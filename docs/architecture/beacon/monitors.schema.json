@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jirathip-dev/beacon/docs/architecture/beacon/monitors.schema.json",
+  "title": "monitors.json v1 (beacon-config, branch main)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "monitors"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "monitors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/monitor"
+      }
+    },
+    "hosts": {
+      "description": "Host checks for `beacon run`, keyed by host name (gethostname() or --host).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/hostCheck"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120,
+      "default": 10
+    },
+    "monitor": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/http"
+        },
+        {
+          "$ref": "#/$defs/tcp"
+        },
+        {
+          "$ref": "#/$defs/heartbeat"
+        }
+      ]
+    },
+    "http": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "group",
+        "url"
+      ],
+      "properties": {
+        "type": {
+          "const": "http"
+        },
+        "name": {
+          "$ref": "#/$defs/name"
+        },
+        "group": {
+          "$ref": "#/$defs/group"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "expect_status": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599,
+          "description": "Absent: any 2xx."
+        },
+        "keyword": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Must appear in the body."
+        },
+        "timeout_s": {
+          "$ref": "#/$defs/timeout"
+        }
+      }
+    },
+    "tcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "group",
+        "host",
+        "port"
+      ],
+      "properties": {
+        "type": {
+          "const": "tcp"
+        },
+        "name": {
+          "$ref": "#/$defs/name"
+        },
+        "group": {
+          "$ref": "#/$defs/group"
+        },
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "timeout_s": {
+          "$ref": "#/$defs/timeout"
+        }
+      }
+    },
+    "heartbeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name",
+        "group",
+        "id",
+        "max_age_min"
+      ],
+      "properties": {
+        "type": {
+          "const": "heartbeat"
+        },
+        "name": {
+          "$ref": "#/$defs/name"
+        },
+        "group": {
+          "$ref": "#/$defs/group"
+        },
+        "id": {
+          "$ref": "#/$defs/id",
+          "description": "beats/<id>.json on branch heartbeats. Unique across monitors."
+        },
+        "max_age_min": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Red when the latest beat is older. Keep above 35 (D4); `beacon check` warns under 40."
+        }
+      }
+    },
+    "hostCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "command"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id",
+          "description": "Must be the id of a heartbeat monitor."
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Run with `sh -c`; exit 0 = up."
+        },
+        "timeout_s": {
+          "$ref": "#/$defs/timeout"
+        }
+      }
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "group": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    }
+  }
+}

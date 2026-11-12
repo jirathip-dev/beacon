@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "monitors": [
+    { "type": "http", "name": "Blog", "group": "Web", "url": "https://example.com/", "expect_status": 200, "keyword": "Example Domain", "timeout_s": 10 },
+    { "type": "http", "name": "API", "group": "Web", "url": "https://api.example.com/health" },
+    { "type": "tcp", "name": "SSH macmini", "group": "Hosts", "host": "macmini.local", "port": 22, "timeout_s": 5 },
+    { "type": "heartbeat", "name": "Nightly backup", "group": "macmini", "id": "backup", "max_age_min": 45 },
+    { "type": "heartbeat", "name": "Disk space", "group": "macmini", "id": "disk", "max_age_min": 45 }
+  ],
+  "hosts": {
+    "macmini": [
+      { "id": "backup", "command": "test -f /var/log/backup.ok && test $(( $(date +%s) - $(stat -f %m /var/log/backup.ok) )) -lt 93600" },
+      { "id": "disk", "command": "df -P / | awk 'NR==2 { gsub(\"%\",\"\",$5); print $5 \"% used\"; exit ($5 < 90 ? 0 : 1) }'", "timeout_s": 5 }
+    ]
+  }
+}
