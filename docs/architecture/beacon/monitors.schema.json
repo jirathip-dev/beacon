@@ -36,7 +36,7 @@
         "type": { "const": "http" },
         "name": { "$ref": "#/$defs/name" },
         "group": { "$ref": "#/$defs/group" },
-        "url": { "type": "string", "format": "uri", "pattern": "^https?://" },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://" },
         "expect_status": { "type": "integer", "minimum": 100, "maximum": 599, "description": "Absent: any 2xx." },
         "keyword": { "type": "string", "minLength": 1, "description": "Must appear in the body." },
         "timeout_s": { "$ref": "#/$defs/probeTimeout", "default": 10 }
@@ -73,7 +73,7 @@
       "additionalProperties": false,
       "required": ["url", "checks"],
       "properties": {
-        "url": { "type": "string", "format": "uri", "pattern": "^https?://", "description": "Full status URL the app GETs, e.g. https://macmini.tail1234.ts.net/status." },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://", "description": "Full status URL the app GETs, e.g. https://macmini.tail1234.ts.net/status." },
         "timeout_s": { "$ref": "#/$defs/probeTimeout", "default": 5 },
         "checks": { "type": "array", "items": { "$ref": "#/$defs/hostCheck" } }
       }
