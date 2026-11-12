@@ -3,32 +3,37 @@
 ```
 beacon/
   cli/                 Rust crate `beacon` (bin). Nothing here is used by app/.
-    src/main.rs        clap: run | check. Exit 0 all up · 1 a check down · 2 config/network error.
-    src/config.rs      MonitorsConfig parse + cross-file rules (types.md). No I/O.
-    src/beat.rs        Beat wire type, serialisation. No I/O.
-    src/state.rs       local State load/save (atomic rename). Only file I/O here.
-    src/github.rs      Contents API: get(path, ref) with ETag, put(path, ref, sha). Only network here.
-    src/run.rs         orchestrates: host checks → decide (statechart.md) → github.put → state.save
-    src/check.rs       runs one host command with timeout, returns (Status, message)
+    src/main.rs        clap: serve | run | check. Exit 0 ok/all up · 1 a check down (run) · 2 config/bind error.
+    src/config.rs      MonitorsConfig parse + cross-field rules (types.md). No I/O.
+    src/source.rs      load config from path (mtime) or URL (ETag, header). Only outbound network here.
+    src/probe.rs       run one `sh -c` command with a kill timeout → (Status, message). Only processes here.
+    src/status.rs      StatusBody, record, render (bytes + ETag). Pure.
+    src/serve.rs       HTTP server (GET /status, If-None-Match → 304), one scheduler thread per check, config reload.
+    src/run.rs         one round of the host's checks, concurrently; print; exit code.
   app/
     Beacon.xcodeproj
-    Beacon/            SwiftUI app target: screens, Keychain, BGAppRefreshTask, writes StatusSnapshot
+    Beacon/            SwiftUI app target: list, config source screen (URL / import / paste / edit),
+                       Keychain (header), BGAppRefreshTask, 60 s foreground timer, writes StatusSnapshot
     BeaconWidget/      WidgetKit extension: reads StatusSnapshot only
-    BeaconKit/         Swift package: config types, checks (http, tcp, heartbeat), GitHubReader, StatusSnapshot
+    BeaconKit/         Swift package: config + status types, ConfigStore (source, cache, ETag),
+                       probes (http, tcp, host fetch with ETag), Refresher, StatusSnapshot
   docs/                this ADR, monitors.example.json, cap-history/
   scripts/line-cap.sh  ci/cap.toml  .github/workflows/ci.yml  .herdsman/rules.md
 ```
 
-Who may call whom (an arrow means "may import"):
+An arrow means "may import":
 
 ```
-cli:  main → run → {config, check, github, state, beat};  run is the only module that touches more than one of them
-      config, beat: pure.  state: files only.  github: network only.  check: process only.
+cli:  main → {serve, run, config, source}
+      serve → {config, source, probe, status}      run → {config, source, probe, status}
+      config, status: pure.  source: network/files only.  probe: processes only.
+      serve and run share probe + status, so `beacon run` prints exactly what serve would report.
 
 app:  Beacon → BeaconKit         BeaconWidget → BeaconKit (StatusSnapshot only)
-      BeaconKit → Foundation, Network (NWConnection for tcp), Security (Keychain)
-      BeaconWidget never imports the GitHub reader or the Keychain; Beacon never imports WidgetKit except to reload timelines.
+      BeaconKit → Foundation, Network (NWConnection for tcp, NWPathMonitor)
+      Keychain access lives in Beacon (the app target), which hands BeaconKit the header value.
+      BeaconWidget never imports the probes or the Keychain. Beacon imports WidgetKit only to reload timelines.
 ```
 
-Shared between cli and app: nothing but the two schema documents and `docs/monitors.example.json`,
+The cli and the app share nothing except the two schema documents and `docs/monitors.example.json`,
 which both test suites decode (ADR D7, acceptance test 4).

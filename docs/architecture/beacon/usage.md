@@ -1,39 +1,56 @@
 # How the callers read
 
-Sketched before the code, so the shapes serve the callers and not the reverse.
+This was sketched before the code, so that the shapes serve the callers and not the other way around.
 
-## The host, from cron or launchd (owner-scheduled, every 5 min)
+## An agent or the owner, editing the config wherever it lives
 
 ```sh
-$ beacon run                      # host name = gethostname(); config from beacon-config main
-backup      up    "0 errors"      written (status changed)
-disk        up    "71% used"      skipped (unchanged, written 12m ago)
+$ $EDITOR monitors.json && beacon check monitors.json          # or: beacon check https://gist.githubusercontent.com/…/raw/monitors.json
+monitors.json: heartbeat "backup": host "macmini" has no check "backup"
 $ echo $?
-0                                 # 1 = a check is down, 2 = config/network error
+2                                                              # 0 = valid
 ```
 
-```sh
-$ beacon run --host macmini --config ./monitors.json --dry-run
-```
-`--config` reads a local file instead of the repo (tests, offline). `--dry-run` runs the
-checks and prints the decision, writes nothing.
+## The host: `beacon serve`, supervised by launchd or systemd (the owner's job; D9)
 
 ```sh
-$ beacon check ./monitors.json    # validate only; exit 0 or 2 with one line per error
+$ BEACON_CONFIG=https://example.net/monitors.json beacon serve   # host = gethostname(); --host, --listen 127.0.0.1:7878 by default
+serve macmini on 127.0.0.1:7878: 2 checks (backup every 300s, disk every 60s)
+$ tailscale serve --bg 7878                                       # once: https://macmini.tail1234.ts.net/ → serve
+$ curl -si https://macmini.tail1234.ts.net/status
+HTTP/2 200
+etag: "9f2c41d07ab3e815"
+cache-control: no-cache
+{"version":1,"host":"macmini","checks":{"backup":{"status":"up","message":"","since":"2026-11-12T03:00:04Z"},"disk":{"status":"up","message":"71% used","since":"2026-11-12T09:41:10Z"}}}
+$ curl -si -H 'If-None-Match: "9f2c41d07ab3e815"' https://macmini.tail1234.ts.net/status
+HTTP/2 304
+```
+
+A sample launchd `ProgramArguments`: `["/Users/me/.cargo/bin/beacon", "serve", "--config", "/Users/me/monitors.json"]`, with `KeepAlive` true.
+
+```sh
+$ beacon run --config ./monitors.json --host macmini    # one round, for trying a command out and for CI
+backup  up    ""
+disk    up    "71% used"
+$ echo $?
+0                                                        # 1 = a check is down, 2 = config error
 ```
 
 ## The app, Swift (`BeaconKit`)
 
 ```swift
-let github = GitHubReader(repo: "jirathip-dev/beacon-config", token: try Keychain.token())
-let config = try MonitorsConfig(json: try await github.file("monitors.json", ref: "main"))
-let beats  = try await github.beats()                      // [HeartbeatId: Beat], ref heartbeats
+let store  = ConfigStore(source: settings.source, header: try Keychain.header())   // .url(…) or .local
+let config = try await store.load()                       // conditional GET; falls back to the cached copy
+let snapshot = await Refresher(config: config, hosts: hostCache).run(now: .now)    // one task group:
+//   http/tcp probes  +  one `GET hosts[h].url` per host (If-None-Match)  →  heartbeat rows mapped from its body
+try snapshot.save()                                       // App Group container; the widget reads this
+WidgetCenter.shared.reloadAllTimelines()
+```
 
-let results: [MonitorResult] = await withTaskGroup { group in
-    for monitor in config.monitors { group.addTask { await monitor.check(beats: beats, now: .now) } }
-    ...
-}
-try StatusSnapshot(results: results, at: .now).save()      // App Group container; the widget reads this
+```swift
+// Config screen: paste/import/edit becomes the local copy only if it decodes
+do    { try store.saveLocal(text) }                       // throws the decode error, shown inline
+catch { editor.error = error.localizedDescription }
 ```
 
 ```swift
@@ -41,11 +58,3 @@ try StatusSnapshot(results: results, at: .now).save()      // App Group containe
 let snapshot = StatusSnapshot.load() ?? .empty
 entries = [Entry(date: .now, worst: snapshot.worst, rows: snapshot.rows)]
 ```
-
-## The owner, once
-
-```sh
-gh api -X PUT repos/jirathip-dev/beacon-config/contents/beats/.keep \
-  -f branch=heartbeats -f message='beats: init' -f content="$(printf '' | base64)"
-```
-(Needs the orphan branch to exist first: `git switch --orphan heartbeats && git commit --allow-empty -m init && git push -u origin heartbeats`.)
