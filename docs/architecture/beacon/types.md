@@ -7,6 +7,10 @@ hand-writes its types from them (ADR D7). Cross-file rules the schemas cannot sa
 - every `hosts.*[].id` names a heartbeat monitor's `id`.
 - `max_age_min` should be ≥ 40 (`beacon check` warns, does not fail).
 
+The schemas say `additionalProperties: false`: that is what is valid to write and what the
+CLI enforces. The app reads leniently (unknown fields ignored, D1); it does not validate
+against the schema.
+
 ## Rust (`cli/src/config.rs`)
 
 ```rust
@@ -48,5 +52,7 @@ enum ResultState: String, Codable { case up, down, unknown }   // unknown: check
 struct StatusSnapshot: Codable { let rows: [MonitorResult]; let at: Date; var worst: ResultState }  // App Group file
 ```
 
-Swift decoding is strict too: a `version != 1` or an unknown `type` throws; unknown keys are
-rejected by decoding each monitor through an explicit `CodingKeys` set and comparing against the container's `allKeys`.
+Swift decoding (D1): a `version != 1` or an unknown monitor `type` throws; unknown keys are
+ignored, which is `Decodable`'s default, so no `allKeys` check and no `CodingKeys` beyond the
+`type` discriminator. `Beat` decodes the same way: an unknown key is ignored, a missing
+required key or a bad `status`/`time` throws. The Rust side keeps `deny_unknown_fields`.

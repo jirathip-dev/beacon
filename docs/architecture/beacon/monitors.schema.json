@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/jirathip-dev/beacon/docs/architecture/beacon/monitors.schema.json",
   "title": "monitors.json v1 (beacon-config, branch main)",
+  "$comment": "additionalProperties: false is enforced by the CLI (deny_unknown_fields, beacon check); the app ignores unknown fields (ADR D1) and rejects only an unknown version or monitor type.",
   "type": "object",
   "additionalProperties": false,
   "required": [

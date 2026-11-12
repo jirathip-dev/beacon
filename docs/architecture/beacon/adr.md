@@ -11,18 +11,27 @@ auth model and the module split, so every later issue builds on the same shapes?
 
 ## Decisions
 
-### D1 `monitors.json` on `beacon-config` `main`, `version: 1`, strict
+### D1 `monitors.json` on `beacon-config` `main`, `version: 1`; CLI strict, app tolerant
 
-One file, one integer `version`. Shapes in `monitors.schema.json`. Readers reject a
-version they do not know and reject unknown fields. Monitor types are a tagged union on
-`type`: `http`, `tcp`, `heartbeat`. Host checks live beside them under `hosts`, keyed by
-host name; each host check `id` must be the `id` of a `heartbeat` monitor.
+One file, one integer `version`. Shapes in `monitors.schema.json`. Both readers reject a
+version they do not know and an unknown monitor `type`. Unknown fields differ by reader:
+the CLI (`beacon run`, `beacon check`) rejects them (`deny_unknown_fields`); the app
+(`BeaconKit`) ignores them, in `monitors.json` and in beat files alike. Monitor types are a
+tagged union on `type`: `http`, `tcp`, `heartbeat`. Host checks live beside them under
+`hosts`, keyed by host name; each host check `id` must be the `id` of a `heartbeat` monitor.
 
 Options considered:
-- Ignore unknown fields (forward compatible). Rejected: a typo (`timeout` for
-  `timeout_s`) would silently take the default; with one owner and two readers, updating
-  both before using a new field is cheap. Adding a field is a version bump.
+- Both readers strict. Rejected (owner, q1511): the app ships through the App Store, so a
+  new field would turn every installed app red until its update lands; the CLI updates
+  with one `cargo install`.
+- Both readers tolerant. Rejected: a typo (`timeout` for `timeout_s`) would silently take
+  the default everywhere. The CLI is where the owner edits and validates (`beacon check`),
+  so it keeps the typo guard; the schemas (`additionalProperties: false`) describe what is
+  valid to write, and the app is merely lenient in what it reads.
 - One file per monitor type or per host. Rejected: more fetches, nothing gained at this size.
+
+Consequence: adding a field is not a version bump; the CLI is updated first, then the
+config. A new monitor type or a changed meaning of a field is a version bump.
 
 ### D2 Heartbeats: one file per id on the orphan branch `heartbeats`
 
@@ -96,7 +105,8 @@ budget is too small for N network checks, and this keeps the token out of the ex
 
 ## Consequences
 
-- Two readers to update on any schema change (strict readers, D1). Accepted.
+- A new field: update the CLI, then the config; the app keeps working (D1). A new type or
+  version: both readers first.
 - Beats are visible only on refresh: the app shows `time` so staleness is honest.
 - A new heartbeat monitor is red until its first beat (D5). Accepted: that is the point.
 - Repo layout for impl: `cli/` (crate), `app/` (`Beacon.xcodeproj`, `BeaconKit` package),

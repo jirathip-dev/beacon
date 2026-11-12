@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/jirathip-dev/beacon/docs/architecture/beacon/heartbeat.schema.json",
   "title": "beats/<id>.json (beacon-config, orphan branch heartbeats)",
+  "$comment": "additionalProperties: false is enforced by the CLI (deny_unknown_fields, beacon check); the app ignores unknown fields (ADR D1); a missing required field or a bad status/time still fails.",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "status", "message", "host", "time"],
