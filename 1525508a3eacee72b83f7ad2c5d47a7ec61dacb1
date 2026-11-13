@@ -1,0 +1,12 @@
+Decided: recipe at .drover/verify.md with $DROVER_PORT, not .herdsman/verify.md as the issue title says
+Because: .drover/verify.md:1
+Rejected: .herdsman/verify.md — drover reads .drover/verify.md, so the herdsman path would give verify-no-recipe
+Decided: point the app at fixtures through a -source launch argument, with no app code change
+Because: app/Beacon/BeaconApp.swift:35
+Decided: a BeaconUITests target taps [cfg] and adds widgets through SpringBoard
+Because: "add the small and medium widget"
+Rejected: simctl only — it cannot tap, and the host has no sim-task, idb or axe
+Decided: a shared Beacon scheme with the same build and archive, plus the UI tests in its test action
+Check: CI's swift job and the TestFlight archive still use -scheme Beacon unchanged
+Check: run .drover/verify/up.sh, the Drive command, then down.sh; testWidgets passes and leaves no simulator behind
+Owner: The verify stage can now drive the real Beacon app and widgets on a throwaway simulator with local test data.
