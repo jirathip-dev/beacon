@@ -22,10 +22,8 @@ shot() { # shot <screen> <png name> [dark]
   sleep 3
   xcrun simctl io "$sim" screenshot "$out/$2.png" >/dev/null 2>&1
 }
-for s in first-run first-run-error list list-offline settings; do
-  shot "A-$s" "A-$s"
-  shot "B-$s" "B-$s" dark
+for s in first-run first-run-error list list-offline list-empty list-loading settings; do
+  shot "$s" "$s-light"
+  shot "$s" "$s-dark" dark
 done
-shot A-list A-list-dark dark
-shot A-settings A-settings-dark dark
 echo "wrote $(ls "$out" | wc -l | tr -d ' ') pngs to $out"
