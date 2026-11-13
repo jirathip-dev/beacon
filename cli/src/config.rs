@@ -81,6 +81,12 @@ pub struct HostCheck {
 #[serde(try_from = "String")]
 pub struct Id(String);
 
+impl Id {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 impl TryFrom<String> for Id {
     type Error = String;
     fn try_from(s: String) -> Result<Self, String> {
