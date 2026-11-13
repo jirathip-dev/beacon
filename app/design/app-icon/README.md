@@ -19,7 +19,7 @@ Open questions: which ground ships, navy `#13263d` or teal `#12303a`? Recommenda
 |---|---|
 | `art.mjs` | Draws `icons/beacon-navy.svg` and `icons/beacon-teal.svg` (1024 × 1024): `node app/design/app-icon/art.mjs`. It follows Cooee's `art.mjs` method: flat fills, black or white shading at low opacity, one ground rect. Colours: red `#c8453a` (Cooee Kitchen's line-cook red), white `#f1ece2`, lamp `#f6c94a`/`#fff4c8`, beams `#ffe08a`, iron `#262a31`. |
 | `icons/` | The two SVGs. |
-| `ref/` | Seven of Cooee's icons, copied unchanged from `jirathip-dev/cooee` `docs/design/app-icons/icons/` (art.mjs at `a4f7fa99`). They appear only on the comparison sheet and do not ship. |
+| `ref/` | Six of Cooee's icons, copied unchanged from `jirathip-dev/cooee` `docs/design/app-icons/icons/` (art.mjs at `a4f7fa99`). They appear only on the comparison sheet and do not ship. |
 | `sheet.html` | The home-screen sheet: `?f=sheet` (390) or `?f=wide` (1440). Its wallpapers, squircle and 60 pt grid copy Cooee's `ai.css`. |
 | `shoot.mjs` | Renders every PNG with headless Chrome, with no dependencies: `node app/design/app-icon/shoot.mjs <chrome-headless-shell>`. It fails if a page scrolls sideways. |
 
