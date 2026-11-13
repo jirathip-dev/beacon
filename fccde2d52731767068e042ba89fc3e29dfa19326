@@ -1,0 +1,9 @@
+Decided: shoot.mjs renders icons/beacon-teal.svg directly into AppIcon.appiconset/AppIcon.png
+Because: "The PNG is rendered from the committed SVG by the committed script; no hand edits."
+Because: q1638
+Rejected: a separate PNG flattening script — Chrome's capture of the opaque-ground SVG is already RGB, no alpha
+Decided: CI swift job asserts the built app's Info.plist icon name, Assets.car entry and AppIcon PNGs
+Because: "The app builds in CI and the built `.app` contains the `AppIcon` asset"
+Rejected: deleting the navy design files — they record the design review; only the shipped asset is teal
+Check: AppIcon.png is byte-identical to app/design/app-icon/beacon-teal-1024.png
+Owner: The app now shows the teal lighthouse icon you approved; nothing else changes.
