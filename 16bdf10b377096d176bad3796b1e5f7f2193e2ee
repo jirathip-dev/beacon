@@ -1,0 +1,8 @@
+Decided: build the ADR's beacon run (probe + run round), not the issue's GitHub heartbeat writer
+Because: q1577
+Because: docs/architecture/beacon/adr.md:8
+Rejected: beacon beat and GitHub contents API writes — owner amendment q1516 removed the config repo and token
+Rejected: libc or clap dependency — kill -KILL -- -pgid and plain slice matching cover it with no new crate
+Check: cli/src/probe.rs:43 kills the whole process group on timeout and after exit, so a background grandchild cannot hold the pipe open
+Check: tests/run.rs probe_timeout_kills_the_whole_process_group fails when the group kill is disabled
+Owner: beacon run now runs a host's checks once and prints them; serve and URL configs come in later issues
