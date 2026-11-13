@@ -1,0 +1,135 @@
+# beacon verify transcript, head 16bdf10b377096d176bad3796b1e5f7f2193e2ee
+# binary: $CARGO_TARGET_DIR/debug/beacon (cargo build exit=0; cargo test exit=0, 11 passed)
+# cfg.json:
+{ "version": 1, "monitors": [
+  { "type": "heartbeat", "name": "A", "group": "g", "host": "box", "id": "ok" },
+  { "type": "heartbeat", "name": "B", "group": "g", "host": "box", "id": "bad" },
+  { "type": "heartbeat", "name": "C", "group": "g", "host": "box", "id": "slow" },
+  { "type": "heartbeat", "name": "D", "group": "g", "host": "up", "id": "only" }
+ ],
+ "hosts": {
+  "box": { "checks": [
+    { "id": "ok", "command": "echo first; echo 'all good'" },
+    { "id": "bad", "command": "echo nope >&2; exit 3" },
+    { "id": "slow", "command": "sleep 31.77 & sleep 31.77", "timeout_s": 2 }
+  ]},
+  "up": { "checks": [ { "id": "only", "command": "printf 'fine\\n\\n'" } ] }
+ } }
+
+$ beacon run --config docs/monitors.example.json --host macmini
+backup  down  ""
+disk    up    "13% used"
+exit=1
+
+$ beacon run --config $SCRATCH/cfg.json --host up
+$SCRATCH/cfg.json: missing field `url` at line 12 column 4
+exit=2
+
+$ /usr/bin/time -p beacon run --config $SCRATCH/cfg.json --host box
+$SCRATCH/cfg.json: missing field `url` at line 12 column 4
+real 0.00
+user 0.00
+sys 0.00
+exit=2
+
+$ pgrep -fl sleep 31.77
+exit=1
+
+$ env BEACON_CONFIG=$SCRATCH/cfg.json beacon run --host up
+$SCRATCH/cfg.json: missing field `url` at line 12 column 4
+exit=2
+
+$ env -u BEACON_CONFIG beacon run --host up
+no config: pass --config <path> or set BEACON_CONFIG
+exit=2
+
+$ beacon run --config $SCRATCH/cfg.json --host nosuch
+$SCRATCH/cfg.json: missing field `url` at line 12 column 4
+exit=2
+
+$ beacon run --config /nonexistent.json
+/nonexistent.json: No such file or directory (os error 2)
+exit=2
+
+$ beacon run --config $SCRATCH/cfg.json --bogus x
+usage: beacon check <path>
+       beacon run [--config <path>] [--host <name>]
+exit=2
+
+$ beacon run --config $SCRATCH/cfg.json --host
+usage: beacon check <path>
+       beacon run [--config <path>] [--host <name>]
+exit=2
+
+$ beacon run --config $SCRATCH/cfg.json
+$SCRATCH/cfg.json: missing field `url` at line 12 column 4
+exit=2
+
+$ hostname -s
+Jirathips-Mac-Mini
+exit=0
+
+$ beacon
+usage: beacon check <path>
+       beacon run [--config <path>] [--host <name>]
+exit=2
+
+$ beacon check docs/monitors.example.json
+exit=0
+
+
+# ---- round 2: cfg.json with host urls (the schema requires hosts.<name>.url) ----
+{ "version": 1, "monitors": [
+  { "type": "heartbeat", "name": "A", "group": "g", "host": "box", "id": "ok" },
+  { "type": "heartbeat", "name": "B", "group": "g", "host": "box", "id": "bad" },
+  { "type": "heartbeat", "name": "C", "group": "g", "host": "box", "id": "slow" },
+  { "type": "heartbeat", "name": "D", "group": "g", "host": "up", "id": "only" }
+ ],
+ "hosts": {
+  "box": { "url": "https://box.example/status", "checks": [
+    { "id": "ok", "command": "echo first; echo 'all good'" },
+    { "id": "bad", "command": "echo nope >&2; exit 3" },
+    { "id": "slow", "command": "sleep 31.77 & sleep 31.77", "timeout_s": 2 }
+  ]},
+  "up": { "url": "https://up.example/status", "checks": [ { "id": "only", "command": "printf 'fine\\n\\n'" } ] }
+ } }
+
+$ beacon check $SCRATCH/cfg.json
+exit=0
+
+$ beacon run --config $SCRATCH/cfg.json --host up
+only  up    "fine"
+exit=0
+
+$ /usr/bin/time -p beacon run --config $SCRATCH/cfg.json --host box
+ok    up    "all good"
+bad   down  "nope"
+slow  down  "timeout after 2s"
+real 2.02
+user 0.00
+sys 0.01
+exit=1
+
+$ pgrep -fl sleep 31.77
+exit=1
+
+$ env BEACON_CONFIG=$SCRATCH/cfg.json beacon run --host up
+only  up    "fine"
+exit=0
+
+$ env BEACON_CONFIG=/nonexistent.json beacon run --config $SCRATCH/cfg.json --host up
+only  up    "fine"
+exit=0
+
+$ beacon run --config $SCRATCH/cfg.json --host nosuch
+$SCRATCH/cfg.json: no host "nosuch" in hosts
+exit=2
+
+$ beacon run --config $SCRATCH/cfg.json
+$SCRATCH/cfg.json: no host "jirathips-mac-mini" in hosts
+exit=2
+
+# ---- round 3: message cut to 200 chars (docs/architecture/beacon/adr.md:109) ----
+$ beacon run --config $SCRATCH/long.json --host h | awk '{print $1, $2, length($3)-2}'
+long down 200
+exit=1
