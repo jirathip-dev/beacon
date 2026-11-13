@@ -39,7 +39,13 @@ jobs:
       - name: Pick an iPhone simulator
         run: echo "SIM=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }')" >> "$GITHUB_ENV"
       - name: Build app
-        run: xcodebuild -project app/Beacon.xcodeproj -scheme Beacon -destination "id=$SIM" CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -project app/Beacon.xcodeproj -scheme Beacon -destination "id=$SIM" -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build
+      - name: Built app carries the AppIcon
+        run: |
+          app="$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/Beacon.app"
+          test "$(plutil -extract CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName raw "$app/Info.plist")" = AppIcon
+          xcrun assetutil --info "$app/Assets.car" | grep '"Name" : "AppIcon"'
+          ls -l "$app"/AppIcon*.png
       - name: Test BeaconKit
         working-directory: app/BeaconKit
         run: xcodebuild -scheme BeaconKit -destination "id=$SIM" test

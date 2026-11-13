@@ -1,5 +1,5 @@
 // #10: render every PNG with headless Chrome, no deps (cooee's docs/design/app-icons/shoot.mjs, trimmed): each icon
-// SVG at 1024 × 1024, and the home-screen sheet at 390 wide (2×) and 1440 wide (1×).
+// SVG at 1024 × 1024, the shipped teal AppIcon (q1638), and the home-screen sheet at 390 wide (2×) and 1440 wide (1×).
 // Usage (repo root): node app/design/app-icon/art.mjs && node app/design/app-icon/shoot.mjs <chrome-headless-shell>
 import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -14,6 +14,7 @@ if (!chrome) { console.error('usage: node shoot.mjs <chrome-headless-shell>'); p
 const VIEWS = [
   ['icons/beacon-navy.svg', 1024, 1024, 1, 'beacon-navy-1024.png'],
   ['icons/beacon-teal.svg', 1024, 1024, 1, 'beacon-teal-1024.png'],
+  ['icons/beacon-teal.svg', 1024, 1024, 1, '../../Beacon/Assets.xcassets/AppIcon.appiconset/AppIcon.png'],
   ['sheet.html?f=sheet', 390, 0, 2, 'sheet-390.png'],
   ['sheet.html?f=wide', 1440, 0, 1, 'sheet-1440.png'],
 ];

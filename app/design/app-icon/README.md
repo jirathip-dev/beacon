@@ -27,3 +27,7 @@ Open questions: which ground ships, navy `#13263d` or teal `#12303a`? Recommenda
 
 - One icon ships (q1610): the chosen variant becomes `AppIcon.appiconset`'s single 1024 × 1024 image. There are no alternates.
 - Render the PNG from the committed SVG with the committed script, with no hand edits. iOS needs an opaque PNG, but Chrome's screenshot is RGBA. Flatten it, or render without alpha, so the shipped PNG has no alpha channel.
+
+## Shipped (q1638)
+
+Teal `#12303a` ships as Beacon's only icon; navy is dropped. `shoot.mjs` renders `icons/beacon-teal.svg` straight into `app/Beacon/Assets.xcassets/AppIcon.appiconset/AppIcon.png` (opaque RGB, byte-identical to `beacon-teal-1024.png`).
