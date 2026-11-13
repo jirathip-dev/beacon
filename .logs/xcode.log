@@ -1,0 +1,14 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project app/Beacon.xcodeproj -scheme Beacon -destination id=0EE04EC2-8F04-4C89-9CE6-3C265B3B5650 -derivedDataPath /Users/jkmacmini/.local/share/herdsman/work/.build/.scratch/beacon-impl-1/dd CODE_SIGNING_ALLOWED=NO test
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  BeaconKit: /Users/jkmacmini/.local/share/herdsman/work/beacon/issue-1/app/BeaconKit @ local
+
+2026-11-13 04:09:16.586 xcodebuild[44604:96781838] Writing error result bundle to /var/folders/51/tp633f_n3tj561q8rqwrqtxw0000gn/T/ResultBundle_2569-13-11_04-09-0016.xcresult
+xcodebuild: error: Failed to build project Beacon with scheme Beacon.: There are no test bundles available to test.

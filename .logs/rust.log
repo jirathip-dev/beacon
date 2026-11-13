@@ -1,0 +1,50 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+    Checking memchr v2.8.3
+    Checking itoa v1.0.19
+   Compiling syn v3.0.10
+   Compiling serde_derive v1.0.229
+    Checking beacon v0.1.0 (/Users/jkmacmini/.local/share/herdsman/work/beacon/issue-1/cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.84s
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.19
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling beacon v0.1.0 (/Users/jkmacmini/.local/share/herdsman/work/beacon/issue-1/cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.95s
+     Running unittests src/lib.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-1/debug/deps/beacon-76519caffdfe123f)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-1/debug/deps/beacon-5047ac8c59db8a46)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/config.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-1/debug/deps/config-135a7efd9b81a225)
+
+running 5 tests
+test example_validates_and_covers_every_monitor_type ... ok
+test defaults_fill_omitted_fields ... ok
+test rejects_cross_field_violations ... ok
+test rejects_schema_violations ... ok
+test check_command_exits_0_on_valid_and_2_with_reason_on_invalid ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s
+
+   Doc-tests beacon
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
