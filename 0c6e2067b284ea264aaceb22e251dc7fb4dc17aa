@@ -1,0 +1,9 @@
+Decided: name both bundle ids explicitly and check they exist in the pbxproj instead of Cooee's sed | head -1
+Because: "Read the app's id explicitly (Cooee's `sed | head -1` may pick the widget's)"
+Decided: turn on App Groups per id via bundleIdCapabilities; the group container itself is left to cloud signing, with a manual-step error
+Because: "If the API key can't register the App Group, fail with a message naming the one-time manual step."
+Rejected: creating the App Group through the API — App Store Connect API has no app group resource
+Decided: add an actionlint job to ci.yml
+Because: "The workflow passes `actionlint` (or an equivalent YAML check in CI)"
+Check: register() is called directly, not in $(...), so bash -e still stops on a failed API call
+Owner: after the one-time steps in docs/testflight.md, a merge to main touching app/ uploads to TestFlight
