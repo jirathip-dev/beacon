@@ -65,3 +65,21 @@ public struct Host: Decodable, Sendable {
     public let url: URL
     public let timeout_s: Int?
 }
+
+extension Monitor {
+    public var name: String {
+        switch self {
+        case .http(let m): m.name
+        case .tcp(let m): m.name
+        case .heartbeat(let m): m.name
+        }
+    }
+
+    public var group: String {
+        switch self {
+        case .http(let m): m.group
+        case .tcp(let m): m.group
+        case .heartbeat(let m): m.group
+        }
+    }
+}
