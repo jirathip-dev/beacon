@@ -45,15 +45,27 @@
 		AA0000000000000000000008 /* Exceptions for "BeaconWidget" folder in "BeaconWidget" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				BeaconWidget.entitlements,
 				Info.plist,
 			);
 			target = AA0000000000000000000011 /* BeaconWidget */;
+		};
+		AA0000000000000000000009 /* Exceptions for "Beacon" folder in "Beacon" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Beacon.entitlements,
+				Info.plist,
+			);
+			target = AA0000000000000000000010 /* Beacon */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		AA0000000000000000000006 /* Beacon */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA0000000000000000000009 /* Exceptions for "Beacon" folder in "Beacon" target */,
+			);
 			path = Beacon;
 			sourceTree = "<group>";
 		};
@@ -63,6 +75,11 @@
 				AA0000000000000000000008 /* Exceptions for "BeaconWidget" folder in "BeaconWidget" target */,
 			);
 			path = BeaconWidget;
+			sourceTree = "<group>";
+		};
+		AA000000000000000000000A /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -92,6 +109,7 @@
 			children = (
 				AA0000000000000000000006 /* Beacon */,
 				AA0000000000000000000007 /* BeaconWidget */,
+				AA000000000000000000000A /* Shared */,
 				AA0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -124,6 +142,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				AA0000000000000000000006 /* Beacon */,
+				AA000000000000000000000A /* Shared */,
 			);
 			name = Beacon;
 			packageProductDependencies = (
@@ -147,6 +166,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				AA0000000000000000000007 /* BeaconWidget */,
+				AA000000000000000000000A /* Shared */,
 			);
 			name = BeaconWidget;
 			packageProductDependencies = (
@@ -263,9 +283,11 @@
 		AA0000000000000000000072 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Beacon/Beacon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Beacon/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -282,9 +304,11 @@
 		AA0000000000000000000073 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Beacon/Beacon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Beacon/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -301,6 +325,7 @@
 		AA0000000000000000000074 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BeaconWidget/BeaconWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -322,6 +347,7 @@
 		AA0000000000000000000075 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BeaconWidget/BeaconWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
