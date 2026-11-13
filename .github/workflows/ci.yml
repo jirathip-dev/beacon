@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging]
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v5
+      - run: rustup component add rustfmt clippy
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  line-cap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: sh scripts/line-cap.sh
+      - run: sh scripts/line-cap.test.sh
+
+  swift:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Pick an iPhone simulator
+        run: echo "SIM=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }')" >> "$GITHUB_ENV"
+      - name: Build app
+        run: xcodebuild -project app/Beacon.xcodeproj -scheme Beacon -destination "id=$SIM" CODE_SIGNING_ALLOWED=NO build
+      - name: Test BeaconKit
+        working-directory: app/BeaconKit
+        run: xcodebuild -scheme BeaconKit -destination "id=$SIM" test
