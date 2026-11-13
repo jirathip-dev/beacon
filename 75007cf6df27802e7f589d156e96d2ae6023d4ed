@@ -1,0 +1,11 @@
+Decided: MonitorResult carries since (not checkedAt) plus StatusSnapshot.configStale
+Because: "shows "config from <time>" when the config fetch failed"
+Rejected: checkedAt per row — the design shows "since <time>" and snapshot.at already holds the check time
+Decided: the config cache is used only for the same URL
+Because: app/BeaconKit/Sources/BeaconKit/ConfigStore.swift:45
+Rejected: any cache on failure — a failing new URL would silently show the old config
+Decided: notifications are posted only from the BGAppRefreshTask run
+Because: "posts a local notification for each monitor that went up→down"
+Check: offline rows are unknown and the transport is never called (RefresherTests offlineMakesEveryRowUnknownWithoutProbing)
+Check: the widget imports only StatusSnapshot and never touches the Keychain (app/BeaconWidget/BeaconWidget.swift)
+Owner: the iPhone app runs its own checks, shows the terminal look, and alerts on down and recovery
