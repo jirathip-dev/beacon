@@ -25,6 +25,13 @@ jobs:
       - run: sh scripts/line-cap.sh
       - run: sh scripts/line-cap.test.sh
 
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+      - run: ./actionlint -color
+
   swift:
     runs-on: macos-latest
     steps:
