@@ -39,9 +39,18 @@ import XCTest
         try shot("settings")
     }
 
-    /// Waits for `element`, then taps it; fails with its query when it never shows.
+    /// Waits for `element`, answering the notification alert iOS may show over SpringBoard at any point.
+    func appears(_ element: XCUIElement, timeout: TimeInterval = 30) -> Bool {
+        let allow = springboard.alerts.buttons["Allow"]
+        for _ in 0..<Int(timeout) {
+            if allow.exists { allow.tap() }
+            if element.waitForExistence(timeout: 1) && !allow.exists { return true }
+        }
+        return false
+    }
+
     func tap(_ element: XCUIElement, timeout: TimeInterval = 30) {
-        XCTAssert(element.waitForExistence(timeout: timeout), "never appeared: \(element)")
+        XCTAssert(appears(element, timeout: timeout), "never appeared: \(element)")
         element.tap()
     }
 
@@ -54,13 +63,13 @@ import XCTest
         }
         XCTAssert(home, "Beacon still in front after Home")
         let icon = springboard.icons["Beacon"]
-        XCTAssert(icon.waitForExistence(timeout: 60), "no Beacon icon on the home screen")
+        XCTAssert(appears(icon, timeout: 60), "no Beacon icon on the home screen")
         let edit = springboard.buttons["Edit"]
         let menu = springboard.buttons["Edit Home Screen"]
         for _ in 0..<3 where !edit.exists {
             icon.press(forDuration: 1.5)
-            if menu.waitForExistence(timeout: 15) { menu.tap() }
-            _ = edit.waitForExistence(timeout: 30)
+            if appears(menu, timeout: 15) { menu.tap() }
+            _ = appears(edit)
         }
         XCTAssert(edit.exists, "home screen never entered edit mode: \(springboard.debugDescription)")
         let widgets = springboard.icons.matching(NSPredicate(format: "identifier == 'Beacon' AND value BEGINSWITH 'Widget'"))
@@ -72,7 +81,7 @@ import XCTest
             search.typeText("Beacon")
             tap(springboard.cells["Beacon"])
             let small = springboard.buttons.matching(NSPredicate(format: "value ENDSWITH 'Small'")).firstMatch
-            XCTAssert(small.waitForExistence(timeout: 10), "no size preview")
+            XCTAssert(appears(small, timeout: 10), "no size preview")
             if medium {
                 small.swipeLeft()
                 XCTAssert(springboard.buttons.matching(NSPredicate(format: "value ENDSWITH 'Medium'")).firstMatch.waitForExistence(timeout: 5))

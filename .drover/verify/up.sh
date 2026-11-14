@@ -6,6 +6,7 @@ set -eu
 cd "$(dirname "$0")/../.."
 sh .drover/verify/down.sh
 mkdir -p shots/serve
+rm -f shots/*.png
 for f in monitors.json status ok.html; do sed "s/PORT/$DROVER_PORT/g" ".drover/verify/$f" >"shots/serve/$f"; done
 python3 -m http.server "$DROVER_PORT" --bind 127.0.0.1 --directory shots/serve >shots/server.log 2>&1 &
 echo $! >shots/server.pid

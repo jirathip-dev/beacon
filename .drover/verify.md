@@ -17,6 +17,7 @@ sh .drover/verify/up.sh
   - Creates and boots a throwaway simulator named `beacon-verify-$DROVER_PORT` (its udid goes to `shots/sim.udid`) and installs `Beacon.app`.
 - The host has no `sim-task`/`hermes-sim-task`, so the script drives `xcrun simctl` directly. It touches only the simulator it created.
 - Ready signal: the last line is `READY sim=<udid> config=http://127.0.0.1:<port>/monitors.json`, and the exit code is 0.
+- Each `up.sh` run deletes the old `shots/*.png` first, so every screenshot comes from the run in hand.
 - Teardown: `sh .drover/verify/down.sh` prints `DOWN`. It stops the server and shuts down and deletes that one simulator. It is safe to run twice, and `up.sh` runs it first.
 - The app is pointed at the fixtures by a launch argument, with no UI typing. The form only accepts https, but the `source` default is read from the argument domain:
   `xcrun simctl launch "$(cat shots/sim.udid)" dev.jirathip.beacon -source "<$(printf '{"url":{"_0":"http://127.0.0.1:%s/monitors.json"}}' "$DROVER_PORT" | xxd -p | tr -d '\n')>"`.
@@ -50,6 +51,7 @@ To drive one screen, use `-only-testing:BeaconUITests/VerifyUITests/<test>` (see
 - SpringBoard (`com.apple.springboard`):
   - Press Home until the app's state is `runningBackground`, then long-press `icons["Beacon"]` → `buttons["Edit Home Screen"]`, then `buttons["Edit"]` → `buttons["Add Widget"]`.
   - Every SpringBoard step waits for its element to exist, and each add waits for the widget count to grow (no fixed sleeps).
+  - The app's notification alert never shows while the app is in front: iOS shows it over SpringBoard later, at any step. Each wait taps its `Allow` when it shows.
   - `searchFields.firstMatch` and type `Beacon`, then `cells["Beacon"]`.
   - The size preview is a button whose value ends in `Small`; swipe left for Medium.
   - Then the button whose label ends in `Add Widget`, then `buttons["Done"]`.
