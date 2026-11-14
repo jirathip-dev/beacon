@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "monitors": [
+    { "type": "http", "name": "Status page", "group": "Web", "url": "http://127.0.0.1:PORT/ok.html", "expect_status": 200, "keyword": "beacon ok", "timeout_s": 5 },
+    { "type": "http", "name": "API wrong status", "group": "Web", "url": "http://127.0.0.1:PORT/health", "expect_status": 200, "timeout_s": 5 },
+    { "type": "http", "name": "Keyword missing", "group": "Web", "url": "http://127.0.0.1:PORT/ok.html", "keyword": "Example Domain", "timeout_s": 5 },
+    { "type": "tcp", "name": "Fixture port", "group": "Hosts", "host": "127.0.0.1", "port": PORT, "timeout_s": 5 },
+    { "type": "tcp", "name": "Closed port", "group": "Hosts", "host": "127.0.0.1", "port": 1, "timeout_s": 5 },
+    { "type": "heartbeat", "name": "Disk space", "group": "macmini", "host": "macmini", "id": "disk" },
+    { "type": "heartbeat", "name": "Nightly backup", "group": "macmini", "host": "macmini", "id": "backup" },
+    { "type": "heartbeat", "name": "Photos sync", "group": "macmini", "host": "macmini", "id": "photos" }
+  ],
+  "hosts": {
+    "macmini": { "url": "http://127.0.0.1:PORT/status", "timeout_s": 5, "checks": [] }
+  }
+}
