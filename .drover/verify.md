@@ -48,7 +48,8 @@ To drive one screen, use `-only-testing:BeaconUITests/VerifyUITests/<test>` (see
   - `buttons["[done]"]`: closes settings.
   - `buttons["[load]"]` and `buttons["[import from files]"]`: the form's actions.
 - SpringBoard (`com.apple.springboard`):
-  - Long-press at (0.5, 0.65) for edit mode, then `buttons["Edit"]` → `buttons["Add Widget"]`.
+  - Press Home until the app's state is `runningBackground`, then long-press `icons["Beacon"]` → `buttons["Edit Home Screen"]`, then `buttons["Edit"]` → `buttons["Add Widget"]`.
+  - Every SpringBoard step waits for its element to exist, and each add waits for the widget count to grow (no fixed sleeps).
   - `searchFields.firstMatch` and type `Beacon`, then `cells["Beacon"]`.
   - The size preview is a button whose value ends in `Small`; swipe left for Medium.
   - Then the button whose label ends in `Add Widget`, then `buttons["Done"]`.
@@ -86,7 +87,7 @@ The fixture config (`.drover/verify/monitors.json`, 8 monitors in 3 groups) give
 | Monitor list (grouped cards, summary, down rows) | launch with `-source` (see Launch) | `testListAndSettings` | `list.png` |
 | Settings sheet (`config`, source card) | list → tap `[cfg]` | `testListAndSettings` | `settings.png` |
 | Pull to refresh | list → swipe down on the scroll view | (manual) | none |
-| Small and medium widget | list once, then Home → Edit → Add Widget → Beacon (Small, then swipe to Medium) | `testWidgets` | `widgets.png`, `widget-small.png`, `widget-medium.png` |
+| Small and medium widget | list once, then Home → long-press the Beacon icon → Edit Home Screen → Edit → Add Widget → Beacon (Small, then swipe to Medium) | `testWidgets` | `widgets.png`, `widget-small.png`, `widget-medium.png` |
 | Offline state (`no network · N unknown`) | not reachable on the simulator: it always has a network path | none | none |
 | Background refresh and local alerts | `BGAppRefreshTask`: not triggerable from `simctl` | none | none |
 
@@ -95,5 +96,6 @@ The fixture config (`.drover/verify/monitors.json`, 8 monitors in 3 groups) give
 - `server.log` shows `code 404, message File not found` / `"GET /health HTTP/1.1" 404`. This is intended: the `API wrong status` fixture.
 - The Closed port row's error is iOS's own `NWError` text, cut off with an ellipsis.
 - `beacon check shots/serve/monitors.json` (the CLI) rejects the fixture because its URLs are http. The fixture is for the app only, which accepts http to 127.0.0.1.
+- `testWidgets` takes about 3 minutes, and `drive.log` shows `App animations complete notification not received` twice: SpringBoard never reports idle while its icons jiggle, so XCUITest waits 60 s before each of two taps and then goes on.
 - The home screen shows a `BeaconUITests-Runner` icon. That is the XCUITest runner app.
 - The `since` times are the run's clock time, except the heartbeat rows (`12 Nov`, from the fixture's `since`).
