@@ -1,0 +1,9 @@
+Decided: every SpringBoard wait in testWidgets taps the notification alert's Allow whenever it shows
+Because: app/BeaconUITests/VerifyUITests.swift:43
+Rejected: more waits or retries around the long-press — the round 2 runs still failed; a probe showed the alert, not timing, hid the icon and the menu
+Rejected: simctl privacy grant — it has no notifications service
+Decided: up.sh deletes old shots/*.png first
+Because: .drover/verify/up.sh:9
+Rejected: keeping old shots — a failed run still showed widget PNGs from an earlier run
+Check: on a fresh simulator per run (up.sh, Drive, down.sh), Drive exits 0, drive.log has one Tap "Allow" Button, and widget-small.png and widget-medium.png carry this run's time
+Owner: The widget step of the verify recipe now passes on a fresh simulator; it used to trip over the app's late notification prompt.
