@@ -1,0 +1,106 @@
+fmt=0
+   Compiling serde_core v1.0.229
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+    Checking memchr v2.8.3
+    Checking itoa v1.0.19
+   Compiling syn v3.0.10
+    Checking log v0.4.35
+    Checking httpdate v1.0.3
+    Checking chunked_transfer v1.5.0
+    Checking ascii v1.1.0
+    Checking tiny_http v0.12.0
+   Compiling serde_derive v1.0.229
+    Checking beacon v0.1.0 (/Users/jkmacmini/.local/share/drover/work/beacon/issue-13/cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.15s
+clippy=0
+   Compiling serde_core v1.0.229
+   Compiling zmij v1.0.23
+   Compiling itoa v1.0.19
+   Compiling log v0.4.35
+   Compiling httpdate v1.0.3
+   Compiling chunked_transfer v1.5.0
+   Compiling ascii v1.1.0
+   Compiling memchr v2.8.3
+   Compiling tiny_http v0.12.0
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling beacon v0.1.0 (/Users/jkmacmini/.local/share/drover/work/beacon/issue-13/cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.87s
+     Running unittests src/lib.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-13/debug/build/beacon/cdc43669bdb7895e/out/beacon-cdc43669bdb7895e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-13/debug/build/beacon/1f8df12a03c00063/out/beacon-1f8df12a03c00063)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/config.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-13/debug/build/beacon/ad0d537d44e4f824/out/config-ad0d537d44e4f824)
+
+running 6 tests
+test example_validates_and_covers_every_monitor_type ... ok
+test defaults_fill_omitted_fields ... ok
+test rejects_cross_field_violations ... ok
+test disks_default_to_root_and_reject_relative_duplicate_or_too_many ... ok
+test rejects_schema_violations ... ok
+test check_command_exits_0_on_valid_and_2_with_reason_on_invalid ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+
+     Running tests/metrics.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-13/debug/build/beacon/1de0c04ea3523245/out/metrics-1de0c04ea3523245)
+
+running 5 tests
+test empty_ring_renders_empty_columns_and_null_totals ... ok
+test render_gives_the_golden_bytes_in_the_schemas_shape ... ok
+test render_keys_disks_by_the_configured_mounts_only ... ok
+test etag_holds_for_the_same_samples_and_changes_with_a_new_one ... ok
+test ring_holds_at_most_1440_and_drops_the_oldest ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/run.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-13/debug/build/beacon/003063e0c2be4772/out/run-003063e0c2be4772)
+
+running 6 tests
+test run_exits_2_on_unknown_host_or_bad_usage ... ok
+test probe_is_up_on_exit_0_with_last_non_empty_line_of_stdout_and_stderr ... ok
+test run_prints_each_check_and_exits_0_when_all_up ... ok
+test probe_is_down_on_non_zero_exit_and_cuts_message_to_200_chars ... ok
+test run_exits_1_when_a_check_is_down_or_times_out ... ok
+test probe_timeout_kills_the_whole_process_group ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.02s
+
+     Running tests/sampler.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-13/debug/build/beacon/09b1fa9624d869ce/out/sampler-09b1fa9624d869ce)
+
+running 5 tests
+test cpu_pct_is_none_when_no_tick_passed_or_a_counter_went_back ... ok
+test garbage_parses_to_none ... ok
+test macos_load_mem_swap_and_df_parse_from_the_minis_tool_output ... ok
+test linux_load_cpu_mem_swap_and_df_parse_from_proc_and_df_text ... ok
+test sample_on_this_os_reads_load_memory_and_root_and_cpu_from_the_second ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running tests/serve.rs (/Users/jkmacmini/.local/share/herdsman/work/.build/beacon-impl-13/debug/build/beacon/70e4b7b6a4b7899e/out/serve-70e4b7b6a4b7899e)
+
+running 2 tests
+test serve_exits_2_when_it_cannot_listen ... ok
+test serve_answers_metrics_and_status_with_etags_304s_and_404 ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+   Doc-tests beacon
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+test=0
