@@ -1,0 +1,7 @@
+Decided: Summary reads snapshot.at through T.stamp and shows it after the counts and after the offline line
+Because: "Offline (`no network`) keeps its line as it is, plus the same `checked HH:MM`."
+Decided: the stamp moves on every refresh because every refresh path replaces the snapshot Summary draws
+Because: app/Beacon/Views.swift:174
+Rejected: a per-row checked time — the issue wants one stamp in the summary line
+Check: list at 390 shows "5 down  3 up  checked HH:MM" in mute 11 pt, as app/design/beacon-app/png/list-light.png
+Owner: the home screen now says when the app last checked, so steady rows no longer look frozen
