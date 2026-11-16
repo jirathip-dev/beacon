@@ -129,3 +129,41 @@ fn check_command_exits_0_on_valid_and_2_with_reason_on_invalid() {
     assert_eq!(out.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&out.stderr).contains("has no check \"nope\""));
 }
+
+#[test]
+fn disks_default_to_root_and_reject_relative_duplicate_or_too_many() {
+    let config = parse(EXAMPLE).unwrap();
+    let disks: Vec<_> = config
+        .hosts
+        .values()
+        .next()
+        .unwrap()
+        .disks
+        .iter()
+        .map(|d| d.as_str())
+        .collect();
+    assert_eq!(disks, ["/"]);
+    let set = |d: Value| move |v: &mut Value| v["hosts"]["macmini"]["disks"] = d;
+    rejects(set(json!(["data"])), "invalid disk");
+    rejects(set(json!(["/a\n"])), "invalid disk");
+    rejects(set(json!(["/", "/"])), "at most 8 distinct");
+    rejects(
+        set(json!([
+            "/1", "/2", "/3", "/4", "/5", "/6", "/7", "/8", "/9"
+        ])),
+        "at most 8 distinct",
+    );
+    let mut v = example();
+    set(json!(["/", "/Volumes/backup"]))(&mut v);
+    assert_eq!(
+        parse(&v.to_string())
+            .unwrap()
+            .hosts
+            .values()
+            .next()
+            .unwrap()
+            .disks
+            .len(),
+        2
+    );
+}

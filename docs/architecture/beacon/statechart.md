@@ -7,15 +7,17 @@
               │ ok
               ▼
           Serving: listen; body = {checks: {}}; spawn one Check thread per hosts.<this>.checks[]
+              │    and one Sampler thread (D10: its chart and the ring's are in metrics.md)
               │
               ├─ GET /status, If-None-Match == etag ─▶ 304          (never waits on a check)
               ├─ GET /status ───────────────────────▶ 200 body, ETag, Cache-Control: no-cache
+              ├─ GET /metrics ──────────────────────▶ the same two arms on the metrics cell (D10)
               ├─ any other path ────────────────────▶ 404
               ├─ every 300 s: reload ─ unchanged (304 / same mtime) ─▶ Serving
               │                       ─ invalid ─▶ log, keep old config ─▶ Serving
               │                       ─ valid ─▶ stop threads of removed/changed checks, drop their results,
               │                                  start threads of new/changed checks ─▶ Serving
-              └─ a Check thread panics ─▶ abort (panic = "abort") ─▶ supervisor restarts serve
+              └─ a Check or Sampler thread panics ─▶ abort (panic = "abort") ─▶ supervisor restarts serve
 ```
 
 ## `beacon serve`: one check thread

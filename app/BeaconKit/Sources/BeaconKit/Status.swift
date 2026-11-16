@@ -43,11 +43,11 @@ public struct StatusSnapshot: Codable, Sendable {
     public let rows: [MonitorResult]
     public let at: Date
     public let configAt: Date
-    /// The config fetch failed and `configAt` is the cached copy's time (ADR D2).
-    public let configStale: Bool
+    /// Why the config fetch failed; `configAt` is then the cached copy's time (ADR D2).
+    public let configFailure: String?
 
-    public init(rows: [MonitorResult], at: Date, configAt: Date, configStale: Bool) {
-        (self.rows, self.at, self.configAt, self.configStale) = (rows, at, configAt, configStale)
+    public init(rows: [MonitorResult], at: Date, configAt: Date, configFailure: String?) {
+        (self.rows, self.at, self.configAt, self.configFailure) = (rows, at, configAt, configFailure)
     }
 
     public var down: [MonitorResult] { rows.filter { $0.state == .down } }
