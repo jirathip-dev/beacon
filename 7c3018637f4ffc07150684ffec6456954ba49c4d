@@ -1,0 +1,11 @@
+Decided: ConfigStore owns the header via a HeaderStore seam; load keeps it, refresh reads it
+Because: "A refresh after a successful URL load fetches the config with the same header the load used"
+Decided: LoadedConfig.failure and StatusSnapshot.configFailure replace the stale bools
+Because: "When the fetch does fail, the stale line says why"
+Decided: a Keychain write failure refuses the load with its OSStatus
+Because: app/Beacon/Keychain.swift:28
+Rejected: the 304/conditional-GET hypothesis — curl and URLSession on the real URL both get 304 with the header
+Rejected: keeping configStale as a computed alias — nothing reads it after the change
+Check: refresh with a header name but no stored header fails as "no header" and sends no request (failedRefreshSaysWhy)
+Check: the home screen at 390 looks the same apart from the reason text
+Owner: refreshes now send the same header the load used, and the amber line says why a fetch failed
