@@ -56,3 +56,37 @@ private let t0 = Date(timeIntervalSince1970: 0), t1 = Date(timeIntervalSince1970
     let loaded = try await s.load(.local, header: nil)
     #expect(loaded.config.monitors.count == 1 && loaded.at == t0)
 }
+
+final class MockHeaders: HeaderStore, @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: String?
+    var header: String? { lock.withLock { value } }
+    func setHeader(_ header: String) throws { lock.withLock { value = header.isEmpty ? nil : header } }
+}
+
+@Test func refreshAfterLoadSendsTheLoadsHeader() async throws {
+    let t = MockTransport(replies: [url.absoluteString: .success((200, body, ["ETag": "\"e1\""]))])
+    let s = ConfigStore(directory: .temporaryDirectory.appending(path: UUID().uuidString), transport: t, headers: MockHeaders())
+    let source = ConfigSource.url(url, headerName: "Authorization")
+    _ = try await s.load(source, header: "token x", now: t0)
+    t.replies[url.absoluteString] = .success((304, "", [:]))
+    let refreshed = try await s.refresh(source, now: t1)
+    #expect(t.requests[1].0.value(forHTTPHeaderField: "Authorization") == "token x")
+    #expect(refreshed.failure == nil && refreshed.at == t1)
+}
+
+@Test func failedRefreshSaysWhy() async throws {
+    let t = MockTransport(replies: [url.absoluteString: .success((200, body, [:]))])
+    let headers = MockHeaders()
+    let s = ConfigStore(directory: .temporaryDirectory.appending(path: UUID().uuidString), transport: t, headers: headers)
+    let source = ConfigSource.url(url, headerName: "Authorization")
+    _ = try await s.load(source, header: "token x", now: t0)
+    t.replies[url.absoluteString] = .success((404, "", [:]))
+    #expect(try await s.refresh(source, now: t1).failure == "HTTP 404")
+    t.replies[url.absoluteString] = .failure(URLError(.timedOut))
+    let timedOut = try await s.refresh(source, now: t1)
+    #expect(timedOut.failure == "timed out" && timedOut.at == t0)
+    try headers.setHeader("")
+    #expect(try await s.refresh(source, now: t1).failure == "no header")
+    #expect(t.requests.count == 3, "no header sends no request")
+}
