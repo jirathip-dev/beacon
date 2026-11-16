@@ -132,7 +132,7 @@ struct MetricRow: View {
                 Text("\(Text(value(series, series.now)).font(T.font(17, .bold)).foregroundStyle(dim ? T.mute : T.fg))\(Text(series.percent ? "%" : "").font(T.font(11)).foregroundStyle(T.mute))")
                 Text(sub).font(T.font(11)).foregroundStyle(T.mute)
             }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
             Canvas { ctx, size in
                 ctx.stroke(Path { $0.addLines([CGPoint(x: 0, y: size.height), CGPoint(x: size.width, y: size.height)]) },
                            with: .color(T.line))
