@@ -215,7 +215,7 @@ struct ChartSheet: View {
                 Key(title: "done", action: done)
             }
             .foregroundStyle(T.fg)
-            .frame(minHeight: T.hit).padding(.leading, 12).padding(.trailing, 4).padding(.top, 8)
+            .frame(minHeight: T.hit).padding(.horizontal, 16).padding(.top, 8)
             .overlay(alignment: .bottom) { T.line.frame(height: 1) }
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 0) {
@@ -223,7 +223,7 @@ struct ChartSheet: View {
                         Button { (range, scrub) = (r, nil) } label: {
                             Text("[\(r.rawValue)]").fontWeight(r == range ? .bold : .regular)
                                 .underline(r == range).foregroundStyle(r == range ? T.fg : T.accent)
-                                .frame(minWidth: T.hit, minHeight: T.hit).padding(.horizontal, 8)
+                                .padding(.horizontal, 8).frame(minWidth: T.hit, minHeight: T.hit)
                         }
                         .buttonStyle(.plain)
                     }
