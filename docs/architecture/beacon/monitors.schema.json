@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jirathip-dev/beacon/docs/architecture/beacon/monitors.schema.json",
+  "title": "monitors.json v1 (any HTTPS URL, a local file, or the app's local copy)",
+  "$comment": "additionalProperties: false is enforced by the CLI (deny_unknown_fields, beacon check); the app ignores unknown fields (ADR D1) and rejects only an unknown version or monitor type.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "monitors"],
+  "properties": {
+    "version": { "const": 1 },
+    "monitors": {
+      "description": "Display order is array order.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/monitor" }
+    },
+    "hosts": {
+      "description": "Hosts running `beacon serve`, keyed by host name (gethostname() or --host).",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/host" }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "group": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "probeTimeout": { "type": "integer", "minimum": 1, "maximum": 30, "description": "Seconds." },
+    "monitor": {
+      "oneOf": [{ "$ref": "#/$defs/http" }, { "$ref": "#/$defs/tcp" }, { "$ref": "#/$defs/heartbeat" }]
+    },
+    "http": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "name", "group", "url"],
+      "properties": {
+        "type": { "const": "http" },
+        "name": { "$ref": "#/$defs/name" },
+        "group": { "$ref": "#/$defs/group" },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+        "expect_status": { "type": "integer", "minimum": 100, "maximum": 599, "description": "Absent: any 2xx." },
+        "keyword": { "type": "string", "minLength": 1, "description": "Must appear in the body." },
+        "timeout_s": { "$ref": "#/$defs/probeTimeout", "default": 10 }
+      }
+    },
+    "tcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "name", "group", "host", "port"],
+      "properties": {
+        "type": { "const": "tcp" },
+        "name": { "$ref": "#/$defs/name" },
+        "group": { "$ref": "#/$defs/group" },
+        "host": { "type": "string", "minLength": 1 },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "timeout_s": { "$ref": "#/$defs/probeTimeout", "default": 10 }
+      }
+    },
+    "heartbeat": {
+      "description": "One host check's latest result, read from that host's `beacon serve`.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "name", "group", "host", "id"],
+      "properties": {
+        "type": { "const": "heartbeat" },
+        "name": { "$ref": "#/$defs/name" },
+        "group": { "$ref": "#/$defs/group" },
+        "host": { "$ref": "#/$defs/id", "description": "A key of `hosts`." },
+        "id": { "$ref": "#/$defs/id", "description": "A check id in hosts.<host>.checks." }
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "checks"],
+      "properties": {
+        "url": { "type": "string", "format": "uri", "pattern": "^https://", "description": "Full status URL the app GETs, e.g. https://macmini.tail1234.ts.net/status." },
+        "timeout_s": { "$ref": "#/$defs/probeTimeout", "default": 5 },
+        "checks": { "type": "array", "items": { "$ref": "#/$defs/hostCheck" } }
+      }
+    },
+    "hostCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "command"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id", "description": "Unique within its host." },
+        "command": { "type": "string", "minLength": 1, "description": "Run with `sh -c`; exit 0 = up." },
+        "every_s": { "type": "integer", "minimum": 10, "maximum": 86400, "default": 60 },
+        "timeout_s": { "type": "integer", "minimum": 1, "maximum": 300, "default": 30, "description": "Killed and down past this." }
+      }
+    }
+  }
+}
