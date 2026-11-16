@@ -1,0 +1,5 @@
+Decided: set line_cap = 3000 under [fleet.beacon] and add a cap-history note
+Because: "`ci/cap.toml`: `line_cap = 3000` under `[fleet.beacon]`"
+Rejected: a ci/cap.d/ raise file — Beacon's script reads only ci/cap.toml
+Check: sh scripts/line-cap.sh reports 1902 / 3000 and exits 0
+Owner: The line cap is now 3,000, as asked in t133.
