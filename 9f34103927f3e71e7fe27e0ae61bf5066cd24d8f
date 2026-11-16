@@ -1,0 +1,8 @@
+Decided: the chart sheet's top bar pads 16 pt each side, so [done] sits 16 pt from the edge as the title does.
+Because: docs/design/host-detail/chart.html:10
+Decided: each range key pads 8 pt first, then takes its 44 pt minimum, as the design's border-box key does.
+Because: docs/design/host-detail/beacon.css:16
+Rejected: changing the shared Key or TopBar — the finding was only in the chart sheet; the list's bars stay as they are.
+Rejected: a mono font fix for the sheet title — measured at 9 pt a character, it already renders SF Mono bold.
+Check: in shots/chart-1h.png, [done] ends about 17 pt from the right edge and [24h] ends near x 470 of 1170 px, as in chart-1h-light.png.
+Owner: The chart's done button and its 1h/6h/24h keys now sit where the design puts them.
