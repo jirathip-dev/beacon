@@ -1,3 +1,9 @@
+## Summary
+
+Decision: the summary line also says when the app last checked, `checked 09:31`, after the counts in the muted small type; the offline line keeps its words and gets the same stamp (#20).
+Screens: the monitor list and the offline list, at 390 pt, light and dark. Nothing else changed.
+Open questions: none. Before the first check (loading, empty) there is no time to show, so no stamp is drawn.
+
 # Beacon app design (issue #3)
 
 The owner picked **look B (terminal)** and dropped look A (q1584). B now uses Cooee's terminal style
@@ -43,6 +49,9 @@ System light/dark setting. Type: SF Mono 13 pt (meta 11 pt, titles 15 pt bold). 
   its error on a second line (one line, ellipsis, mute) and a 3 pt red left rule.
 - **Summary line** at the top: `4 down  3 up` (bold). Under it, `● config from 08:40 · fetch failed` in amber,
   shown only when the config fetch failed (D2).
+- **Checked time** (#20): the summary line ends with `checked HH:MM` (`StatusSnapshot.at` via `T.stamp`) in mute
+  11 pt, the same style as `· fetch failed`. It moves on every refresh. Offline keeps its line and adds the same
+  stamp: `● no network · 7 unknown  checked 09:31`. No stamp before the first check.
 - **Offline** (`NWPathMonitor` unsatisfied): `● no network · 7 unknown` in amber. Every dot, word and top rule
   is grey. Nothing turns red (D5).
 - **Keys** are lowercase `[bracket]` words in the accent colour, each with a ≥44×44 pt hit area. This fixes
@@ -65,8 +74,8 @@ System light/dark setting. Type: SF Mono 13 pt (meta 11 pt, titles 15 pt bold). 
 |---|---|
 | `first-run-*.png` | First run: three fields, `[load]` dim (no URL yet), `[import from files]` |
 | `first-run-error-*.png` | `● refused monitors[2]: unknown type "ping"` card with a red rule |
-| `list-*.png` | Summary, config-from line, four group cards with red/green top rules and counts, down rows with a red left rule, ellipsised name and error |
-| `list-offline-*.png` | `no network · 7 unknown`; all rows `--`, all rules grey |
+| `list-*.png` | Summary `4 down  3 up  checked 09:31` (#20), config-from line, four group cards with red/green top rules and counts, down rows with a red left rule, ellipsised name and error |
+| `list-offline-*.png` | `no network · 7 unknown  checked 09:31` (#20); all rows `--`, all rules grey |
 | `list-loading-*.png` | `↻ lighting up · checking 7 monitors` |
 | `list-empty-*.png` | `dark coast · no monitors` + `[change config]` |
 | `settings-*.png` | `config` sheet: current-source card, the same fields filled in, `[done]` |

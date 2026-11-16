@@ -24,6 +24,7 @@ struct ListState {
     let configFrom: String?  // set only when the config fetch failed (ADR D2)
     let offline: Bool  // NWPathMonitor unsatisfied: every row unknown (ADR D5)
     var loading = false  // config loaded, first check not back yet
+    var checked: String? = nil  // StatusSnapshot.at as T.stamp; nil before the first check (#20)
 }
 
 struct WidgetState {
@@ -51,13 +52,13 @@ enum Fixture {
         ]),
     ]
 
-    static let list = ListState(groups: groups, configFrom: "08:40", offline: false)
+    static let list = ListState(groups: groups, configFrom: "08:40", offline: false, checked: "09:31")
 
     static let offline = ListState(
         groups: groups.map { g in
             MonitorGroup(name: g.name, rows: g.rows.map { Row(name: $0.name, health: .unknown, detail: "", since: "") })
         },
-        configFrom: nil, offline: true)
+        configFrom: nil, offline: true, checked: "09:31")
 
     static let empty = ListState(groups: [], configFrom: nil, offline: false)
     static let loading = ListState(groups: [], configFrom: nil, offline: false, loading: true)
