@@ -26,6 +26,8 @@ $ curl -si -H 'If-None-Match: "9f2c41d07ab3e815"' https://macmini.tail1234.ts.ne
 HTTP/2 304
 ```
 
+`/metrics` (D10) is served by the same process on the same port: its `curl` and its callers are in `metrics.md`.
+
 A sample launchd `ProgramArguments`: `["/Users/me/.cargo/bin/beacon", "serve", "--config", "/Users/me/monitors.json"]`, with `KeepAlive` true.
 
 ```sh
