@@ -1,0 +1,7 @@
+Decided: a metric row's › is left-aligned in its 14 pt column, so it starts where the design's grid cell starts.
+Because: docs/design/host-detail/beacon.css:26
+Rejected: a narrower column for the › — the design's grid keeps 14 px; only the glyph's alignment in it was off.
+Decided: the stray linecap.log, verify-up.log and verify-down.log from wip snapshots leave the PR.
+Because: docs/design/host-detail/beacon.css:26
+Check: in shots/host-detail.png the mem row's chevron ink starts near x 1051 px, against 1049 in detail-light.png.
+Owner: The small arrow at the end of each host metric row now sits where the design puts it.
