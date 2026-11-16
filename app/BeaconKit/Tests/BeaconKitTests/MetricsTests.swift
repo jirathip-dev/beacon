@@ -42,8 +42,10 @@ let metricsURL = "https://mini.ts.net/metrics"
     let day = Window(t, ys, range: .day)
     #expect(day.t.first == 60 * 60 && day.t.count == 1440)
     #expect(day.points.count == 360)
-    #expect(day.points[0].t == 63 * 60 && day.points[0].y == (4.0 + 5 + 6 + 7) / 4)
-    #expect(day.points.last?.y == (0.0 + 1 + 2) / 3)
+    let firstMean: Double = (4 + 5 + 6 + 7) / 4
+    let lastMean: Double = (0 + 1 + 2) / 3
+    #expect(day.points[0].t == 63 * 60 && day.points[0].y == firstMean)
+    #expect(day.points.last?.y == lastMean)
     #expect(day.max == 7 && day.min == 0)
     let gap = Window([0, 60, 120, 180], [nil, nil, nil, nil], range: .day)
     #expect(gap.points.map(\.y) == [nil] && gap.avg == nil)
