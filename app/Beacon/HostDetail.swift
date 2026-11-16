@@ -140,7 +140,7 @@ struct MetricRow: View {
             }
             .frame(width: 132, height: 36)
             .opacity(dim ? 0.45 : 1)
-            Text("›").foregroundStyle(T.mute).frame(width: 14)
+            Text("›").foregroundStyle(T.mute).frame(width: 14, alignment: .leading)
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
         .frame(minHeight: 64)
