@@ -1,0 +1,9 @@
+Decided: build serve, sampler, metrics ring and /metrics as ADR D10 lays out
+Because: docs/architecture/beacon/adr.md:201
+Decided: line_cap stays 2000 in this PR; the raise to 2500 is its own orchestrator-filed issue
+Because: q1758
+Rejected: logging a read when it starts and stops failing — lines under cap pressure; a failed read is a null in the body
+Rejected: /usr/bin/df on Linux — /bin/df exists on ubuntu and macOS alike, one path
+Check: cli/src/probe.rs drops the Command after spawn so the pipe closes; without it output() hangs
+Check: cli/tests/serve.rs drives the real binary: 200 + ETag, 304, 404, exit 2 on a taken port
+Owner: Beacon serve now keeps 24 h of host load, cpu, memory and disk at /metrics; the line-cap check stays red until the raise lands
