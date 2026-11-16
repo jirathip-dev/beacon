@@ -211,11 +211,11 @@ struct Summary: View {
                 }
                 .font(T.font(13, .bold))
             }
-            if snapshot.configStale {
+            if let failure = snapshot.configFailure {
                 HStack(spacing: 8) {
                     Dot(color: T.amber)
                     Text("config from \(T.stamp(snapshot.configAt))").foregroundStyle(T.amber)
-                    Text("· fetch failed").font(T.font(11)).foregroundStyle(T.mute)
+                    Text("· \(failure)").font(T.font(11)).foregroundStyle(T.mute).lineLimit(1)
                 }
             }
         }
@@ -288,7 +288,7 @@ struct SourceForm: View {
         .padding(16)
         .onAppear {
             guard case .url(let u, let name) = model.source else { return }
-            (url, headerName, headerValue) = (u.absoluteString, name ?? "", Keychain.header ?? "")
+            (url, headerName, headerValue) = (u.absoluteString, name ?? "", Keychain().header ?? "")
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
             do {
@@ -331,7 +331,6 @@ struct SourceForm: View {
         let source = ConfigSource.url(u, headerName: name.isEmpty ? nil : name)
         do {
             let loaded = try await model.store.load(source, header: headerValue)
-            Keychain.setHeader(name.isEmpty ? "" : headerValue)
             model.use(source, loaded: loaded)
             done()
         } catch {
