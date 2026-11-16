@@ -1,0 +1,1001 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project app/Beacon.xcodeproj -scheme Beacon -destination id=9B437A5D-6329-4C20-B649-1AE7D50F5F28 -derivedDataPath .build/dd CODE_SIGNING_ALLOWED=NO build
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  BeaconKit: /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit @ local
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (4 targets)
+    Target 'Beacon' in project 'Beacon'
+        ➜ Explicit dependency on target 'BeaconWidget' in project 'Beacon'
+        ➜ Explicit dependency on target 'BeaconKit-product' in project 'BeaconKit'
+    Target 'BeaconWidget' in project 'Beacon'
+        ➜ Explicit dependency on target 'BeaconKit-product' in project 'BeaconKit'
+    Target 'BeaconKit-product' in project 'BeaconKit'
+        ➜ Explicit dependency on target 'BeaconKit' in project 'BeaconKit'
+    Target 'BeaconKit' in project 'BeaconKit' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: 934341890c0c71edd7329fe9609a39b9
+Build description path: /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/XCBuildData/934341890c0c71edd7329fe9609a39b9.xcbuilddata
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/CompilationCache.noindex
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/CompilationCache.noindex
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/PrecompiledHeaders
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/PrecompiledHeaders
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon-3d092df847e08b59c9cb5621fbcf4f51-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon-3d092df847e08b59c9cb5621fbcf4f51-VFS-iphonesimulator/all-product-headers.yaml
+
+CreateBuildDirectory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-create-build-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.SwiftFileList (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.SwiftFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.SwiftConstValuesFileList (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.LinkFileList (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.LinkFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-OutputFileMap.json (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget_const_extract_protocols.json (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget.hmap (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget.DependencyStaticMetadataFileList (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget.DependencyMetadataFileList (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-project-headers.hmap (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-project-headers.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-own-target-headers.hmap (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-generated-files.hmap (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-generated-files.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-all-target-headers.hmap (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-all-non-framework-target-headers.hmap (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-DebugEntryPoint-normal-arm64.txt (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-DebugEntryPoint-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-DebugDylibPath-normal-arm64.txt (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-DebugDylibInstallName-normal-arm64.txt (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.modulemap (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.modulemap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-OutputFileMap.json (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit_const_extract_protocols.json (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.SwiftFileList (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.SwiftFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.SwiftConstValuesFileList (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.DependencyStaticMetadataFileList (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.LinkFileList (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.LinkFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.DependencyMetadataFileList (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.SwiftFileList (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.SwiftFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.LinkFileList (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.LinkFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.SwiftConstValuesFileList (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon_const_extract_protocols.json (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-OutputFileMap.json (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-OutputFileMap.json
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/GeneratedModuleMaps-iphonesimulator/BeaconKit.modulemap /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.modulemap (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.modulemap /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/GeneratedModuleMaps-iphonesimulator
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon.hmap (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon.DependencyStaticMetadataFileList (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon.DependencyMetadataFileList (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-project-headers.hmap (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-project-headers.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-own-target-headers.hmap (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-generated-files.hmap (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-generated-files.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-all-target-headers.hmap (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-all-non-framework-target-headers.hmap (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-DebugDylibPath-normal-arm64.txt (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-DebugDylibInstallName-normal-arm64.txt (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    write-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-DebugDylibInstallName-normal-arm64.txt
+
+MkDir /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /bin/mkdir -p /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex
+
+MkDir /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /bin/mkdir -p /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns
+
+MkDir /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /bin/mkdir -p /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app
+
+SwiftDriver BeaconKit normal arm64 com.apple.xcode.tools.swift.compiler (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -parse-as-library -module-name BeaconKit -Onone @/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE -DXcode -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk/Developer/Library/Frameworks -c -j12 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache -output-file-map /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -sdk-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -package-name beaconkit -emit-const-values -const-gather-protocols-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit_const_extract_protocols.json -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/DerivedSources-normal/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/DerivedSources/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-Swift.h -working-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_SwiftConcurrencyShims-4Y4GCXZYB9SHWGHQW0TR5FS8X.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/SwiftShims-BGD7GTAI1MIOSDMMBM555U1AL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_AvailabilityInternal-7VVSX1FHHFDIPHZVD1ASF2MOT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ptrcheck-DZY7TK2R3IJ73FUEXT0CWTQZ5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdbool-473AL6X8TO5O27SWF5MMLCNDA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ptrauth-55IWYQX08HNUJS726TT7DY2AA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdarg-DKWHIIZ8AVG6OCX065NZRECK8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_float-AYKQ0R2RRDLYEDZL9FGNYEPN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stddef-DD5T6UND39U0IXBXE5KON3A0F.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_DarwinFoundation1-40K8HCVFNEVZGHR1YT7J81EIB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_DarwinFoundation2-9BZNR556GHT48BYR8JQ7VTXT1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_limits-BGAV8QIS1WBUTKV4YX9GKSVJE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdint-6RI8JPFONKB3F7SQ9F0Z7P83Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/sys_types-5RR13QHN3470KJ8WVUELHLFFQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/string_h-85S85ZL5MII4GJP4CZ0G7I3HP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdatomic-DNKM3FALQCJ3YUK9Q1Y64E6RZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_DarwinFoundation3-EJ5JICI1I5VBLZ1DMNMFYKBJ7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_inttypes-ET5M6EXQFKVCAOGLGV9L2NB2G.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Darwin-F4Y0YUZW44PDAMQFRYWKXBH1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ObjectiveC-CMEK0RP90O1QBH7GOK2FS2KS1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/MachO-CRNS8ZBJOKMU92PRS86X0JI19.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/os_object-ANA8W8DFCT9NTJ1TEGWSBP8GF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/os_workgroup-C2OWCZQEJJURI79WUODS3TIWU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Dispatch-ESN4V3C2L0NP25RS62ILO5HHH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreFoundation-AXFPD28X54547REYZXEVKX117.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/XPC-DIRUE7I7579UQ5723RNWG375J.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/dnssd-78BUWCSGOOUK47H0J75STCPUB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/os-B6GIOJJMFVMHYXZUYTUR0L44O.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CFNetwork-8YQBOTERVUMTMJWX2WS7VTUMM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Security-CVJF47SLZKCOSB4JKYCQ199H4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Foundation-2R3HS1X9HFHCUMI9USJT4LU2J.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Network-D7D1295JJUPKRDI8CUTC1MNZN.pcm
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ BeaconKit (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftCompile normal arm64 (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    
+
+SwiftCompile normal arm64 Compiling\ Status.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/Status.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/Status.swift (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-SwiftPerFileCompile Status.swift
+
+SwiftCompile normal arm64 Compiling\ ConfigStore.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/ConfigStore.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/ConfigStore.swift (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-SwiftPerFileCompile ConfigStore.swift
+
+SwiftCompile normal arm64 Compiling\ Refresher.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/Refresher.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/Refresher.swift (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-SwiftPerFileCompile Refresher.swift
+
+SwiftCompile normal arm64 Compiling\ MonitorsConfig.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/MonitorsConfig.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/MonitorsConfig.swift (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-SwiftPerFileCompile MonitorsConfig.swift
+
+SwiftCompile normal arm64 Compiling\ Transport.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/Transport.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit/Sources/BeaconKit/Transport.swift (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-SwiftPerFileCompile Transport.swift
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for BeaconKit (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftDriver\ Compilation\ Requirements BeaconKit normal arm64 com.apple.xcode.tools.swift.compiler (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -parse-as-library -module-name BeaconKit -Onone @/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE -DXcode -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk/Developer/Library/Frameworks -c -j12 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache -output-file-map /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -sdk-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -package-name beaconkit -emit-const-values -const-gather-protocols-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit_const_extract_protocols.json -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/DerivedSources-normal/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/DerivedSources/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-Swift.h -working-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj -experimental-emit-module-separately -disable-cmo
+
+SwiftMergeGeneratedHeaders /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/GeneratedModuleMaps-iphonesimulator/BeaconKit-Swift.h /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-Swift.h (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    builtin-swiftHeaderTool -arch arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-Swift.h -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/GeneratedModuleMaps-iphonesimulator/BeaconKit-Swift.h
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftmodule (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftmodule /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftdoc (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftdoc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.abi.json (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.abi.json /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftsourceinfo (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftsourceinfo /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriver BeaconWidget normal arm64 com.apple.xcode.tools.swift.compiler (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name BeaconWidget -Onone @/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.SwiftFileList -DDEBUG -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Index.noindex/DataStore -swift-version 6 -I /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -c -j12 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache -output-file-map /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -sdk-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget_const_extract_protocols.json -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-generated-files.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-own-target-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon-3d092df847e08b59c9cb5621fbcf4f51-VFS-iphonesimulator/all-product-headers.yaml -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-project-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources-normal/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-Swift.h -working-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stddef-C1CUNWIE8W8F6GKRCNFP64TCN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_float-2JDTT8CSCN96S402KMO45ZJX0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ptrcheck-F41DCRZ1M4DHOOTKSSSPOSLY0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ptrauth-9KKTINK08MISZ6WZ72Z314IAK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdarg-8OZQS0MV636UJA6FAKBP4GPWH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_SwiftConcurrencyShims-85DHLQSVYQ3T1SDGTPNBSP9OD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/DeveloperToolsSupport-BE69W3T8RL69CVXYAR738N6HQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdbool-CGS4YNHRXWM6YFCG56KQZWW4M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/SwiftShims-YGV1L1PBR80YY0583VZ10TWQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_AvailabilityInternal-2E2NKZPNX5UUK1W6D6P41J29I.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ActivityKit-9QVP3PHRRTDPMXMVM88479RSC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_DarwinFoundation1-ACACBBZ8SAI7IDRZ4FSP4J82C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ExtensionFoundation-EXO20N7Q8XNJQ4ZVD08V97VJ1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_limits-2BBFFP43855ZV24VXLHMF0PWR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_DarwinFoundation2-54JU6S9TW6B78DTSE22K391JI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_tgmath-2H5A0FAOQGYH6U4052T0TX937.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/string_h-43FFWUNV2ARXP49VA2I3P80ZU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/sys_types-341POPAIV4FARGHIYXBDYKQ28.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdint-A7WIJ9B3PQUW9DY028PX5QRNA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdatomic-6XS5U1ZNIHCCOGBW6I0LNLG9M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_DarwinFoundation3-8M4D43YYXTIY0Z35N5CS3BT3Z.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_intrinsics-25B69PVCB4HM00JTIFAZORVT2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_inttypes-1WD4B1KIJTT1A8YO4LY4SD8X.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Darwin-AQFL9BXGI73E9F1TPQI6TLLCT.pcm
+
+SwiftDriverJobDiscovery normal arm64 Compiling MonitorsConfig.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftDriverJobDiscovery normal arm64 Compiling Status.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftDriverJobDiscovery normal arm64 Compiling Refresher.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/simd-7DT52EX304GPOPBW1FVHTXPIE.pcm
+
+SwiftDriverJobDiscovery normal arm64 Compiling Transport.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ConfigStore.swift (in target 'BeaconKit' from project 'BeaconKit')
+
+SwiftDriver\ Compilation BeaconKit normal arm64 com.apple.xcode.tools.swift.compiler (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -parse-as-library -module-name BeaconKit -Onone @/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE -DXcode -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk/Developer/Library/Frameworks -c -j12 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache -output-file-map /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -sdk-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -package-name beaconkit -emit-const-values -const-gather-protocols-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit_const_extract_protocols.json -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/DerivedSources-normal/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/DerivedSources/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit-Swift.h -working-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon.xcodeproj -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.o normal (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -r -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -O0 -Xlinker -no_warn_duplicate_libraries -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk/Developer/Library/Frameworks -filelist /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.LinkFileList -nostdlib -Xlinker -object_path_lto -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit_lto.o -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.swiftmodule -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.o
+
+ExtractAppIntentsMetadata (in target 'BeaconKit' from project 'BeaconKit')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconKit
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name BeaconKit --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk --xcode-version 27B52 --platform-family iOS --deployment-target 18.0 --bundle-identifier beaconkit.BeaconKit --output /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.appintents --target-triple arm64-apple-ios18.0-simulator --binary-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconKit.o --dependency-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit_dependency_info.dat --stringsdata-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.SwiftFileList --metadata-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.DependencyMetadataFileList --static-metadata-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/BeaconKit.DependencyStaticMetadataFileList --swift-const-vals-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/BeaconKit.build/Debug-iphonesimulator/BeaconKit-t.build/Objects-normal/arm64/BeaconKit.SwiftConstValuesFileList --force --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-11-16 17:28:51.260 appintentsmetadataprocessor[9577:294017181] Starting App Intents metadata extraction
+2026-11-16 17:28:51.383 appintentsmetadataprocessor[9577:294017181] Extracted no relevant App Intents symbols, skipping writing output
+
+ProcessInfoPlistFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/Info.plist /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconWidget/Info.plist (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-infoPlistUtility /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconWidget/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/Info.plist
+
+Ld /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/__preview.dylib normal (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -install_name @rpath/BeaconWidget.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget_dependency_info.dat -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/__preview.dylib
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/MachO-CNLX66TVE7UBTMJJJMGS23YB8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ObjectiveC-59X93DBBUHBIXFFDO0WSZ9NOJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Spatial-90WKN95UO9TCZJLI0RRHHJC5M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/os_object-2G8LGP4MD6S6HQE3DM5VS81R9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/os_workgroup-2LZ1AGHMY72GE2U9T4CQ8M14S.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Dispatch-DSY5F8MS34QFDNSJX1F8OV0IU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/XPC-5PJKDZF116B1U35X9MWCQDUZF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/dnssd-BP13YPKH6QOXQVN85ZVL6FWGL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreFoundation-21O56DQUGCHLONWJVL2PKHGVX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/os-15U4VKTKILPF287B7G5VH2VX1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreGraphics-9LSI81N2GK9H2XSEME8QTNMSP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Security-996B2C8KDF7KEZ0R8WXQ3AR79.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreAudioTypes-8QT8KES5WM9L8AI41FAO0BNF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CFNetwork-1QHITZVVIIE8TKIMLYS6H3UTJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreAudio-BDFDIJQIX9GOZXZDS6RNQH2DO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Foundation-75SCGOXRCNMX82IC7XKW3Q2O4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ImageIO-4WTGG8JFOMNFA649ZM58SN30C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreText-B1XSF8NV6C1H4OSFMOTQ98NYI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/OSLog-19XR8AWSZTNW0ZPR6AZEJB9IM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/IOSurface-7B8YGCSC1ZJ6VH1LRRHKKRK7A.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/FileProvider-5SPP5QPE7IVA8VV9ATSRBK140.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Accessibility-2HX73G4782LZNJI7U20D7FOCE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Network-ALVZXOKU8GBMRPJSO7D3SYUHX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/AppIntentsTypeSupport-12C1YJ2SD02U4920PJLMYWXE1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreData-1MWE7P4EBZSBAR5T880LFXM0Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/DataDetection-DM6500RXKHM1PF5BNIU5XXP18.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/WidgetKit-CC6U4OFIG3VCDH7UMIHP686P6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/UIUtilities-71KP7ZYH2A9I7I9HQ130QNM4Q.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/UserNotifications-5HP4XDXAOBSUFBG410IRIY7N3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/RelevanceKit-7P3DBQ5K89XXAG6X1ZKSZTQLC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreTransferable-AXMQ8LDCARIBHQONYCLR5L4OW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/UniformTypeIdentifiers-8P2YGTRM6C28HJWSCFEG5WEVG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Symbols-EKTC08WRAG4OGMCYYVK418WPI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_LocationEssentials-4TR4KTMG9I8LYUWXZ8JPRMEI2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/OpenGLES-BHVRZMQSNXCV23PHW4Z6VBWFM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/AppIntents-8L53SL37S6ESRVVCJ8ORXZPMR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Metal-63KX8QBX2JO8PE7MBQQC5FV8S.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreSpotlight-7VQGBC2VL5258TYZ9MC16DWS5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreLocation-64CGHUOK5QJAXEQKA0JCJBL20.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Intents-CJHZIIH05KAJGGSGG9GBR0UK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreMotion-DHX3XZCP9N6J0LZAUN1W0X3IQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreVideo-3VPX8UGMLUVNLXEZES7IX4E9N.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreMedia-AYGT20AP5PVU3GBI04DY1RSL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreImage-BE7JRPBIKO0NDX6JD2P0GBJ38.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/QuartzCore-C1M0OPSGU35OH0TQ1GAC23ZQ1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/SwiftUICore-BH4C4ZM6046B2TRNJUCHG7SJL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/UIKit-BYIBGXRPRARXCAF4XXUS55WJX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/SwiftUI-3HFGVW61U5DMX1OY5I6XV970B.pcm
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ BeaconWidget (in target 'BeaconWidget' from project 'Beacon')
+
+SwiftCompile normal arm64 (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    
+
+SwiftCompile normal arm64 Compiling\ Theme.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Shared/Theme.swift (in target 'BeaconWidget' from project 'Beacon')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Shared/Theme.swift (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-SwiftPerFileCompile Theme.swift
+
+SwiftCompile normal arm64 Compiling\ BeaconWidget.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconWidget/BeaconWidget.swift (in target 'BeaconWidget' from project 'Beacon')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/BeaconWidget/BeaconWidget.swift (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-SwiftPerFileCompile BeaconWidget.swift
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for BeaconWidget (in target 'BeaconWidget' from project 'Beacon')
+
+SwiftDriver\ Compilation\ Requirements BeaconWidget normal arm64 com.apple.xcode.tools.swift.compiler (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name BeaconWidget -Onone @/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.SwiftFileList -DDEBUG -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Index.noindex/DataStore -swift-version 6 -I /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -c -j12 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache -output-file-map /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -sdk-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget_const_extract_protocols.json -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-generated-files.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-own-target-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon-3d092df847e08b59c9cb5621fbcf4f51-VFS-iphonesimulator/all-product-headers.yaml -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-project-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources-normal/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-Swift.h -working-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app -experimental-emit-module-separately -disable-cmo
+
+SwiftMergeGeneratedHeaders /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources/BeaconWidget-Swift.h /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-Swift.h (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-swiftHeaderTool -arch arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-Swift.h -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources/BeaconWidget-Swift.h
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftmodule (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftmodule /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftdoc (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftdoc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.abi.json (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.abi.json /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftsourceinfo (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftsourceinfo /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+MkDir /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/unthinned (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /bin/mkdir -p /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/unthinned
+
+MkDir /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/thinned (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /bin/mkdir -p /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/thinned
+
+GenerateAssetSymbols /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Assets.xcassets (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Assets.xcassets --compile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_dependencies --output-partial-info-plist /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_generated_info.plist --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --minimum-deployment-target 18.0 --platform iphonesimulator --bundle-identifier dev.jirathip.beacon --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CompileAssetCatalogVariant thinned /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Assets.xcassets (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Assets.xcassets --compile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --filter-for-thinning-device-configuration iPhone19,2 --filter-for-device-os-version 27.2 --development-region en --target-device iphone --minimum-deployment-target 18.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_generated_info.plist_thinned
+/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/thinned/Assets.car
+
+
+SwiftDriver Beacon normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Beacon -Onone @/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.SwiftFileList -DDEBUG -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Index.noindex/DataStore -swift-version 6 -I /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -c -j12 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache -output-file-map /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -sdk-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon_const_extract_protocols.json -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-generated-files.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-own-target-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon-3d092df847e08b59c9cb5621fbcf4f51-VFS-iphonesimulator/all-product-headers.yaml -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-project-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources-normal/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-Swift.h -working-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ActivityKit-D6XYSIBON3LXGMA4YXC3T6JTV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ptrauth-3G63OYGXLHAKC7JLBTENSMTNV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stddef-91U7EMX8YRF6D0N4JV4VRJUDM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdbool-79CWFNCBOYP7Z7V29CGX98P7X.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_float-D81RRB1WXITGM0OOA206HJAOQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_SwiftConcurrencyShims-37CQTUM494L5YD1AJ3SM956VD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_AvailabilityInternal-CYJC86QTCA4Q5NEE0R46H20KZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/SwiftShims-BBERQXQEVGEV7VQYXRD6XDQO4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdarg-5JM6LROX0KLVRL3OTAN5FR8GE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/DeveloperToolsSupport-2BEFFBJM80G79083RUW6IJCEV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ptrcheck-6Q32QHGCICTYQ2KBWLLIIDWKF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_DarwinFoundation1-8DZR9SNJHZKQM9WG59VT1M6EV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ExtensionFoundation-CQ5SBJIQARU7GGE1JFXIN75EG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_limits-3W2Z55IV9WQ1K4K37VXWD7LBC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_DarwinFoundation2-5JOFPQ09L652YWCKJYHPEY6LI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/sys_types-DF7751QAHI2QGMBE0MM7DDNGL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdint-3QMVFVRSYEXD4F5HWFR6HWBU1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_tgmath-68EYPTQ4EEY14PDMD2FRZ5DDI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/string_h-1JAR69WT3CWS4WSOL89L5CV87.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_DarwinFoundation3-D2Z03B237ALFBK1DWC28SBC91.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_intrinsics-2URYSRLHST9BOLSV6XY0EL3ER.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_stdatomic-2XC5FPGDVVQYHFPY8X2XERATS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_Builtin_inttypes-C8YZXMPMXRIIB5V1YFS39QBSD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Darwin-B9CH7K1LXY5TOZPXH54LS7HVI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/simd-8S0VG7TBQQHJ1B13ZYJFNB5FR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/MachO-6ZDOTG9G90D0WPJN90SX46FIX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ObjectiveC-2MXNN9LTZI4XQHUWAUJH9XUJ6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/os_object-ASPAIWTC04HFIIPFLE8L8DFWO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/os_workgroup-DID1B47S169FP7FAZ2VNR0Y95.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Spatial-3Y9CT3ZBN5EE889NEWA3OTFS1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Dispatch-4NWOP9OUE367RNC3FYRQAROU7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/dnssd-82V4X8YEMKWSGSY891QDX1L2F.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/XPC-BKLDOI4DHGX8PKT0AWAS50I0X.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreFoundation-56JFJX1VU4GM4Y2346S66QT5L.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/os-AJ9YSPPMO0NWNP3Z3OKOD20X0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Security-62SUTS51DPCRMJKYKD725T1FX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreAudioTypes-DPK8ZDJXZ5IV7MR6RJSH9MEKP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CFNetwork-3VA4P1Y5NUWQ84RAV1J3DL2H.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreGraphics-19VWSO2OTKOSZQ0GYBSJZZJQY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreAudio-7XLGH6557LRNGYUAYTUVJEZ09.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Foundation-2LAMQ6VGBFMO22BIZ7W92U7D5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreText-6SYR9B6KNEQIYUMLV3GZ08JB5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/ImageIO-6EYB1Z7N7H0LMUAMHZRYV9CTN.pcm
+
+LinkAssetCatalog /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Assets.xcassets (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-linkAssetCatalog --thinned /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/thinned --thinned-dependencies /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_generated_info.plist_unthinned --output /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app --plist-output /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/AppIcon76x76@2x~ipad.png (in target 'Beacon' from project 'Beacon')
+note: Emplaced /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/AppIcon60x60@2x.png (in target 'Beacon' from project 'Beacon')
+note: Emplaced /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Assets.car (in target 'Beacon' from project 'Beacon')
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreTransferable-5O1CXU0IZR8848QLDKNGMJGJH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/AppIntents-8TCNR888FX4YMWQCL10D0H4SV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Accessibility-EX77C0XMXYIUZIS1XOBQ0TCKM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/_LocationEssentials-3W4KNJZ3B3HJ3G5UO8VJOGIWE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/OpenGLES-ATCK9VTUHZTTSFBFIUXKW0DW8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/UIUtilities-5GUG28IWVON7130IYPJ4SPJM1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/DataDetection-E4G7DBB9D7KFV1BKCMDKGEI43.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreData-4KJDYQKNEZ0QL5FVH5XDRUGQK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/AppIntentsTypeSupport-CAJCWTBA2S21UMF3MC0ITEUT9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/WidgetKit-6U5CKPLLA8942SJR4B8HCVT0C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/OSLog-8FFDKSSO9I00ZWWZ8WP6L5EDN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/FileProvider-ER7HFCZHWRPA4YZAF8U2NLY21.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Symbols-1XRWZJQT5NEJTYAMTXT8NH760.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreLocation-6RRVVEVGFD3TXZXX4LHJNSC6T.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/BackgroundTasks-7W0M4XAGT8F8KOKTLRK4O8GH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/UserNotifications-3FC4Y1WXUK9SL25GKALJ2I3GC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/RelevanceKit-5AEH9S2DZLY7NV6Y8KCEQUCMM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/IOSurface-4EZOW44MIRR8Z7DHE6NBP8M3P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/UniformTypeIdentifiers-5E27E498IE3JZG8SRZ3219FH2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Network-1U5MK81IL99BE8AR6YDT4IX1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Metal-F28N6YA4PVFV8XNN93N7UA1IK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreSpotlight-ER59DXDBE5TD6KUPSDMJ3J6SC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreMotion-EOHILJFG8H45ZBZ42O3XT08LK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/Intents-5QJTQBG7OTYSKHEH76PL3K9DC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreVideo-EMCF21K4C58T85XTXUZXBBBQM.pcm
+
+SwiftDriverJobDiscovery normal arm64 Compiling Theme.swift (in target 'BeaconWidget' from project 'Beacon')
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreMedia-1FGYRBMUI85PASWWE14Y5DTDO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/QuartzCore-42XP8J0RY8M9XK3G9DDZVM8EH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/CoreImage-988RCNDI4153LQI4TDRDEUIVP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/SwiftUICore-D4AM1WKIX76LWGTQ20BX2OIUT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/UIKit-2M0E5A7QJYQLAXZXTCR462TDK.pcm
+
+SwiftDriverJobDiscovery normal arm64 Compiling BeaconWidget.swift (in target 'BeaconWidget' from project 'Beacon')
+
+SwiftDriver\ Compilation BeaconWidget normal arm64 com.apple.xcode.tools.swift.compiler (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name BeaconWidget -Onone @/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.SwiftFileList -DDEBUG -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -application-extension -enable-testing -index-store-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Index.noindex/DataStore -swift-version 6 -I /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -c -j12 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache -output-file-map /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -sdk-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget_const_extract_protocols.json -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-generated-files.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-own-target-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon-3d092df847e08b59c9cb5621fbcf4f51-VFS-iphonesimulator/all-product-headers.yaml -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-project-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources-normal/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget-Swift.h -working-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/BeaconWidget.debug.dylib normal (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -filelist /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.LinkFileList -install_name @rpath/BeaconWidget.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/../../Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget_lto.o -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget_dependency_info.dat -fapplication-extension -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.swiftmodule -Xlinker -alias -Xlinker _NSExtensionMain -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/BeaconWidget.debug.dylib
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules/SwiftUI-C6C4H2S1EIC9GA9AZ85B2DTG1.pcm
+
+SwiftCompile normal arm64 Compiling\ GeneratedAssetSymbols.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Beacon' from project 'Beacon')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-SwiftPerFileCompile GeneratedAssetSymbols.swift
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Beacon (in target 'Beacon' from project 'Beacon')
+
+SwiftCompile normal arm64 (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    
+
+SwiftCompile normal arm64 Compiling\ Theme.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Shared/Theme.swift (in target 'Beacon' from project 'Beacon')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Shared/Theme.swift (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-SwiftPerFileCompile Theme.swift
+
+SwiftCompile normal arm64 Compiling\ Keychain.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Keychain.swift (in target 'Beacon' from project 'Beacon')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Keychain.swift (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-SwiftPerFileCompile Keychain.swift
+
+SwiftCompile normal arm64 Compiling\ BeaconApp.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/BeaconApp.swift (in target 'Beacon' from project 'Beacon')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/BeaconApp.swift (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-SwiftPerFileCompile BeaconApp.swift
+
+SwiftCompile normal arm64 Compiling\ Views.swift /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Views.swift (in target 'Beacon' from project 'Beacon')
+
+SwiftCompile normal arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Views.swift (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-SwiftPerFileCompile Views.swift
+
+ConstructStubExecutorLinkFileList /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-ExecutorLinkFileList-normal-arm64.txt (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    construct-stub-executor-link-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/BeaconWidget.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'BeaconWidget' from project 'Beacon')
+
+Ld /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/BeaconWidget normal (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/../../Frameworks -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_entry -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-DebugEntryPoint-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget-ExecutorLinkFileList-normal-arm64.txt /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/BeaconWidget.debug.dylib -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/BeaconWidget
+
+ExtractAppIntentsMetadata (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name BeaconWidget --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk --xcode-version 27B52 --platform-family iOS --deployment-target 18.0 --bundle-identifier dev.jirathip.beacon.widget --output /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex --target-triple arm64-apple-ios18.0-simulator --binary-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/BeaconWidget --dependency-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget_dependency_info.dat --stringsdata-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.SwiftFileList --metadata-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget.DependencyMetadataFileList --static-metadata-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget.DependencyStaticMetadataFileList --swift-const-vals-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/Objects-normal/arm64/BeaconWidget.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-11-16 17:28:56.874 appintentsmetadataprocessor[16065:294030496] Starting App Intents metadata extraction
+2026-11-16 17:28:56.934 appintentsmetadataprocessor[16065:294030496] Extracted no relevant App Intents symbols, skipping writing output
+
+SwiftDriverJobDiscovery normal arm64 Compiling GeneratedAssetSymbols.swift (in target 'Beacon' from project 'Beacon')
+
+AppIntentsSSUTraining (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/Info.plist --temp-dir-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/ssu --bundle-id dev.jirathip.beacon.widget --product-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex --extracted-metadata-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/Metadata.appintents --metadata-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/BeaconWidget.build/BeaconWidget.DependencyMetadataFileList --source-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/Info.plist --archive-ssu-assets
+2026-11-16 17:28:56.958 appintentsnltrainingprocessor[16154:294030677] Parsing options for appintentsnltrainingprocessor
+2026-11-16 17:28:56.959 appintentsnltrainingprocessor[16154:294030677] Starting AppIntents SSU YAML Generation
+2026-11-16 17:28:56.959 appintentsnltrainingprocessor[16154:294030677] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-RegisterExecutionPolicyException /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex
+
+Touch /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex (in target 'BeaconWidget' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /usr/bin/touch -c /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex
+
+Ld /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/__preview.dylib normal (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -install_name @rpath/Beacon.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon_dependency_info.dat -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/__preview.dylib
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Beacon (in target 'Beacon' from project 'Beacon')
+
+SwiftDriver\ Compilation\ Requirements Beacon normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Beacon -Onone @/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.SwiftFileList -DDEBUG -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Index.noindex/DataStore -swift-version 6 -I /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -c -j12 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache -output-file-map /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -sdk-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon_const_extract_protocols.json -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-generated-files.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-own-target-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon-3d092df847e08b59c9cb5621fbcf4f51-VFS-iphonesimulator/all-product-headers.yaml -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-project-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources-normal/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-Swift.h -working-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling Theme.swift (in target 'Beacon' from project 'Beacon')
+
+SwiftMergeGeneratedHeaders /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/Beacon-Swift.h /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-Swift.h (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-swiftHeaderTool -arch arm64 /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-Swift.h -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/Beacon-Swift.h
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftmodule (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftmodule /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftdoc (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftdoc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.abi.json (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.abi.json /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftsourceinfo (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftsourceinfo /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling Keychain.swift (in target 'Beacon' from project 'Beacon')
+
+SwiftDriverJobDiscovery normal arm64 Compiling BeaconApp.swift (in target 'Beacon' from project 'Beacon')
+
+SwiftDriverJobDiscovery normal arm64 Compiling Views.swift (in target 'Beacon' from project 'Beacon')
+
+SwiftDriver\ Compilation Beacon normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Beacon -Onone @/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.SwiftFileList -DDEBUG -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -target arm64-apple-ios18.0-simulator -g -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Index.noindex/DataStore -swift-version 6 -I /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -c -j12 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKStatCaches.noindex/iphonesimulator27.2-24B8118-cc78df9d8a9de6526dea716b1c70fd8e.sdkstatcache -output-file-map /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex -sdk-module-cache-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon_const_extract_protocols.json -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-generated-files.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-own-target-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon-3d092df847e08b59c9cb5621fbcf4f51-VFS-iphonesimulator/all-product-headers.yaml -Xcc -iquote -Xcc /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-project-headers.hmap -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources-normal/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources/arm64 -Xcc -I/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon-Swift.h -working-directory /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Beacon.debug.dylib normal (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -filelist /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.LinkFileList -install_name @rpath/Beacon.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon_lto.o -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.swiftmodule -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Beacon.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-ExecutorLinkFileList-normal-arm64.txt (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    construct-stub-executor-link-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Beacon.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Beacon' from project 'Beacon')
+
+Ld /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Beacon normal (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -F/Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon-ExecutorLinkFileList-normal-arm64.txt /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Beacon.debug.dylib -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Beacon
+
+Copy /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns/BeaconWidget.appex /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -remove-static-executable /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -D -S -no_atom_info /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/BeaconWidget -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns/BeaconWidget.appex/BeaconWidget/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -D -S -no_atom_info /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/BeaconWidget.debug.dylib -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns/BeaconWidget.appex/BeaconWidget.debug.dylib/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -D -S -no_atom_info /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/BeaconWidget.appex/__preview.dylib -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns/BeaconWidget.appex/__preview.dylib
+ProcessInfoPlistFile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Info.plist /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Info.plist (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-infoPlistUtility /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app/Beacon/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/assetcatalog_generated_info.plist -scanforprivacyfile /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns/BeaconWidget.appex -o /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Info.plist
+
+ExtractAppIntentsMetadata (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name Beacon --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.2.sdk --xcode-version 27B52 --platform-family iOS --deployment-target 18.0 --bundle-identifier dev.jirathip.beacon --output /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app --target-triple arm64-apple-ios18.0-simulator --binary-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Beacon --dependency-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon_dependency_info.dat --stringsdata-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.SwiftFileList --metadata-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon.DependencyMetadataFileList --static-metadata-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon.DependencyStaticMetadataFileList --swift-const-vals-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Objects-normal/arm64/Beacon.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-11-16 17:28:58.018 appintentsmetadataprocessor[17252:294033283] Starting App Intents metadata extraction
+2026-11-16 17:28:58.071 appintentsmetadataprocessor[17252:294033283] Extracted no relevant App Intents symbols, skipping writing output
+
+CopySwiftLibs /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Beacon.debug.dylib --scan-folder /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Frameworks --scan-folder /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns --scan-folder /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/SystemExtensions --scan-folder /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Extensions --platform iphonesimulator --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ValidateEmbeddedBinary /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns/BeaconWidget.appex (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/PlugIns/BeaconWidget.appex -info-plist-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Info.plist
+
+AppIntentsSSUTraining (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Info.plist --temp-dir-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/ssu --bundle-id dev.jirathip.beacon --product-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app --extracted-metadata-path /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Metadata.appintents --metadata-file-list /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/Beacon.build/Debug-iphonesimulator/Beacon.build/Beacon.DependencyMetadataFileList --source-file /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app/Info.plist --archive-ssu-assets
+2026-11-16 17:28:58.096 appintentsnltrainingprocessor[17340:294033450] Parsing options for appintentsnltrainingprocessor
+2026-11-16 17:28:58.097 appintentsnltrainingprocessor[17340:294033450] Starting AppIntents SSU YAML Generation
+2026-11-16 17:28:58.097 appintentsnltrainingprocessor[17340:294033450] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-RegisterExecutionPolicyException /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app
+
+Validate /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    builtin-validationUtility /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app (in target 'Beacon' from project 'Beacon')
+    cd /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/app
+    /usr/bin/touch -c /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Products/Debug-iphonesimulator/Beacon.app
+
+PruneExplicitPrecompiledModules /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/SDKExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/jkmacmini/.local/share/drover/work/beacon/issue-19/.build/dd/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+** BUILD SUCCEEDED **
+
