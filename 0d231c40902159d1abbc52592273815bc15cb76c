@@ -1,0 +1,5 @@
+Decided: the bucket-mean expectations in MetricsTests are typed Double lets, so the CI compiler type-checks them.
+Because: app/BeaconKit/Tests/BeaconKitTests/MetricsTests.swift:42
+Rejected: an explicit `as Double` cast inline in the #expect — the let keeps the macro expression short.
+Check: the swift CI job is green at 0d231c4 and MetricsTests still asserts the 4-min means.
+Owner: A test fix so the app's tests build in CI; nothing changes in the app.
