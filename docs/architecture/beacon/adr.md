@@ -1,6 +1,15 @@
+## Summary
+
+Decision: `beacon serve` samples its own host once a minute (load, cpu, memory, swap, disk per mount), keeps the last 1440 samples in memory and serves them at `/metrics` as one JSON with an ETag, cached like `/status`. It reads the OS's own text plus one macOS system call for cpu, so there is no new dependency. The app finds metrics at the host's existing URL with `status` swapped for `metrics`; a 404 means the host has none.
+
+Slices: (1) serve itself with `/status`, as M0 decided it; (2) the metrics shape, ring, schema and golden test; (3) the sampler with macOS and Linux fixtures; (4) the `/metrics` endpoint and the `disks` config field.
+
+Open questions: (1) `beacon serve` is not built yet: the CLI has only `check` and `run`. I made it slice 1 of this issue; say so if you want it as its own issue first. (2) The line cap stands at 1902 of 2000 and this issue adds about 450 lines, so impl will ask for a raise to about 2400.
+
 # ADR: Beacon M0: config schema, host status, app/CLI split
 
-Status: proposed (third round: q1511 and q1516 applied). Issue: jirathip-dev/beacon#1. Read `usage.md` first.
+Status: D1–D9 approved (issue #1; third round: q1511 and q1516 applied). D10, host metrics, is proposed by issue #13
+and is the only part to review now: read `metrics.md` first, then D10 below. For D1–D9 read `usage.md` first.
 
 ## Question
 
@@ -136,7 +145,79 @@ because a widget's time budget is too small for N network calls.
 systemd (a sample plist is in `usage.md`; nothing is installed by the CLI). `beacon run`
 runs the host's checks once and prints them. It is for trying a command out and for CI.
 
-## Consequences
+### D10 Host metrics: serve samples its own host, the app reads `/metrics` (#13)
+
+The question: the owner wants host load, cpu, memory and disk history with charts, in Beacon and not on
+Drover's page. How does serve read them, what does it send, and how does the app find them?
+
+Decided by the owner already (t127 q1742, q1746) and not reopened: one sample every 60 s of load 1/5/15, cpu %,
+memory and swap used/total, and disk used/free per configured mount; the last 1440 samples in memory and
+nothing on disk; `GET /metrics` as one JSON with an ETag, cached like `/status`; no Drover and no shared host.
+The usage, shapes, reads and statecharts are in `metrics.md`, and the wire contract is `metrics.schema.json`.
+
+What this ADR decides:
+
+- **The sampler reads the OS's own text and parses it with pure functions. No new crate.** Linux: three
+  `/proc` files. macOS: `sysctl` and `vm_stat`. Both: `df -kP`. The one value macOS offers no text for is
+  cumulative cpu ticks, so `sampler.rs` makes one Mach call (`host_statistics`, which fills four integers).
+  Options considered:
+  - The `sysinfo` crate. Rejected: a new dependency larger than the rest of the tree, and it hides the reads
+    the AC wants tested with fixtures.
+  - Hand-written FFI for everything (`getloadavg`, `statvfs`, `sysctlbyname`). Rejected: struct layouts
+    written by hand per OS, and a path that only the OS it runs on can test. Text parsers are tested on both.
+  - `top -l 1` for macOS cpu. Rejected by measurement on the Mini: its first sample read 0–6 % idle while
+    `iostat` and `top`'s second sample read 28–65 %. Those two are right, but they measure a single second,
+    which is noisy, and take over a second to run.
+    The Mach call matched `iostat` over the same 5 s (35.8 % against 35 %), and a difference of ticks gives
+    the mean of the whole minute, which is what `/proc/stat` gives on Linux.
+- **`sampler` sits beside `probe` and starts no process itself.** It reads files and makes the Mach call.
+  For the tools it calls `probe::output(program, args, timeout)`, a new entry on probe's existing
+  spawn-wait-kill helper, so `probe.rs` stays the only module that starts processes, and a hung `df` is
+  killed after 5 s. The ring and the response live in `metrics.rs`, pure like `status.rs`.
+- **The body is columns, not rows.** One array per series and one `t` array. A full day with one mount is
+  about 115 KB, against about 285 KB as an array of objects; each further mount adds about 37 KB. The arrays
+  are also what a chart takes. Rejected: gzip or a binary form (more moving parts than the size is worth),
+  and a `?since=` query (the owner decided one JSON; the ETag already makes the polls between samples a 304).
+- **A read that fails is a `null` in that sample, and each sample carries its own time.** So a missing mount,
+  a hung tool or a sleeping host shows as a gap in a chart and never stops serve. `cpu_pct` is `null` in the
+  first sample after a start, because it needs two readings.
+- **"Used" is what the owner would call used.** Memory: what cannot be freed without swapping, so file cache
+  is not counted (Linux `MemTotal − MemAvailable`; macOS as Activity Monitor's "Memory Used"). Disk: the
+  volume's size minus what is available, so used + free is the size. On a Mac that makes `/` right without
+  configuration; `df`'s own Used column would show only the 13 GiB system volume.
+- **Mounts are `hosts.<name>.disks`**, an optional list of absolute paths, at most 8, default `["/"]`. It is a
+  new field, so by D1 it is no version bump: update the CLI, then the config. The app ignores it. There is no
+  switch for sampling itself and none for the interval.
+- **The app derives the metrics URL from `hosts.<name>.url`**: the same URL with its last path segment
+  replaced by `metrics`. A 200 means charts and a 404 means this host's serve has none. Rejected: a
+  `metrics_url` field (the owner chose the existing URL, and it is one more thing to mistype), and a flag in
+  the `/status` body (it changes a shape the shipped app reads, to say what a 404 says).
+- **`/metrics` is cached by the mechanism of D4.** The sampler thread renders the bytes and the ETag once per
+  sample and swaps them into a cell, and a request clones the cell. `/status` and `/metrics` are two cells
+  of one type behind one request arm. A request never waits on a read.
+- **The ring is bounded by count** (1440), in a type that cannot hold more. It is owned by the sampler
+  thread alone, so it needs no lock. Samples are taken on a fixed 60 s schedule from the start of serve,
+  the first one at once, so `curl` shows a point right after a start.
+- **Serve itself is slice 1.** At b97cdf2 the CLI has `check` and `run` only: D3 and D4 were approved but
+  `serve.rs` was never built. This issue builds the part of them it stands on: the listener (`tiny_http`,
+  approved in D4), `/status` with ETag and 304, one thread per check, 404 for other paths and
+  `panic = "abort"`. It does not build the 300 s config reload or a URL config (`source.rs`): serve takes a
+  path here, as `run` does today, and those stay for the issue that needs them.
+
+Consequences of D10:
+
+- Anyone on the tailnet can read the host's load, memory and disk sizes, as they can read its checks (D3).
+- The crate gets its first `unsafe`: the one Mach call, compiled on macOS only.
+- The contract is now three schema documents and two shared examples (`docs/monitors.example.json`,
+  `docs/metrics.example.json`). `/status` and `status.schema.json` do not change.
+- The app fetches `/metrics` only while a host's detail screen is open (#14). The refresh, the background
+  task and the widget stay as they are.
+- A host with `"checks": []` serves metrics, but the app reaches a host through a heartbeat row. Whether a
+  host without checks gets a row is #14's design question.
+- About 450 non-test lines in `cli/src` (serve core about 170, metrics about 280). The cap is 2000 and the
+  tree is at 1902, so impl needs a raise to about 2400.
+
+## Consequences (D1–D9)
 
 - No GitHub dependency anywhere. A new host means adding `hosts.<name>` and running serve there.
 - An unreachable host turns its heartbeat rows red. That is intended (owner, q1516).
@@ -147,3 +228,9 @@ runs the host's checks once and prints them. It is for trying a command out and 
   `docs/`, `scripts/line-cap.sh`, `ci/cap.toml`, `.github/workflows/ci.yml`,
   `.herdsman/rules.md`. The line cap counts non-test lines in `cli/src` and in `app/**/*.swift`
   outside `*Tests*`.
+
+## Hot files and `.drover/arch.toml`
+
+D10 converts no hot file, so the impl lane adds no `.drover/arch.toml` lines. The new code is two new files
+(`sampler.rs`, `metrics.rs`) and one file M0 named (`serve.rs`). The metrics docs are their own file
+(`metrics.md`), so a later change to metrics does not edit the files the rest of the architecture shares.

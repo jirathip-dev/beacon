@@ -73,9 +73,17 @@
       "additionalProperties": false,
       "required": ["url", "checks"],
       "properties": {
-        "url": { "type": "string", "format": "uri", "pattern": "^https://", "description": "Full status URL the app GETs, e.g. https://macmini.tail1234.ts.net/status." },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://", "description": "Full status URL the app GETs, e.g. https://macmini.tail1234.ts.net/status. The app GETs the host's metrics at the same URL with its last path segment replaced by `metrics` (ADR D10)." },
         "timeout_s": { "$ref": "#/$defs/probeTimeout", "default": 5 },
-        "checks": { "type": "array", "items": { "$ref": "#/$defs/hostCheck" } }
+        "checks": { "type": "array", "items": { "$ref": "#/$defs/hostCheck" } },
+        "disks": {
+          "description": "Mount points whose used and free bytes `beacon serve` samples for /metrics (ADR D10). Only serve reads this. An empty list samples no disk.",
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "default": ["/"],
+          "items": { "type": "string", "pattern": "^/", "maxLength": 255, "description": "An absolute path with no control character." }
+        }
       }
     },
     "hostCheck": {

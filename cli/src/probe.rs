@@ -7,7 +7,9 @@ use std::time::Duration;
 
 /// Runs `sh -c command`; up on exit 0. Past `timeout` its whole process group is killed.
 pub fn run(command: &str, timeout: Duration) -> (Status, String) {
-    match spawn_and_wait(command, timeout) {
+    let mut sh = Command::new("sh");
+    sh.args(["-c", command]);
+    match spawn_and_wait(sh, timeout) {
         Ok(Some((ok, output))) => (
             if ok { Status::Up } else { Status::Down },
             last_line(&output),
@@ -20,15 +22,25 @@ pub fn run(command: &str, timeout: Duration) -> (Status, String) {
     }
 }
 
-fn spawn_and_wait(command: &str, timeout: Duration) -> std::io::Result<Option<(bool, String)>> {
+/// Runs `program` with `args`, no shell; its output on exit 0 within `timeout`, else `None`.
+pub fn output(program: &str, args: &[&str], timeout: Duration) -> Option<String> {
+    let mut cmd = Command::new(program);
+    cmd.args(args);
+    match spawn_and_wait(cmd, timeout) {
+        Ok(Some((true, output))) => Some(output),
+        _ => None,
+    }
+}
+
+fn spawn_and_wait(mut cmd: Command, timeout: Duration) -> std::io::Result<Option<(bool, String)>> {
     let (mut reader, writer) = std::io::pipe()?;
-    let mut child = Command::new("sh")
-        .args(["-c", command])
+    let mut child = cmd
         .stdin(Stdio::null())
         .stdout(writer.try_clone()?)
         .stderr(writer)
         .process_group(0)
         .spawn()?;
+    drop(cmd);
     let pgid = child.id();
     let output = std::thread::spawn(move || {
         let mut buf = Vec::new();
