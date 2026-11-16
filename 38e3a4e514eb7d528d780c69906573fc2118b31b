@@ -1,0 +1,8 @@
+Decided: the host detail and chart sheet bodies pad 16 pt left and right and 12 pt top and bottom, as the design's body does.
+Because: docs/design/host-detail/beacon.css:20
+Decided: on the host detail, the checks card header is the design's ruled header: regular weight, count right-aligned, a rule under it.
+Because: docs/design/host-detail/detail.html:4
+Rejected: changing the list's group header — only the host detail's ruled-off card differs in the design.
+Rejected: switching the shared Card to strokeBorder for the 2 px left over — it would move the list too, which this issue did not ask for.
+Check: card edges at x 46 and 1123 px in shots/host-detail.png and chart-1h.png, against 48 and 1121 in the design PNGs.
+Owner: The host page and its chart now have the design's side margins, and the host's checks card has the design's header.
