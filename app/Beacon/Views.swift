@@ -203,11 +203,13 @@ struct Summary: View {
                     Dot(color: T.amber)
                     Text("no network").foregroundStyle(T.amber)
                     Text("· \(snapshot.rows.count) unknown").font(T.font(11)).foregroundStyle(T.mute)
+                    checked
                 }
             } else {
-                HStack(spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
                     Text("\(down) down").foregroundStyle(down > 0 ? T.red : T.mute)
                     Text("\(snapshot.upCount) up").foregroundStyle(T.green)
+                    checked
                 }
                 .font(T.font(13, .bold))
             }
@@ -222,6 +224,8 @@ struct Summary: View {
         .font(T.font())
         .padding(.horizontal, 4)
     }
+
+    var checked: some View { Text("checked \(T.stamp(snapshot.at))").font(T.font(11)).foregroundStyle(T.mute) }
 }
 
 struct Field: View {

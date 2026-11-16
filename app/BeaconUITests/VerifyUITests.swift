@@ -33,6 +33,7 @@ import XCTest
 
     func testListAndSettings() throws {
         launchOnFixtures()
+        XCTAssert(app.staticTexts.matching(NSPredicate(format: "label MATCHES 'checked [0-9]{2}:[0-9]{2}'")).firstMatch.waitForExistence(timeout: 5))
         try shot("list")
         app.buttons["[cfg]"].tap()
         XCTAssert(app.staticTexts["fetched"].waitForExistence(timeout: 5))
