@@ -1,0 +1,11 @@
+Decided: the host detail fetches /metrics in a .task on the screen only, every 60 s while open and active.
+Because: "Fetch `/metrics` with ETag while the screen is open only. No background fetch, no widget change."
+Decided: 6h plots every sample, 24h plots 4-min means; min/avg/max come from raw samples.
+Because: docs/design/host-detail/README.md:15
+Rejected: view.js's width-derived bucket (2 and 7 min) — it contradicts the README and the PNG footnotes.
+Decided: the mount order comes from the config's hosts.<name>.disks, decoded by the app as an optional field.
+Because: docs/design/host-detail/README.md:11
+Decided: the verify recipe runs a live beacon serve of the Mini as host `mini`.
+Because: "verify: screenshots of the host detail screen and the chart sheet with a live Mini host."
+Check: MetricsTests decodes docs/metrics.example.json, the golden from #13, and tolerates unknown fields.
+Owner: Tap a host's check in the app to see its load, cpu, memory and disks; tap one for a 1h/6h/24h chart.
