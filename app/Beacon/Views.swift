@@ -4,6 +4,7 @@ import SwiftUI
 struct Root: View {
     let model: Model
     @State private var settings = false
+    @State private var host: String?
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
@@ -14,7 +15,13 @@ struct Root: View {
             }
             .background(T.bg)
         } else {
-            MonitorList(model: model) { settings = true }
+            Group {
+                if let host, let h = model.config?.hosts?[host] {
+                    HostDetail(model: model, name: host, host: h) { self.host = nil }
+                } else {
+                    MonitorList(model: model, openSettings: { settings = true }, openHost: { host = $0 })
+                }
+            }
                 .task(id: phase) {
                     while phase == .active, !Task.isCancelled {
                         await model.refresh()
@@ -83,6 +90,8 @@ struct Card<Content: View>: View {
 
 struct MonitorRow: View {
     let row: MonitorResult
+    /// true: a mute `›` for a row that opens its host; false: the same width blank; nil: neither.
+    var chevron: Bool? = nil
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 8) {
@@ -96,6 +105,9 @@ struct MonitorRow: View {
                     }
                 }
                 .font(T.font(11)).fixedSize()
+                if let chevron {
+                    Text("›").foregroundStyle(T.mute).frame(width: 22, alignment: .trailing).opacity(chevron ? 1 : 0)
+                }
             }
             if row.state == .down, !row.detail.isEmpty {
                 Text(row.detail).font(T.font(11)).foregroundStyle(T.mute)
@@ -113,23 +125,35 @@ struct MonitorRow: View {
 struct GroupCard: View {
     let name: String
     let rows: [MonitorResult]
+    var ruled = true
+    /// The list's rows: a host-backed row opens its host; nil on the host detail.
+    var open: ((MonitorResult) -> (() -> Void)?)? = nil
     var body: some View {
         let down = rows.count { $0.state == .down }
         let unknown = rows.allSatisfy { $0.state == .unknown }
-        Card(rule: unknown ? T.mute : down > 0 ? T.red : T.green) {
-            HStack(spacing: 10) {
-                Text("~ \(name.lowercased())").font(T.font(13, .bold)).foregroundStyle(T.fg)
-                Group {
-                    if unknown { Text("\(rows.count) unknown").foregroundStyle(T.mute) }
-                    else if down > 0 { Text("\(down) down").foregroundStyle(T.red) }
-                    else { Text("\(rows.count) up").foregroundStyle(T.mute) }
-                }
-                .font(T.font(11))
+        Card(rule: !ruled ? nil : unknown ? T.mute : down > 0 ? T.red : T.green) {
+            let count = Group {
+                if unknown { Text("\(rows.count) unknown").foregroundStyle(T.mute) }
+                else if down > 0 { Text("\(down) down").foregroundStyle(T.red) }
+                else { Text("\(rows.count) up").foregroundStyle(T.mute) }
             }
-            .padding(.horizontal, 12).padding(.top, 11).padding(.bottom, 5)
+            if ruled {
+                HStack(spacing: 10) {
+                    Text("~ \(name.lowercased())").font(T.font(13, .bold)).foregroundStyle(T.fg)
+                    count.font(T.font(11))
+                }
+                .padding(.horizontal, 12).padding(.top, 11).padding(.bottom, 5)
+            } else {
+                HStack { Text("~ \(name.lowercased())").foregroundStyle(T.fg); Spacer(); count }
+                    .padding(.horizontal, 12).padding(.vertical, 8)
+                T.line.frame(height: 1)
+            }
             ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
                 if i > 0 { T.line.frame(height: 1).padding(.leading, 12) }
-                MonitorRow(row: row)
+                let action = open?(row)
+                MonitorRow(row: row, chevron: open.map { _ in action != nil })
+                    .contentShape(Rectangle())
+                    .onTapGesture { action?() }
             }
             Spacer().frame(height: 4)
         }
@@ -162,6 +186,7 @@ struct StateCard: View {
 struct MonitorList: View {
     let model: Model
     let openSettings: () -> Void
+    let openHost: (String) -> Void
     var body: some View {
         VStack(spacing: 0) {
             TopBar(title: "beacon", key: "cfg", action: openSettings)
@@ -172,7 +197,9 @@ struct MonitorList: View {
                             StateCard(phrase: "dark coast", plain: "no monitors", key: ("change config", openSettings))
                         } else {
                             Summary(snapshot: snapshot)
-                            ForEach(groups(snapshot.rows), id: \.0) { GroupCard(name: $0.0, rows: $0.1) }
+                            ForEach(groups(snapshot.rows), id: \.0) {
+                                GroupCard(name: $0.0, rows: $0.1) { row in model.host(of: row).map { h in { openHost(h) } } }
+                            }
                         }
                     } else {
                         StateCard(glyph: "↻", phrase: "lighting up",

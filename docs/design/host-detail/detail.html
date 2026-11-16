@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>host detail</title><link rel="stylesheet" href="beacon.css">
+<body><script type="module">
+import { rows, statusBar, mount, B, hhmm } from './view.js';
+const checks = `<div class="card"><div class="hd"><span>~ checks on macmini</span><span class="red">1 down</span></div>
+  <div class="mrow" style="border-top:0;box-shadow:inset 3px 0 0 var(--red)"><span class="line1"><span class="dot red"></span>backup</span><span><span class="red">down</span> <span class="mute">since 03:12</span></span></div>
+  <div class="mrow"><span class="line1"><span class="dot green"></span>disk</span><span><span class="green">up</span> <span class="mute">since 08:12</span></span></div></div>`;
+mount(() => `${statusBar()}<div class="top"><span class="key">[‹ monitors]</span><span class="title">macmini</span><span style="width:96px"></span></div>
+  <div class="body">
+    <div class="card"><div class="hd"><span>~ host</span><span class="mute">last 1h</span></div>${rows()}</div>
+    <p class="meta mute" style="padding:0 4px">updated ${hhmm(B.t.at(-1))} · a sample every ${B.every_s}s · tap a row for its chart</p>
+    ${checks}
+  </div>`, 'Host detail: macmini (detail.html)');
+</script>

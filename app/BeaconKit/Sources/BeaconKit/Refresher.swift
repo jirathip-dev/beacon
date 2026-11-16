@@ -144,7 +144,7 @@ public struct Refresher: Sendable {
     }
 }
 
-private func reason(_ error: any Error, timeout: Int) -> String {
+func reason(_ error: any Error, timeout: Int) -> String {
     (error as? URLError)?.code == .timedOut ? "timeout after \(timeout)s" : describe(error)
 }
 

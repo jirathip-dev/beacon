@@ -64,6 +64,8 @@ public struct HeartbeatMonitor: Decodable, Sendable {
 public struct Host: Decodable, Sendable {
     public let url: URL
     public let timeout_s: Int?
+    /// The mounts serve samples, in the order the host detail shows them.
+    public let disks: [String]?
 }
 
 extension Monitor {
