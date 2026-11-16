@@ -1,0 +1,5 @@
+Decided: a metric row's text column fills the free width itself, so the row has two 10 pt gaps, not three.
+Because: docs/design/host-detail/beacon.css:26
+Rejected: shortening the mem sub-line — the design shows the full string on one line.
+Check: in shots/host-detail.png the mem row's "of 32 GB · swap" sub-line sits on one line.
+Owner: The memory row's detail line no longer wraps onto a second line.
