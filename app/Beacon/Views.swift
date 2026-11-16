@@ -132,16 +132,22 @@ struct GroupCard: View {
         let down = rows.count { $0.state == .down }
         let unknown = rows.allSatisfy { $0.state == .unknown }
         Card(rule: !ruled ? nil : unknown ? T.mute : down > 0 ? T.red : T.green) {
-            HStack(spacing: 10) {
-                Text("~ \(name.lowercased())").font(T.font(13, .bold)).foregroundStyle(T.fg)
-                Group {
-                    if unknown { Text("\(rows.count) unknown").foregroundStyle(T.mute) }
-                    else if down > 0 { Text("\(down) down").foregroundStyle(T.red) }
-                    else { Text("\(rows.count) up").foregroundStyle(T.mute) }
-                }
-                .font(T.font(11))
+            let count = Group {
+                if unknown { Text("\(rows.count) unknown").foregroundStyle(T.mute) }
+                else if down > 0 { Text("\(down) down").foregroundStyle(T.red) }
+                else { Text("\(rows.count) up").foregroundStyle(T.mute) }
             }
-            .padding(.horizontal, 12).padding(.top, 11).padding(.bottom, 5)
+            if ruled {
+                HStack(spacing: 10) {
+                    Text("~ \(name.lowercased())").font(T.font(13, .bold)).foregroundStyle(T.fg)
+                    count.font(T.font(11))
+                }
+                .padding(.horizontal, 12).padding(.top, 11).padding(.bottom, 5)
+            } else {
+                HStack { Text("~ \(name.lowercased())").foregroundStyle(T.fg); Spacer(); count }
+                    .padding(.horizontal, 12).padding(.vertical, 8)
+                T.line.frame(height: 1)
+            }
             ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
                 if i > 0 { T.line.frame(height: 1).padding(.leading, 12) }
                 let action = open?(row)

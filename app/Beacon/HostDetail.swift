@@ -30,7 +30,7 @@ struct HostDetail: View {
                     if !rows.isEmpty { GroupCard(name: "checks on \(name)", rows: rows, ruled: false) }
                 }
                 .font(T.font())
-                .padding(12)
+                .padding(.horizontal, 16).padding(.vertical, 12)
             }
         }
         .background(T.bg)
@@ -246,7 +246,7 @@ struct ChartSheet: View {
                      + (w.missing > 0 ? " · \(w.missing) missing, left blank" : "") + " · hold and drag to read a point")
                     .font(T.font(11)).foregroundStyle(T.mute).padding(.horizontal, 4)
             }
-            .padding(12)
+            .padding(.horizontal, 16).padding(.vertical, 12)
             Spacer()
         }
         .font(T.font())
