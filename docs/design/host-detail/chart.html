@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>chart sheet</title><link rel="stylesheet" href="beacon.css">
+<body><script type="module">
+import { METRICS, chart, stats, missing, statusBar, mount } from './view.js';
+const q = new URLSearchParams(location.search), range = q.get('r') || '1h', m = METRICS.find(x => x.id === (q.get('id') || 'cpu'));
+const scrub = q.has('scrub') ? +q.get('scrub') : null;
+const n = missing(m, range);
+mount(() => `${statusBar()}<div style="position:absolute;inset:47px 0 0;background:var(--line);opacity:.6"></div>
+  <div style="position:absolute;inset:58px 0 0;background:var(--bg);border-radius:12px 12px 0 0;border-top:1px solid var(--edge)">
+  <div class="grab"></div>
+  <div class="top"><span class="title" style="padding-left:12px">${m.label} <span class="mute" style="font-weight:400">· macmini</span></span><span class="key">[done]</span></div>
+  <div class="body">
+    <div class="seg">${Object.keys({ '1h': 0, '6h': 0, '24h': 0 }).map(r => `<span class="key ${r === range ? 'on' : ''}">[${r}]</span>`).join('')}</div>
+    <div class="card"><div style="padding:${scrub == null ? 12 : 40}px 0 4px">${chart(m, range, scrub)}</div>
+      <div class="stats">${stats(m, range)}</div></div>
+    <p class="meta mute" style="padding:0 4px">${range === '1h' ? 'every sample' : `mean of every ${range === '6h' ? 1 : 4} min`}${n ? ` · ${n} missing, left blank` : ''} · hold and drag to read a point</p>
+  </div></div>`, `Chart sheet: ${m.label}, ${range} (chart.html?r=${range})`);
+</script>
