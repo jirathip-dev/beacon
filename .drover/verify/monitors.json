@@ -8,9 +8,11 @@
     { "type": "tcp", "name": "Closed port", "group": "Hosts", "host": "127.0.0.1", "port": 1, "timeout_s": 5 },
     { "type": "heartbeat", "name": "Disk space", "group": "macmini", "host": "macmini", "id": "disk" },
     { "type": "heartbeat", "name": "Nightly backup", "group": "macmini", "host": "macmini", "id": "backup" },
-    { "type": "heartbeat", "name": "Photos sync", "group": "macmini", "host": "macmini", "id": "photos" }
+    { "type": "heartbeat", "name": "Photos sync", "group": "macmini", "host": "macmini", "id": "photos" },
+    { "type": "heartbeat", "name": "Live serve", "group": "mini", "host": "mini", "id": "alive" }
   ],
   "hosts": {
-    "macmini": { "url": "http://127.0.0.1:PORT/status", "timeout_s": 5, "checks": [] }
+    "macmini": { "url": "http://127.0.0.1:PORT/status", "timeout_s": 5, "checks": [] },
+    "mini": { "url": "http://127.0.0.1:LIVE/status", "timeout_s": 5, "disks": ["/"], "checks": [] }
   }
 }

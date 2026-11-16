@@ -39,6 +39,24 @@ import XCTest
         try shot("settings")
     }
 
+    /// The live `beacon serve` host's detail and its cpu chart on 1h and 24h, then a host with no `/metrics`.
+    func testHostDetailAndChart() throws {
+        launchOnFixtures()
+        app.staticTexts["Live serve"].tap()
+        XCTAssert(app.staticTexts["~ host"].waitForExistence(timeout: 10))
+        try shot("host-detail")
+        app.staticTexts["cpu"].tap()
+        XCTAssert(app.buttons["[24h]"].waitForExistence(timeout: 5))
+        try shot("chart-1h")
+        app.buttons["[24h]"].tap()
+        try shot("chart-24h")
+        app.buttons["[done]"].tap()
+        app.buttons["[‹ monitors]"].tap()
+        app.staticTexts["Disk space"].tap()
+        XCTAssert(app.staticTexts["dark lamp · no metrics"].waitForExistence(timeout: 10))
+        try shot("host-not-served")
+    }
+
     /// Waits for `element`, answering the notification alert iOS may show over SpringBoard at any point.
     func appears(_ element: XCUIElement, timeout: TimeInterval = 30) -> Bool {
         let allow = springboard.alerts.buttons["Allow"]

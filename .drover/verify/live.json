@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "monitors": [],
+  "hosts": {
+    "mini": { "url": "https://mini.invalid/status", "disks": ["/"], "checks": [{ "id": "alive", "command": "true", "every_s": 60 }] }
+  }
+}
