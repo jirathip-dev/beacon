@@ -1,3 +1,3 @@
 DOWN
 No runtime specified, using 'iOS 27.2 (27.2 - 24B8117) - com.apple.CoreSimulator.SimRuntime.iOS-27-2'
-READY sim=DC3E07DF-479C-4A22-ACC5-31638B99F398 config=http://127.0.0.1:41737/monitors.json live=http://127.0.0.1:50925/metrics
+READY sim=F5BCAC06-B9B9-4EB9-9270-C522B7A101D2 config=http://127.0.0.1:41737/monitors.json live=http://127.0.0.1:49668/metrics
