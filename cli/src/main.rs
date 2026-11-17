@@ -22,7 +22,7 @@ fn main() -> ExitCode {
             })
         }
         ["serve", opts @ ..] => target(opts, true)
-            .and_then(|(name, host, listen, _)| Err(beacon::serve::serve(&name, &host, &listen))),
+            .and_then(|(name, _, listen, path)| Err(beacon::serve::serve(&name, &path, &listen))),
         ["install", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path)| {
             beacon::install::install(&path, &name, &listen).map(|done| {
                 println!("{done}");

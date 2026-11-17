@@ -79,6 +79,12 @@ impl StatusBody {
         changed
     }
 
+    /// Drops the results of checks not in `ids`.
+    pub fn keep(&mut self, ids: &[&Id]) {
+        self.checks
+            .retain(|k, _| ids.iter().any(|id| id.as_str() == k));
+    }
+
     pub fn render(&self) -> Rendered {
         Rendered::of(serde_json::to_vec(self).unwrap())
     }
