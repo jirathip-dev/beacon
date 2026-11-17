@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "monitors": [
+    {
+      "type": "heartbeat",
+      "name": "drover doctor",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "doctor"
+    },
+    {
+      "type": "heartbeat",
+      "name": "dev.drover.tick",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "dev-drover-tick"
+    },
+    {
+      "type": "heartbeat",
+      "name": "dev.drover.fast",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "dev-drover-fast"
+    },
+    {
+      "type": "heartbeat",
+      "name": "dev.drover.update",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "dev-drover-update"
+    },
+    {
+      "type": "heartbeat",
+      "name": "dev.drover.clean",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "dev-drover-clean"
+    },
+    {
+      "type": "heartbeat",
+      "name": "dev.drover.serve",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "dev-drover-serve"
+    },
+    {
+      "type": "heartbeat",
+      "name": "dev.shed.serve",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "dev-shed-serve"
+    },
+    {
+      "type": "heartbeat",
+      "name": "dev.cooee.cooee",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "dev-cooee-cooee"
+    },
+    {
+      "type": "heartbeat",
+      "name": "actions.runner.jirathip-dev-cooee.mini-cooee",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "actions-runner-jirathip-dev-cooee-mini-cooee"
+    },
+    {
+      "type": "heartbeat",
+      "name": "actions.runner.jirathip-dev-shed.shed-mini",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "actions-runner-jirathip-dev-shed-shed-mini"
+    },
+    {
+      "type": "heartbeat",
+      "name": "CLIs on PATH",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "clis"
+    },
+    {
+      "type": "heartbeat",
+      "name": "Disk /",
+      "group": "Mini",
+      "host": "jirathips-mac-mini",
+      "id": "disk"
+    }
+  ],
+  "hosts": {
+    "jirathips-mac-mini": {
+      "url": "https://jirathips-mac-mini.tail8c3301.ts.net/status",
+      "timeout_s": 5,
+      "checks": [
+        {
+          "id": "doctor",
+          "command": "command -v drover >/dev/null || { echo 'drover not on PATH'; exit 1; }; x=$(drover doctor 2>&1 | grep -m1 '✗'); test -z \"$x\" && echo 'no ✗' || { echo \"$x\"; exit 1; }",
+          "every_s": 900,
+          "timeout_s": 290
+        },
+        {
+          "id": "dev-drover-tick",
+          "command": "s=$(launchctl print gui/$(id -u)/dev.drover.tick 2>/dev/null) || { echo \"dev.drover.tick not loaded\"; exit 1; }; p=$(printf \"%s\\n\" \"$s\" | awk '$1 == \"pid\" { print $3; exit }'); test -n \"$p\" && { echo \"running, pid $p\"; exit 0; }; e=$(printf \"%s\\n\" \"$s\" | awk -F \" = \" '/^\\tlast exit code = / { print $2; exit }'); r=$(printf \"%s\\n\" \"$s\" | awk -F \" = \" '/^\\tlast exit reason = / { print $2; exit }'); test \"$e\" = 0 && echo \"last exit 0\" || { echo \"dev.drover.tick last exit ${e:-${r:-none}}\"; exit 1; }",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "dev-drover-fast",
+          "command": "s=$(launchctl print gui/$(id -u)/dev.drover.fast 2>/dev/null) || { echo \"dev.drover.fast not loaded\"; exit 1; }; p=$(printf \"%s\\n\" \"$s\" | awk '$1 == \"pid\" { print $3; exit }'); test -n \"$p\" && { echo \"running, pid $p\"; exit 0; }; e=$(printf \"%s\\n\" \"$s\" | awk -F \" = \" '/^\\tlast exit code = / { print $2; exit }'); r=$(printf \"%s\\n\" \"$s\" | awk -F \" = \" '/^\\tlast exit reason = / { print $2; exit }'); test \"$e\" = 0 && echo \"last exit 0\" || { echo \"dev.drover.fast last exit ${e:-${r:-none}}\"; exit 1; }",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "dev-drover-update",
+          "command": "s=$(launchctl print gui/$(id -u)/dev.drover.update 2>/dev/null) || { echo \"dev.drover.update not loaded\"; exit 1; }; p=$(printf \"%s\\n\" \"$s\" | awk '$1 == \"pid\" { print $3; exit }'); test -n \"$p\" && { echo \"running, pid $p\"; exit 0; }; e=$(printf \"%s\\n\" \"$s\" | awk -F \" = \" '/^\\tlast exit code = / { print $2; exit }'); r=$(printf \"%s\\n\" \"$s\" | awk -F \" = \" '/^\\tlast exit reason = / { print $2; exit }'); test \"$e\" = 0 && echo \"last exit 0\" || { echo \"dev.drover.update last exit ${e:-${r:-none}}\"; exit 1; }",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "dev-drover-clean",
+          "command": "s=$(launchctl print gui/$(id -u)/dev.drover.clean 2>/dev/null) || { echo \"dev.drover.clean not loaded\"; exit 1; }; p=$(printf \"%s\\n\" \"$s\" | awk '$1 == \"pid\" { print $3; exit }'); test -n \"$p\" && { echo \"running, pid $p\"; exit 0; }; e=$(printf \"%s\\n\" \"$s\" | awk -F \" = \" '/^\\tlast exit code = / { print $2; exit }'); r=$(printf \"%s\\n\" \"$s\" | awk -F \" = \" '/^\\tlast exit reason = / { print $2; exit }'); test \"$e\" = 0 && echo \"last exit 0\" || { echo \"dev.drover.clean last exit ${e:-${r:-none}}\"; exit 1; }",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "dev-drover-serve",
+          "command": "s=$(launchctl print gui/$(id -u)/dev.drover.serve 2>/dev/null) || { echo \"dev.drover.serve not loaded\"; exit 1; }; p=$(printf \"%s\\n\" \"$s\" | awk '$1 == \"pid\" { print $3; exit }'); test -n \"$p\" && echo \"pid $p\" || { echo \"dev.drover.serve not running\"; exit 1; }",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "dev-shed-serve",
+          "command": "s=$(launchctl print gui/$(id -u)/dev.shed.serve 2>/dev/null) || { echo \"dev.shed.serve not loaded\"; exit 1; }; p=$(printf \"%s\\n\" \"$s\" | awk '$1 == \"pid\" { print $3; exit }'); test -n \"$p\" && echo \"pid $p\" || { echo \"dev.shed.serve not running\"; exit 1; }",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "dev-cooee-cooee",
+          "command": "s=$(launchctl print gui/$(id -u)/dev.cooee.cooee 2>/dev/null) || { echo \"dev.cooee.cooee not loaded\"; exit 1; }; p=$(printf \"%s\\n\" \"$s\" | awk '$1 == \"pid\" { print $3; exit }'); test -n \"$p\" && echo \"pid $p\" || { echo \"dev.cooee.cooee not running\"; exit 1; }",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "actions-runner-jirathip-dev-cooee-mini-cooee",
+          "command": "s=$(launchctl print gui/$(id -u)/actions.runner.jirathip-dev-cooee.mini-cooee 2>/dev/null) || { echo \"actions.runner.jirathip-dev-cooee.mini-cooee not loaded\"; exit 1; }; p=$(printf \"%s\\n\" \"$s\" | awk '$1 == \"pid\" { print $3; exit }'); test -n \"$p\" && echo \"pid $p\" || { echo \"actions.runner.jirathip-dev-cooee.mini-cooee not running\"; exit 1; }",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "actions-runner-jirathip-dev-shed-shed-mini",
+          "command": "s=$(launchctl print gui/$(id -u)/actions.runner.jirathip-dev-shed.shed-mini 2>/dev/null) || { echo \"actions.runner.jirathip-dev-shed.shed-mini not loaded\"; exit 1; }; p=$(printf \"%s\\n\" \"$s\" | awk '$1 == \"pid\" { print $3; exit }'); test -n \"$p\" && echo \"pid $p\" || { echo \"actions.runner.jirathip-dev-shed.shed-mini not running\"; exit 1; }",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "clis",
+          "command": "m=; for c in drover shed claude gh git; do command -v \"$c\" >/dev/null || m=\"$m $c\"; done; test -z \"$m\" && echo 'drover shed claude gh git on PATH' || { echo \"missing:$m\"; exit 1; }",
+          "every_s": 300,
+          "timeout_s": 10
+        },
+        {
+          "id": "disk",
+          "command": "df -P / | awk 'NR==2 { gsub(\"%\",\"\",$5); print $5 \"% used\"; exit ($5 < 90 ? 0 : 1) }'",
+          "every_s": 300,
+          "timeout_s": 10
+        }
+      ]
+    }
+  }
+}

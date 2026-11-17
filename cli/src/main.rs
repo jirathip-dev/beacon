@@ -3,7 +3,8 @@ use std::process::{Command, ExitCode};
 
 const USAGE: &str = "usage: beacon check <path>
        beacon run [--config <path>] [--host <name>]
-       beacon serve [--config <path>] [--host <name>] [--listen <addr>]";
+       beacon serve [--config <path>] [--host <name>] [--listen <addr>]
+       beacon install [--config <path>] [--host <name>] [--listen <addr>]";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -15,13 +16,22 @@ fn main() -> ExitCode {
     {
         ["check", path] => load(path).map(|_| ExitCode::SUCCESS),
         ["run", opts @ ..] => {
-            target(opts, false).map(|(_, host, _)| match beacon::run::round(&host) {
+            target(opts, false).map(|(_, host, _, _)| match beacon::run::round(&host) {
                 true => ExitCode::SUCCESS,
                 false => ExitCode::from(1),
             })
         }
         ["serve", opts @ ..] => target(opts, true)
-            .and_then(|(name, host, listen)| Err(beacon::serve::serve(&name, &host, &listen))),
+            .and_then(|(name, host, listen, _)| Err(beacon::serve::serve(&name, &host, &listen))),
+        ["install", ..] if !cfg!(target_os = "macos") => {
+            Err("install: macOS only (use systemd)".into())
+        }
+        ["install", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path)| {
+            beacon::install::install(&path, &name, &listen).map(|done| {
+                println!("{done}");
+                ExitCode::SUCCESS
+            })
+        }),
         _ => Err(USAGE.into()),
     };
     result.unwrap_or_else(|e| {
@@ -30,7 +40,7 @@ fn main() -> ExitCode {
     })
 }
 
-fn target(opts: &[&str], serve: bool) -> Result<(String, Host, String), String> {
+fn target(opts: &[&str], serve: bool) -> Result<(String, Host, String, String), String> {
     let (mut path, mut host) = (std::env::var("BEACON_CONFIG").ok(), None);
     let mut listen = "127.0.0.1:7878".to_string();
     for pair in opts.chunks(2) {
@@ -51,7 +61,7 @@ fn target(opts: &[&str], serve: bool) -> Result<(String, Host, String), String> 
         .ok()
         .and_then(|id| config.hosts.remove(&id))
         .ok_or(format!("{path}: no host {host:?} in hosts"))?;
-    Ok((host, checks, listen))
+    Ok((host, checks, listen, path))
 }
 
 fn load(path: &str) -> Result<MonitorsConfig, String> {
