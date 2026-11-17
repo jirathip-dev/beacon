@@ -1,9 +1,11 @@
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-const MINI: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../docs/hosts/mini.json");
+#[cfg(target_os = "macos")]
+const LAUNCHCTL: (&str, &str) = ("BEACON_LAUNCHCTL", "launchctl");
+const HOSTS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../docs/hosts");
 
-fn install(home: &Path, listen: &str) -> Output {
+fn install(home: &Path, listen: &str, (var, ctl): (&str, &str)) -> Output {
     let config = r#"{ "version": 1, "monitors": [], "hosts": { "box": { "url": "https://box/status", "checks": [] } } }"#;
     std::fs::write(home.join("beacon.json"), config).unwrap();
     Command::new(env!("CARGO_BIN_EXE_beacon"))
@@ -11,7 +13,7 @@ fn install(home: &Path, listen: &str) -> Output {
         .args(["--listen", listen])
         .current_dir(home)
         .env("HOME", home)
-        .env("BEACON_LAUNCHCTL", home.join("launchctl"))
+        .env(var, home.join(ctl))
         .output()
         .unwrap()
 }
@@ -44,7 +46,7 @@ fn install_writes_loads_then_is_idempotent_and_reloads_on_change() {
     let gui = format!("gui/{}", uid.trim());
 
     assert_eq!(
-        stdout(&install(&home, "127.0.0.1:7878")),
+        stdout(&install(&home, "127.0.0.1:7878", LAUNCHCTL)),
         "+ installed dev.beacon.serve\n"
     );
     let plist = std::fs::read_to_string(&plist_path).unwrap();
@@ -83,7 +85,7 @@ fn install_writes_loads_then_is_idempotent_and_reloads_on_change() {
 
     reset();
     assert_eq!(
-        stdout(&install(&home, "127.0.0.1:7878")),
+        stdout(&install(&home, "127.0.0.1:7878", LAUNCHCTL)),
         "= already dev.beacon.serve\n"
     );
     assert_eq!(calls(), format!("print {gui}/dev.beacon.serve\n"));
@@ -91,7 +93,7 @@ fn install_writes_loads_then_is_idempotent_and_reloads_on_change() {
 
     reset();
     assert_eq!(
-        stdout(&install(&home, "0.0.0.0:9000")),
+        stdout(&install(&home, "0.0.0.0:9000", LAUNCHCTL)),
         "~ updated dev.beacon.serve\n"
     );
     assert!(
@@ -105,33 +107,88 @@ fn install_writes_loads_then_is_idempotent_and_reloads_on_change() {
     assert_eq!(calls(), reload);
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
 #[test]
-fn install_on_non_macos_exits_2() {
+fn install_writes_and_enables_the_unit_then_is_idempotent_and_restarts_on_change() {
+    use std::os::unix::fs::PermissionsExt;
     let home = scratch("install-linux");
-    let o = install(&home, "127.0.0.1:7878");
-    assert_eq!(o.status.code(), Some(2));
+    std::fs::write(
+        home.join("systemctl"),
+        "#!/bin/sh\necho \"$*\" >> \"$HOME/calls\"\n",
+    )
+    .unwrap();
+    std::fs::set_permissions(home.join("systemctl"), PermissionsExt::from_mode(0o755)).unwrap();
+    let run = |listen: &str| {
+        let o = install(&home, listen, ("BEACON_SYSTEMCTL", "systemctl"));
+        assert!(o.status.success(), "{o:?}");
+        let calls = std::fs::read_to_string(home.join("calls")).unwrap_or_default();
+        let _ = std::fs::remove_file(home.join("calls"));
+        (String::from_utf8_lossy(&o.stdout).into_owned(), calls)
+    };
+    let unit_path = home.join(".config/systemd/user/beacon-serve.service");
+    let enable = "--user daemon-reload\n--user enable --now beacon-serve.service\n";
+
     assert_eq!(
-        String::from_utf8_lossy(&o.stderr),
-        "install: macOS only (use systemd)\n"
+        run("127.0.0.1:7878"),
+        ("+ installed beacon-serve.service\n".into(), enable.into())
     );
-    assert!(!home.join("Library").exists());
+    let unit = std::fs::read_to_string(&unit_path).unwrap();
+    let config = std::fs::canonicalize(home.join("beacon.json")).unwrap();
+    let h = home.display();
+    for want in [
+        format!(
+            "\nExecStart=\"{}\" serve --config \"{}\" --host box --listen 127.0.0.1:7878\n",
+            env!("CARGO_BIN_EXE_beacon"),
+            config.display()
+        ),
+        format!(
+            "\nEnvironment=PATH=/usr/local/bin:/opt/homebrew/bin:{h}/.local/bin:{h}/.cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin\n"
+        ),
+        "\nRestart=always\n".into(),
+        format!("\nStandardOutput=append:{h}/.local/state/beacon/serve.log\n"),
+        "\n[Install]\nWantedBy=default.target\n".into(),
+    ] {
+        assert!(unit.contains(&want), "missing {want}\nin {unit}");
+    }
+    assert!(home.join(".local/state/beacon").is_dir());
+
+    assert_eq!(
+        run("127.0.0.1:7878"),
+        ("= already beacon-serve.service\n".into(), String::new())
+    );
+    assert_eq!(std::fs::read_to_string(&unit_path).unwrap(), unit);
+
+    let restart = "--user daemon-reload\n--user restart beacon-serve.service\n";
+    assert_eq!(
+        run("0.0.0.0:9000"),
+        ("~ updated beacon-serve.service\n".into(), restart.into())
+    );
+    let unit = std::fs::read_to_string(&unit_path).unwrap();
+    assert!(unit.contains("--listen 0.0.0.0:9000\n"), "{unit}");
 }
 
 #[test]
 fn mini_config_is_valid_and_every_check_is_valid_sh() {
+    host_config_is_valid("mini.json", "jirathips-mac-mini", "Mini", 12);
+}
+
+#[test]
+fn boat_config_is_valid_and_every_check_is_valid_sh() {
+    host_config_is_valid("boat.json", "boat-dev-1", "Boat", 3);
+}
+
+fn host_config_is_valid(file: &str, host: &str, group: &str, n: usize) {
+    let path = format!("{HOSTS}/{file}");
     let o = Command::new(env!("CARGO_BIN_EXE_beacon"))
-        .args(["check", MINI])
+        .args(["check", &path])
         .output()
         .unwrap();
     assert!(o.status.success(), "{o:?}");
     let config: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(MINI).unwrap()).unwrap();
-    let checks = config["hosts"]["jirathips-mac-mini"]["checks"]
-        .as_array()
-        .unwrap();
+        serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    let checks = config["hosts"][host]["checks"].as_array().unwrap();
     let ids: Vec<_> = checks.iter().map(|c| c["id"].as_str().unwrap()).collect();
-    assert_eq!(ids.len(), 12, "{ids:?}");
+    assert_eq!(ids.len(), n, "{ids:?}");
     for c in checks {
         let sh = Command::new("sh")
             .args(["-n", "-c", c["command"].as_str().unwrap()])
@@ -143,7 +200,7 @@ fn mini_config_is_valid_and_every_check_is_valid_sh() {
         .as_array()
         .unwrap()
         .iter()
-        .filter(|m| m["group"] == "Mini" && m["host"] == "jirathips-mac-mini")
+        .filter(|m| m["group"] == group && m["host"] == host)
         .map(|m| m["id"].as_str().unwrap())
         .collect();
     assert_eq!(monitored, ids);

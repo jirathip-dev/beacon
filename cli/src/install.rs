@@ -1,57 +1,90 @@
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
-/// Writes and loads the dev.beacon.serve LaunchAgent running `beacon serve`; idempotent.
+/// Installs `beacon serve` as LaunchAgent dev.beacon.serve (macOS) or systemd user unit beacon-serve.service; idempotent.
 pub fn install(config: &str, host: &str, listen: &str) -> Result<String, String> {
     let home = std::env::var("HOME").map_err(|_| "install: HOME is not set")?;
     let exe = std::env::current_exe().map_err(|e| format!("install: {e}"))?;
     let config = std::fs::canonicalize(config).map_err(|e| format!("{config}: {e}"))?;
+    let (exe, config) = (exe.display(), config.display());
+    let logs = format!("{home}/.local/state/beacon");
+    let path = format!(
+        "/usr/local/bin:/opt/homebrew/bin:{home}/.local/bin:{home}/.cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    );
+    if !cfg!(target_os = "macos") {
+        let unit = format!(
+            "[Unit]\nDescription=beacon serve\n\n[Service]\nExecStart=\"{exe}\" serve --config \"{config}\" --host {host} --listen {listen}\nEnvironment=PATH={path}\nRestart=always\nStandardOutput=append:{logs}/serve.log\nStandardError=append:{logs}/serve.log\n\n[Install]\nWantedBy=default.target\n"
+        );
+        let dir = format!("{home}/.config/systemd/user");
+        let file = format!("{dir}/beacon-serve.service");
+        let old = std::fs::read_to_string(&file).ok();
+        if old.as_deref() == Some(&unit) {
+            return Ok("= already beacon-serve.service".into());
+        }
+        write(&[&dir, &logs], &file, &unit)?;
+        let start: &[&str] = match old {
+            Some(_) => &["--user", "restart", "beacon-serve.service"],
+            None => &["--user", "enable", "--now", "beacon-serve.service"],
+        };
+        let systemctl = std::env::var("BEACON_SYSTEMCTL").unwrap_or("systemctl".into());
+        let ok = ctl(&systemctl, &["--user", "daemon-reload"]) && ctl(&systemctl, start);
+        let step = format!("{systemctl} {}", start.join(" "));
+        return done(ok, old, "beacon-serve.service", &step);
+    }
     let uid = crate::probe::output("id", &["-u"], Duration::from_secs(5)).ok_or("id -u failed")?;
     let launchctl = std::env::var("BEACON_LAUNCHCTL").unwrap_or("launchctl".into());
-    let ctl = |args: &[&str]| {
-        let mut cmd = Command::new(&launchctl);
-        cmd.args(args)
-            .stdout(Stdio::null())
-            .status()
-            .is_ok_and(|s| s.success())
-    };
-    let (domain, logs) = (
-        format!("gui/{}", uid.trim()),
-        format!("{home}/.local/state/beacon"),
-    );
-    let (path, service) = (
+    let domain = format!("gui/{}", uid.trim());
+    let (file, service) = (
         format!("{home}/Library/LaunchAgents/dev.beacon.serve.plist"),
         format!("{domain}/dev.beacon.serve"),
     );
     let plist = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
 <plist version="1.0"><dict><key>Label</key><string>dev.beacon.serve</string>
-<key>ProgramArguments</key><array><string>{}</string><string>serve</string><string>--config</string><string>{}</string><string>--host</string><string>{host}</string><string>--listen</string><string>{listen}</string></array>
-<key>EnvironmentVariables</key><dict><key>PATH</key><string>/usr/local/bin:/opt/homebrew/bin:{home}/.local/bin:{home}/.cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
+<key>ProgramArguments</key><array><string>{exe}</string><string>serve</string><string>--config</string><string>{config}</string><string>--host</string><string>{host}</string><string>--listen</string><string>{listen}</string></array>
+<key>EnvironmentVariables</key><dict><key>PATH</key><string>{path}</string></dict>
 <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
 <key>StandardOutPath</key><string>{logs}/serve.log</string><key>StandardErrorPath</key><string>{logs}/serve.log</string>
 </dict></plist>
-"#,
-        exe.display(),
-        config.display()
+"#
     );
-    let old = std::fs::read_to_string(&path).ok();
-    let loaded = ctl(&["print", &service]);
+    let old = std::fs::read_to_string(&file).ok();
+    let loaded = ctl(&launchctl, &["print", &service]);
     if loaded && old.as_deref() == Some(&plist) {
         return Ok("= already dev.beacon.serve".into());
     }
-    for dir in [&format!("{home}/Library/LaunchAgents"), &logs] {
+    write(
+        &[&format!("{home}/Library/LaunchAgents"), &logs],
+        &file,
+        &plist,
+    )?;
+    if loaded {
+        ctl(&launchctl, &["bootout", &service]);
+    }
+    let ok = ctl(&launchctl, &["bootstrap", &domain, &file]);
+    let step = format!("launchctl bootstrap {domain} {file}");
+    done(ok, old, "dev.beacon.serve", &step)
+}
+
+fn ctl(program: &str, args: &[&str]) -> bool {
+    let mut cmd = Command::new(program);
+    cmd.args(args)
+        .stdout(Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success())
+}
+
+fn write(dirs: &[&str], file: &str, text: &str) -> Result<(), String> {
+    for dir in dirs {
         std::fs::create_dir_all(dir).map_err(|e| format!("{dir}: {e}"))?;
     }
-    std::fs::write(&path, plist).map_err(|e| format!("{path}: {e}"))?;
-    if loaded {
-        ctl(&["bootout", &service]);
-    }
-    match (ctl(&["bootstrap", &domain, &path]), old) {
-        (false, _) => Err(format!(
-            "install: launchctl bootstrap {domain} {path} failed"
-        )),
-        (true, Some(_)) => Ok("~ updated dev.beacon.serve".into()),
-        (true, None) => Ok("+ installed dev.beacon.serve".into()),
+    std::fs::write(file, text).map_err(|e| format!("{file}: {e}"))
+}
+
+fn done(ok: bool, old: Option<String>, name: &str, step: &str) -> Result<String, String> {
+    match (ok, old) {
+        (false, _) => Err(format!("install: {step} failed")),
+        (true, Some(_)) => Ok(format!("~ updated {name}")),
+        (true, None) => Ok(format!("+ installed {name}")),
     }
 }
