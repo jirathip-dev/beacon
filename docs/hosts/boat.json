@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "monitors": [
+    {
+      "type": "heartbeat",
+      "name": "actions.runner.* active",
+      "group": "Boat",
+      "host": "boat-dev-1",
+      "id": "runner"
+    },
+    {
+      "type": "heartbeat",
+      "name": "CLIs on PATH",
+      "group": "Boat",
+      "host": "boat-dev-1",
+      "id": "clis"
+    },
+    {
+      "type": "heartbeat",
+      "name": "Disk /",
+      "group": "Boat",
+      "host": "boat-dev-1",
+      "id": "disk"
+    }
+  ],
+  "hosts": {
+    "boat-dev-1": {
+      "url": "https://boat-dev-1.tail8c3301.ts.net/status",
+      "timeout_s": 5,
+      "checks": [
+        {
+          "id": "runner",
+          "command": "systemctl list-units --type=service --state=active --no-legend 'actions.runner.*' | awk 'END { if (NR) print NR \" runner(s) active\"; else print \"no actions.runner.* service active\"; exit !NR }'",
+          "every_s": 60,
+          "timeout_s": 10
+        },
+        {
+          "id": "clis",
+          "command": "m=; for c in drover shed claude gh git; do command -v \"$c\" >/dev/null || m=\"$m $c\"; done; test -z \"$m\" && echo 'drover shed claude gh git on PATH' || { echo \"missing:$m\"; exit 1; }",
+          "every_s": 300,
+          "timeout_s": 10
+        },
+        {
+          "id": "disk",
+          "command": "df -P / | awk 'NR==2 { gsub(\"%\",\"\",$5); print $5 \"% used\"; exit ($5 < 90 ? 0 : 1) }'",
+          "every_s": 300,
+          "timeout_s": 10
+        }
+      ]
+    }
+  }
+}

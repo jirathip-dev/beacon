@@ -23,9 +23,6 @@ fn main() -> ExitCode {
         }
         ["serve", opts @ ..] => target(opts, true)
             .and_then(|(name, host, listen, _)| Err(beacon::serve::serve(&name, &host, &listen))),
-        ["install", ..] if !cfg!(target_os = "macos") => {
-            Err("install: macOS only (use systemd)".into())
-        }
         ["install", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path)| {
             beacon::install::install(&path, &name, &listen).map(|done| {
                 println!("{done}");
