@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jirathip-dev/beacon/docs/architecture/beacon/metrics.schema.json",
+  "title": "GET <hosts.<name>.url with its last path segment replaced by `metrics`> — `beacon serve`'s host metrics (version 1)",
+  "$comment": "Columns, not rows: every array has exactly one entry per entry of `t` (a rule this schema cannot express; the CLI's golden test checks it). A scalar is the latest reading. `null` is a reading that failed or does not exist yet. The body bytes change once per sample, so ETag/304 hold in between (ADR D4, D10). The CLI writes exactly this; the app ignores unknown fields (ADR D1).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "host", "every_s", "t", "load1", "load5", "load15", "cpu_pct", "mem", "swap", "disks"],
+  "properties": {
+    "version": { "const": 1 },
+    "host": { "type": "string", "minLength": 1 },
+    "every_s": { "type": "integer", "minimum": 1, "description": "Seconds between samples: 60. A wider step between two entries of `t` is a gap (serve was not running, or the host slept)." },
+    "t": {
+      "description": "When each sample was taken: Unix seconds, UTC, oldest first. Empty until the first sample.",
+      "type": "array",
+      "maxItems": 1440,
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "load1": { "$ref": "#/$defs/numbers", "description": "Load average over 1 min, two decimals." },
+    "load5": { "$ref": "#/$defs/numbers", "description": "Load average over 5 min." },
+    "load15": { "$ref": "#/$defs/numbers", "description": "Load average over 15 min." },
+    "cpu_pct": { "$ref": "#/$defs/numbers", "description": "Mean busy share of all cores since the previous sample, 0–100, one decimal. Null on the first sample after a start." },
+    "mem": { "$ref": "#/$defs/gauge", "description": "Physical memory. Used is what cannot be given back without swapping: it excludes file cache." },
+    "swap": { "$ref": "#/$defs/gauge" },
+    "disks": {
+      "description": "Keyed by mount point, one key per entry of hosts.<name>.disks in the config serve runs now.",
+      "type": "object",
+      "propertyNames": { "pattern": "^/" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["used_bytes", "free_bytes"],
+        "properties": {
+          "used_bytes": { "$ref": "#/$defs/bytes", "description": "Size minus free: everything not available on the volume's disk." },
+          "free_bytes": { "$ref": "#/$defs/bytes", "description": "Available to an unprivileged user." }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "numbers": { "type": "array", "maxItems": 1440, "items": { "type": ["number", "null"], "minimum": 0 } },
+    "bytes": { "type": "array", "maxItems": 1440, "items": { "type": ["integer", "null"], "minimum": 0 } },
+    "gauge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_bytes", "used_bytes"],
+      "properties": {
+        "total_bytes": { "type": ["integer", "null"], "minimum": 0, "description": "The latest reading; null until one succeeds." },
+        "used_bytes": { "$ref": "#/$defs/bytes" }
+      }
+    }
+  }
+}

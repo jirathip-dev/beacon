@@ -35,7 +35,8 @@ func scheduleRefresh() {
     private(set) var snapshot = StatusSnapshot.load()
     /// The monitor count while the first check after a config change is out.
     private(set) var checking: Int?
-    let store = ConfigStore()
+    private(set) var config: MonitorsConfig?
+    let store = ConfigStore(headers: Keychain())
     private let refresher = Refresher()
     private var inFlight: Task<Void, Never>?
 
@@ -51,6 +52,14 @@ func scheduleRefresh() {
         }
     }
 
+    /// The serve host a list row reads: a heartbeat whose host is in `hosts`.
+    func host(of row: MonitorResult) -> String? {
+        for case .heartbeat(let m) in config?.monitors ?? [] where m.name == row.name && m.group == row.group {
+            return config?.hosts?[m.host] == nil ? nil : m.host
+        }
+        return nil
+    }
+
     func refresh(background: Bool = false) async {
         if let inFlight { return await inFlight.value }
         let task = Task { await run(background: background) }
@@ -63,17 +72,17 @@ func scheduleRefresh() {
         guard let source else { return }
         let previous = snapshot?.rows ?? []
         let online = await networkAvailable()
-        let header = source == .local ? nil : Keychain.header
         let next: StatusSnapshot
         do {
-            let loaded = try await store.load(source, header: header)
+            let loaded = try await store.refresh(source)
+            config = loaded.config
             let rows = await refresher.run(
                 loaded.config, previous: previous, online: online, timeoutCap: background ? 10 : nil)
-            next = StatusSnapshot(rows: rows, at: .now, configAt: loaded.at, configStale: loaded.stale)
+            next = StatusSnapshot(rows: rows, at: .now, configAt: loaded.at, configFailure: loaded.failure)
         } catch {
             let row = MonitorResult(
                 name: "config", group: "config", state: online ? .down : .unknown, detail: describe(error), since: nil)
-            next = StatusSnapshot(rows: [row], at: .now, configAt: .now, configStale: false)
+            next = StatusSnapshot(rows: [row], at: .now, configAt: .now, configFailure: nil)
         }
         try? next.save()
         snapshot = next

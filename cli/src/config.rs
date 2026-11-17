@@ -64,6 +64,8 @@ pub struct Host {
     #[serde(default = "five")]
     pub timeout_s: u8,
     pub checks: Vec<HostCheck>,
+    #[serde(default = "root")]
+    pub disks: Vec<MountPath>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
@@ -97,6 +99,25 @@ impl TryFrom<String> for Id {
             });
         ok.then(|| Id(s.clone()))
             .ok_or_else(|| format!("invalid id {s:?} (want [a-z0-9][a-z0-9-]{{0,63}})"))
+    }
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[serde(try_from = "String")]
+pub struct MountPath(String);
+
+impl MountPath {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for MountPath {
+    type Error = String;
+    fn try_from(s: String) -> Result<Self, String> {
+        let ok = s.starts_with('/') && s.len() <= 255 && !s.contains(char::is_control);
+        ok.then(|| MountPath(s.clone()))
+            .ok_or_else(|| format!("invalid disk {s:?} (want an absolute path)"))
     }
 }
 
@@ -134,6 +155,10 @@ impl MonitorsConfig {
         for (host_id, host) in &self.hosts {
             let ctx = |e: String| format!("host {:?}: {e}", host_id.0);
             range("timeout_s", host.timeout_s.into(), 1, 30).map_err(ctx)?;
+            let disks: BTreeSet<_> = host.disks.iter().collect();
+            if host.disks.len() > 8 || disks.len() < host.disks.len() {
+                return Err(ctx("disks must be at most 8 distinct paths".into()));
+            }
             let mut seen = BTreeSet::new();
             for c in &host.checks {
                 let ctx = |e: String| format!("host {:?}: check {:?}: {e}", host_id.0, c.id.0);
@@ -205,6 +230,9 @@ fn range(field: &str, v: u64, lo: u64, hi: u64) -> Result<(), String> {
         .ok_or_else(|| format!("{field} {v} out of {lo}..={hi}"))
 }
 
+fn root() -> Vec<MountPath> {
+    vec![MountPath("/".into())]
+}
 fn five() -> u8 {
     5
 }

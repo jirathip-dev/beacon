@@ -1,12 +1,14 @@
 # Data shapes
 
-The wire shapes are the two JSON schemas beside this file, and they are the contract. Each side
+The wire shapes are the JSON schemas beside this file, and they are the contract. `/metrics` (D10) has its
+schema in `metrics.schema.json` and its types and rules in `metrics.md`; this file covers the config and `/status`. Each side
 writes its own types from them by hand (ADR D7). These are the cross-field rules the schemas cannot express, and `beacon check` enforces them
 (exit 2):
 
 - A heartbeat monitor's `host` is a key of `hosts`, and its `id` is a check id on that host.
 - Check ids are unique within their host.
 - A check's `timeout_s` is less than its `every_s`.
+- A host's `disks` (D10) are absolute paths with no control character, at most 8, with no duplicates.
 
 The schemas say `additionalProperties: false`. That describes what is valid to write and what the
 CLI enforces. The app reads leniently: it ignores unknown fields (D1) and does not validate
@@ -22,7 +24,9 @@ pub struct MonitorsConfig { pub version: Version1, pub monitors: Vec<Monitor>,
 #[derive(Deserialize)] #[serde(tag = "type", rename_all = "lowercase", deny_unknown_fields)]
 pub enum Monitor { Http(HttpMonitor), Tcp(TcpMonitor), Heartbeat(HeartbeatMonitor) }
 pub struct HeartbeatMonitor { pub name: String, pub group: String, pub host: Id, pub id: Id }
-pub struct Host { pub url: Url, #[serde(default = "five")] pub timeout_s: u8, pub checks: Vec<HostCheck> }
+pub struct Host { pub url: Url, #[serde(default = "five")] pub timeout_s: u8, pub checks: Vec<HostCheck>,
+                  #[serde(default = "root")] pub disks: Vec<MountPath> }   // D10; absent: ["/"]
+pub struct MountPath(String);                    // D10: starts with '/', 1..=255 chars, checked on parse
 #[derive(Deserialize, PartialEq, Clone)]          // PartialEq: reload restarts only changed checks
 pub struct HostCheck { pub id: Id, pub command: String,
                        #[serde(default = "sixty")] pub every_s: u32, #[serde(default = "thirty")] pub timeout_s: u16 }

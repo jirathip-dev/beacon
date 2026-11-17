@@ -1,8 +1,10 @@
-use beacon::config::{self, Id, MonitorsConfig};
+use beacon::config::{self, Host, Id, MonitorsConfig};
 use std::process::{Command, ExitCode};
 
-const USAGE: &str =
-    "usage: beacon check <path>\n       beacon run [--config <path>] [--host <name>]";
+const USAGE: &str = "usage: beacon check <path>
+       beacon run [--config <path>] [--host <name>]
+       beacon serve [--config <path>] [--host <name>] [--listen <addr>]
+       beacon install [--config <path>] [--host <name>] [--listen <addr>]";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -13,7 +15,20 @@ fn main() -> ExitCode {
         .as_slice()
     {
         ["check", path] => load(path).map(|_| ExitCode::SUCCESS),
-        ["run", opts @ ..] => run(opts),
+        ["run", opts @ ..] => {
+            target(opts, false).map(|(_, host, _, _)| match beacon::run::round(&host) {
+                true => ExitCode::SUCCESS,
+                false => ExitCode::from(1),
+            })
+        }
+        ["serve", opts @ ..] => target(opts, true)
+            .and_then(|(name, host, listen, _)| Err(beacon::serve::serve(&name, &host, &listen))),
+        ["install", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path)| {
+            beacon::install::install(&path, &name, &listen).map(|done| {
+                println!("{done}");
+                ExitCode::SUCCESS
+            })
+        }),
         _ => Err(USAGE.into()),
     };
     result.unwrap_or_else(|e| {
@@ -22,30 +37,28 @@ fn main() -> ExitCode {
     })
 }
 
-fn run(opts: &[&str]) -> Result<ExitCode, String> {
+fn target(opts: &[&str], serve: bool) -> Result<(String, Host, String, String), String> {
     let (mut path, mut host) = (std::env::var("BEACON_CONFIG").ok(), None);
+    let mut listen = "127.0.0.1:7878".to_string();
     for pair in opts.chunks(2) {
         match pair {
             ["--config", v] => path = Some(v.to_string()),
             ["--host", v] => host = Some(v.to_string()),
+            ["--listen", v] if serve => listen = v.to_string(),
             _ => return Err(USAGE.into()),
         }
     }
     let path = path.ok_or("no config: pass --config <path> or set BEACON_CONFIG")?;
-    let config = load(&path)?;
+    let mut config = load(&path)?;
     let host = match host {
         Some(h) => h,
         None => short_hostname()?,
     };
     let checks = Id::try_from(host.clone())
         .ok()
-        .and_then(|id| config.hosts.get(&id))
+        .and_then(|id| config.hosts.remove(&id))
         .ok_or(format!("{path}: no host {host:?} in hosts"))?;
-    Ok(if beacon::run::round(checks) {
-        ExitCode::SUCCESS
-    } else {
-        ExitCode::from(1)
-    })
+    Ok((host, checks, listen, path))
 }
 
 fn load(path: &str) -> Result<MonitorsConfig, String> {

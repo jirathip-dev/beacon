@@ -11,14 +11,15 @@ sh .drover/verify/up.sh
 ```
 
 - What it does:
-  - Copies `.drover/verify/{monitors.json,status,ok.html}` into `shots/serve/`, with `PORT` replaced by `$DROVER_PORT`.
+  - Builds the CLI (`cargo build`) and starts a live `beacon serve --config .drover/verify/live.json --host mini --listen 127.0.0.1:0` of this Mini: one check `alive` (`true`) and real load/cpu/mem/disk `/` metrics. Its pid goes to `shots/live.pid`, its log to `shots/live.log`, and its port is read from the log's first line.
+  - Copies `.drover/verify/{monitors.json,status,ok.html}` into `shots/serve/`, with `PORT` replaced by `$DROVER_PORT` and `LIVE` by the live serve's port.
   - Serves them with `python3 -m http.server $DROVER_PORT --bind 127.0.0.1`. Its pid goes to `shots/server.pid` and its log to `shots/server.log`.
   - Builds the `Beacon` scheme (the app, the widget and `BeaconUITests`) with `build-for-testing` into `.build/verify`, with ad-hoc signing so the App Group the widget reads works. The log goes to `shots/build.log`.
   - Creates and boots a throwaway simulator named `beacon-verify-$DROVER_PORT` (its udid goes to `shots/sim.udid`) and installs `Beacon.app`.
 - The host has no `sim-task`/`hermes-sim-task`, so the script drives `xcrun simctl` directly. It touches only the simulator it created.
-- Ready signal: the last line is `READY sim=<udid> config=http://127.0.0.1:<port>/monitors.json`, and the exit code is 0.
+- Ready signal: the last line is `READY sim=<udid> config=http://127.0.0.1:<port>/monitors.json live=http://127.0.0.1:<live>/metrics`, and the exit code is 0.
 - Each `up.sh` run deletes the old `shots/*.png` first, so every screenshot comes from the run in hand.
-- Teardown: `sh .drover/verify/down.sh` prints `DOWN`. It stops the server and shuts down and deletes that one simulator. It is safe to run twice, and `up.sh` runs it first.
+- Teardown: `sh .drover/verify/down.sh` prints `DOWN`. It stops the fixture server and the live serve, and shuts down and deletes that one simulator. It is safe to run twice, and `up.sh` runs it first.
 - The app is pointed at the fixtures by a launch argument, with no UI typing. The form only accepts https, but the `source` default is read from the argument domain:
   `xcrun simctl launch "$(cat shots/sim.udid)" dev.jirathip.beacon -source "<$(printf '{"url":{"_0":"http://127.0.0.1:%s/monitors.json"}}' "$DROVER_PORT" | xxd -p | tr -d '\n')>"`.
   Without `-source`, the app opens on first run, because nothing is saved until a config loads through the form.
@@ -59,7 +60,7 @@ To drive one screen, use `-only-testing:BeaconUITests/VerifyUITests/<test>` (see
 - Manual look: `xcrun simctl io "$(cat shots/sim.udid)" screenshot shots/<name>.png` after a `simctl launch` (see Launch).
 - Appearance: `xcrun simctl ui "$(cat shots/sim.udid)" appearance dark|light`.
 
-The fixture config (`.drover/verify/monitors.json`, 8 monitors in 3 groups) gives `5 down  3 up`:
+The fixture config (`.drover/verify/monitors.json`, 9 monitors in 4 groups) gives `5 down  4 up`:
 
 | group | monitor | fixture | expected row |
 |---|---|---|---|
@@ -71,13 +72,16 @@ The fixture config (`.drover/verify/monitors.json`, 8 monitors in 3 groups) give
 | macmini | Disk space | heartbeat `disk` in `/status`: up | up `since 12 Nov` |
 | macmini | Nightly backup | stale heartbeat: `backup` down `backup.ok is 31h old` since 2026-11-12 | down `since 12 Nov` |
 | macmini | Photos sync | id `photos` missing from `/status` | down `no result yet` |
+| mini | Live serve | heartbeat `alive` from the live `beacon serve` | up, since the serve started |
+
+Heartbeat rows (macmini, mini) end in a mute `›` and open their host's detail. `macmini` serves no `/metrics` (404), so its detail is the "dark lamp · no metrics" state; `mini` shows live charts.
 
 ## Evidence
 
 - Screenshots: native shots are 1170 px wide (390 pt at 3×). Make the 390 px copies with
-  `for f in first-run list settings widgets; do sips --resampleWidth 390 "shots/$f.png" --out "shots/$f-390.png" >/dev/null; done`.
+  `for f in first-run list settings widgets host-detail chart-1h chart-24h host-not-served; do sips --resampleWidth 390 "shots/$f.png" --out "shots/$f-390.png" >/dev/null; done`.
   `shots/widget-small.png` and `shots/widget-medium.png` are the widgets cropped from the home screen at native scale.
-- Transcript: `shots/drive.log` (xcodebuild, with every `Test Case … passed|failed` line), `shots/build.log` and `shots/server.log` (each GET the app and widget made, with its status).
+- Transcript: `shots/drive.log` (xcodebuild, with every `Test Case … passed|failed` line), `shots/build.log`, `shots/server.log` (each GET the app and widget made, with its status) and `shots/live.log` (the live serve).
 - Exit codes to record: `up.sh` (0 and `READY`), Doctor (0 and `DOCTOR OK`), the Drive xcodebuild (`drive exit=0`, `** TEST SUCCEEDED **`), and `down.sh` (0 and `DOWN`).
 - All files stay in this worktree's `shots/`.
 
@@ -87,6 +91,10 @@ The fixture config (`.drover/verify/monitors.json`, 8 monitors in 3 groups) give
 |---|---|---|---|
 | First run (config form) | launch with no `-source` | `testFirstRun` | `first-run.png` |
 | Monitor list (grouped cards, summary, down rows) | launch with `-source` (see Launch) | `testListAndSettings` | `list.png` |
+| Host detail (load/cpu/mem/disk sparklines, checks on the host), live | list → tap `Live serve` | `testHostDetailAndChart` | `host-detail.png` |
+| Chart sheet (1h, then 24h) | host detail → tap `cpu` → `[24h]` | `testHostDetailAndChart` | `chart-1h.png`, `chart-24h.png` |
+| Host with no `/metrics` (404) | list → tap `Disk space` | `testHostDetailAndChart` | `host-not-served.png` |
+| Chart scrub (hold and drag), unreachable and warming-up states | hold and drag on the chart; stop the live serve | (manual) | none |
 | Settings sheet (`config`, source card) | list → tap `[cfg]` | `testListAndSettings` | `settings.png` |
 | Pull to refresh | list → swipe down on the scroll view | (manual) | none |
 | Small and medium widget | list once, then Home → long-press the Beacon icon → Edit Home Screen → Edit → Add Widget → Beacon (Small, then swipe to Medium) | `testWidgets` | `widgets.png`, `widget-small.png`, `widget-medium.png` |
@@ -96,6 +104,7 @@ The fixture config (`.drover/verify/monitors.json`, 8 monitors in 3 groups) give
 ## Known noise
 
 - `server.log` shows `code 404, message File not found` / `"GET /health HTTP/1.1" 404`. This is intended: the `API wrong status` fixture.
+- `server.log` also shows `"GET /metrics HTTP/1.1" 404`. This is intended: `macmini` is a serve from before metrics.
 - The Closed port row's error is iOS's own `NWError` text, cut off with an ellipsis.
 - `beacon check shots/serve/monitors.json` (the CLI) rejects the fixture because its URLs are http. The fixture is for the app only, which accepts http to 127.0.0.1.
 - `testWidgets` takes about 3 minutes, and `drive.log` shows `App animations complete notification not received` twice: SpringBoard never reports idle while its icons jiggle, so XCUITest waits 60 s before each of two taps and then goes on.

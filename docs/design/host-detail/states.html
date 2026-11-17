@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>states</title><link rel="stylesheet" href="beacon.css">
+<body><script type="module">
+import { rows, statusBar, mount } from './view.js';
+const bar = `${statusBar()}<div class="top"><span class="key">[‹ monitors]</span><span class="title">macmini</span><span style="width:96px"></span></div>`;
+const word = (a, b, extra = '') => `<div class="card word">${extra}<div>${a}</div><div class="mute">${b}</div></div>`;
+const lamp = `<img src="../../../app/design/app-icon/icons/beacon-teal.svg" width="72" height="72" style="border-radius:16px;margin-bottom:6px" alt="">`;
+const r = (dot, name, word, since, chev, err) => `<div class="mrow" style="${err ? 'box-shadow:inset 3px 0 0 var(--red);flex-wrap:wrap' : ''}">
+  <span class="line1"><span class="dot ${dot}"></span>${name}</span><span><span class="${dot}">${word}</span> <span class="mute">since ${since}</span>${chev ? ' <span class="chev">&nbsp;›</span>' : '<span style="display:inline-block;width:22px"></span>'}</span>
+  ${err ? `<span class="meta mute" style="width:100%;padding-left:13px">${err}</span>` : ''}</div>`;
+mount(() => [
+  `${statusBar()}<div class="top"><span class="title" style="padding-left:12px">beacon</span><span class="key">[cfg]</span></div><div class="body">
+    <div class="card" style="border-top:3px solid var(--red)"><div class="hd"><span>~ macmini</span><span class="red">1 down</span></div>
+      ${r('red', 'backup', 'down', '03:12', 1, 'exit 1: rsync: connection reset')}${r('green', 'disk', 'up', '08:12', 1)}</div>
+    <div class="card" style="border-top:3px solid var(--green)"><div class="hd"><span>~ web</span><span class="mute">1 up</span></div>
+      ${r('green', 'api', 'up', '07:40', 0)}</div></div>`,
+  `${bar}<div class="body">${word('↻ reading the lamp', 'fetching macmini metrics')}</div>`,
+  `${bar}<div class="body">${word('just lit', 'no samples yet · the first comes within a minute')}</div>`,
+  `${bar}<div class="body">${word('dark lamp · no metrics', "macmini's beacon serve is older than metrics. update beacon there to see its history.", lamp)}</div>`,
+  `${bar.replace("9:31", "9:36")}<div class="body"><p class="amber line1" style="padding:0 4px"><span class="dot"></span>metrics from 09:31 · timeout after 5s</p>
+    <div class="card"><div class="hd"><span>~ host</span><span class="mute">last 1h</span></div>${rows(true)}</div></div>`,
+], 'Host detail states (states.html)', [
+  'entry: host-backed rows get ›',
+  'loading: first fetch, nothing shown yet',
+  'warming up: 200 with empty arrays (serve just started)',
+  'not served: 404, a serve from before #13',
+  'unreachable: the last charts stay, values mute, amber line',
+]);
+</script>

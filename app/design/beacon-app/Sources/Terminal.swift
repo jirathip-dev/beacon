@@ -208,11 +208,13 @@ struct MonitorList: View {
                     Dot(color: T.amber)
                     Text("no network").foregroundStyle(T.amber)
                     Text("· \(rows.count) unknown").font(T.font(11)).foregroundStyle(T.mute)
+                    checked
                 }
             } else {
-                HStack(spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
                     Text("\(down) down").foregroundStyle(down > 0 ? T.red : T.mute)
                     Text("\(up) up").foregroundStyle(T.green)
+                    checked
                 }
                 .font(T.font(13, .bold))
             }
@@ -226,6 +228,13 @@ struct MonitorList: View {
         }
         .font(T.font())
         .padding(.horizontal, 4)
+    }
+
+    // #20: when the app last checked, after the counts, in the muted 11 pt meta style.
+    @ViewBuilder var checked: some View {
+        if let at = state.checked {
+            Text("checked \(at)").font(T.font(11)).foregroundStyle(T.mute)
+        }
     }
 }
 
