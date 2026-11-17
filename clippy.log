@@ -1,0 +1,18 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling serde_core v1.0.229
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+    Checking memchr v2.8.3
+   Compiling syn v3.0.10
+    Checking itoa v1.0.19
+    Checking log v0.4.35
+    Checking httpdate v1.0.3
+    Checking chunked_transfer v1.5.0
+    Checking ascii v1.1.0
+    Checking tiny_http v0.12.0
+   Compiling serde_derive v1.0.229
+    Checking beacon v0.1.0 (/Users/jkmacmini/.local/share/drover/work/beacon/issue-25/cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.83s

@@ -1,0 +1,6 @@
+line-cap	Run sh scripts/line-cap.sh	﻿2026-11-17T01:01:29.9754510Z ##[group]Run sh scripts/line-cap.sh
+line-cap	Run sh scripts/line-cap.sh	2026-11-17T01:01:29.9756175Z ^[[36;1msh scripts/line-cap.sh^[[0m
+line-cap	Run sh scripts/line-cap.sh	2026-11-17T01:01:29.9812122Z shell: /usr/bin/bash -e {0}
+line-cap	Run sh scripts/line-cap.sh	2026-11-17T01:01:29.9813368Z ##[endgroup]
+line-cap	Run sh scripts/line-cap.sh	2026-11-17T01:01:30.0424843Z non-test lines: 3026 / 3000
+line-cap	Run sh scripts/line-cap.sh	2026-11-17T01:01:30.0456079Z ##[error]Process completed with exit code 1.
