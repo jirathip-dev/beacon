@@ -1,0 +1,10 @@
+Decided: serve loads and watches the config itself; a watcher re-reads it every second by byte compare and pulls every 5 min when the folder has .git
+Because: "When the config's folder is a git checkout, serve runs `git pull --ff-only` in it every 5 minutes"
+Decided: a reload bumps a check generation; old check threads exit without recording, removed checks are dropped from /status
+Because: "new or removed checks appear without a restart"
+Decided: reload and error lines go to stderr; install points it at serve.log and a closed stdout would abort serve
+Because: cli/src/install.rs:16
+Rejected: changing probe::output to return the git error text — touches sampler and install callers for a log detail
+Rejected: mtime polling — byte compare cannot miss a same-second rewrite
+Check: cli/tests/serve.rs drives the real binary: /config ETag and 304, reload to a new check id, invalid JSON keeps the last valid file, a real git pull from a local bare repo
+Owner: Beacon serve now serves its config at /config and keeps it pulled from git; the phone can drop the token
