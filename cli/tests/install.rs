@@ -23,6 +23,7 @@ fn scratch(name: &str) -> PathBuf {
     home
 }
 
+#[cfg(target_os = "macos")]
 fn stdout(o: &Output) -> String {
     assert!(o.status.success(), "{o:?}");
     String::from_utf8_lossy(&o.stdout).into_owned()
@@ -40,7 +41,7 @@ fn install_writes_loads_then_is_idempotent_and_reloads_on_change() {
     let reset = || std::fs::remove_file(home.join("calls")).unwrap();
     let plist_path = home.join("Library/LaunchAgents/dev.beacon.serve.plist");
     let uid = String::from_utf8(Command::new("id").arg("-u").output().unwrap().stdout).unwrap();
-    let (gui, uid) = (format!("gui/{}", uid.trim()), uid.trim().to_string());
+    let gui = format!("gui/{}", uid.trim());
 
     assert_eq!(
         stdout(&install(&home, "127.0.0.1:7878")),
@@ -79,7 +80,6 @@ fn install_writes_loads_then_is_idempotent_and_reloads_on_change() {
         calls(),
         format!("print {gui}/dev.beacon.serve\nbootstrap {gui} {p}\n")
     );
-    assert!(!uid.is_empty());
 
     reset();
     assert_eq!(
