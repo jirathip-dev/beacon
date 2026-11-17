@@ -1,0 +1,11 @@
+Decided: second unchanged run calls only read-only `launchctl print` to confirm the job is loaded
+Because: "an unchanged plist that is already loaded prints `= already dev.beacon.serve` and touches nothing"
+Rejected: skipping launchctl entirely on unchanged plist — a booted-out job would never be reloaded
+Decided: tests inject launchctl via BEACON_LAUNCHCTL env and drive the real binary
+Because: "with a temp `HOME` (tests may inject the launchctl runner)"
+Decided: timer jobs count as up while running, since a running timer shows no last exit code
+Because: "timer jobs are up when loaded and their last exit is 0"
+Decided: plist strings are not XML-escaped to fit the line cap; launchctl rejects a malformed plist loudly
+Because: cli/src/install.rs:26
+Check: run `cargo test --test install` on macOS; the Linux CI job runs the non-macOS exit-2 test
+Owner: after merge, copy the Mini block from docs/hosts/mini.json into your config and run beacon install
