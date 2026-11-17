@@ -1,0 +1,10 @@
+Decided: one install() serves launchd and systemd, sharing setup, ctl, write and result helpers
+Because: "same flags, idempotent the same way: `= already` / `~ updated` / `+ installed`"
+Decided: an unchanged unit returns "= already" before any systemctl call
+Because: "a second unchanged run calls nothing"
+Decided: a changed unit runs daemon-reload then restart; a new one daemon-reload then enable --now
+Because: "a changed flag rewrites it and restarts it"
+Decided: the runner check passes when any actions.runner.* systemd service is active
+Rejected: naming each VM's runner unit — names differ per VM and repo, the template stays one block
+Check: CI ubuntu rust job runs install_writes_and_enables_the_unit_then_is_idempotent_and_restarts_on_change
+Owner: Boat VMs can run beacon as a systemd service; fits under the raised line cap (q1839, #28)
