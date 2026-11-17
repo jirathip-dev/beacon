@@ -1,0 +1,5 @@
+Decided: Key draws a disabled key in mute only; it blocks taps with allowsHitTesting and guards the action instead of using .disabled
+Because: app/Beacon/Views.swift:62
+Rejected: keeping .disabled and raising the opacity back — it relies on SwiftUI's private dimming amount
+Check: in the connecting state [connect] has the same mute colour as the connecting text and cannot be tapped
+Owner: While the app connects, the connect button now looks the way the design shows.
