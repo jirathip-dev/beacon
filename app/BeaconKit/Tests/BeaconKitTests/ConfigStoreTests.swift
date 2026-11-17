@@ -2,11 +2,11 @@ import BeaconKit
 import Foundation
 import Testing
 
-private let url = URL(string: "https://gist.example/monitors.json")!
+private let url = URL(string: "https://mini.example.ts.net/config")!
 private let body = #"{"version":1,"monitors":[{"type":"tcp","name":"a","group":"g","host":"a","port":1}]}"#
 
 private func store(_ t: MockTransport) -> ConfigStore {
-    ConfigStore(directory: .temporaryDirectory.appending(path: UUID().uuidString), transport: t, headers: MockHeaders())
+    ConfigStore(directory: .temporaryDirectory.appending(path: UUID().uuidString), transport: t)
 }
 
 private let t0 = Date(timeIntervalSince1970: 0), t1 = Date(timeIntervalSince1970: 60)
@@ -14,79 +14,46 @@ private let t0 = Date(timeIntervalSince1970: 0), t1 = Date(timeIntervalSince1970
 @Test func fetchCachesWithETagThen304UsesCache() async throws {
     let t = MockTransport(replies: [url.absoluteString: .success((200, body, ["ETag": "\"e1\""]))])
     let s = store(t)
-    let source = ConfigSource.url(url, headerName: "Authorization")
-    let first = try await s.load(source, header: "Bearer x", now: t0)
+    let first = try await s.load(url, now: t0)
     #expect(first.config.monitors.count == 1 && first.failure == nil)
-    #expect(t.requests[0].0.value(forHTTPHeaderField: "Authorization") == "Bearer x")
     #expect(t.requests[0].0.value(forHTTPHeaderField: "If-None-Match") == nil)
+    #expect(t.requests[0].0.allHTTPHeaderFields?.isEmpty ?? true, "no token or other header is sent")
 
     t.replies[url.absoluteString] = .success((304, "", [:]))
-    let second = try await s.load(source, header: "Bearer x", now: t1)
+    let second = try await s.load(url, now: t1)
     #expect(t.requests[1].0.value(forHTTPHeaderField: "If-None-Match") == "\"e1\"")
-    #expect(second.config.monitors.count == 1 && second.failure == nil)
+    #expect(second.config.monitors.count == 1 && second.failure == nil && second.at == t1)
 }
 
-@Test func failedFetchUsesCacheAndIsStale() async throws {
+@Test func failedFetchUsesCacheAndSaysWhy() async throws {
     let t = MockTransport(replies: [url.absoluteString: .success((200, body, [:]))])
     let s = store(t)
-    _ = try await s.load(.url(url, headerName: nil), header: nil, now: t0)
-    t.replies[url.absoluteString] = .failure(URLError(.notConnectedToInternet))
-    let loaded = try await s.load(.url(url, headerName: nil), header: nil, now: t1)
-    #expect(loaded.failure != nil && loaded.at == t0)
-
-    t.replies[url.absoluteString] = .success((200, "{\"version\":1}", [:]))
-    #expect(try await s.load(.url(url, headerName: nil), header: nil, now: t1).failure != nil, "a bad body keeps the cache")
-}
-
-@Test func failedFetchWithoutCacheOfThatURLThrows() async throws {
-    let t = MockTransport(replies: [url.absoluteString: .success((200, body, [:]))])
-    let s = store(t)
-    _ = try await s.load(.url(url, headerName: nil), header: nil)
-    let other = URL(string: "https://other.example/m.json")!
-    await #expect(throws: URLError.self) { try await s.load(.url(other, headerName: nil), header: nil) }
-}
-
-@Test func importLocalRefusesInvalidFileWithDecodeError() async throws {
-    let s = store(MockTransport())
-    let bad = body.replacingOccurrences(of: "\"tcp\"", with: "\"ping\"")
-    #expect {
-        try s.importLocal(Data(bad.utf8))
-    } throws: { describe($0) == "monitors[0].type: unknown monitor type ping" }
-    _ = try s.importLocal(Data(body.utf8), now: t0)
-    let loaded = try await s.load(.local, header: nil)
-    #expect(loaded.config.monitors.count == 1 && loaded.at == t0)
-}
-
-final class MockHeaders: HeaderStore, @unchecked Sendable {
-    private let lock = NSLock()
-    private var value: String?
-    var header: String? { lock.withLock { value } }
-    func setHeader(_ header: String) throws { lock.withLock { value = header.isEmpty ? nil : header } }
-}
-
-@Test func refreshAfterLoadSendsTheLoadsHeader() async throws {
-    let t = MockTransport(replies: [url.absoluteString: .success((200, body, ["ETag": "\"e1\""]))])
-    let s = ConfigStore(directory: .temporaryDirectory.appending(path: UUID().uuidString), transport: t, headers: MockHeaders())
-    let source = ConfigSource.url(url, headerName: "Authorization")
-    _ = try await s.load(source, header: "token x", now: t0)
-    t.replies[url.absoluteString] = .success((304, "", [:]))
-    let refreshed = try await s.refresh(source, now: t1)
-    #expect(t.requests[1].0.value(forHTTPHeaderField: "Authorization") == "token x")
-    #expect(refreshed.failure == nil && refreshed.at == t1)
-}
-
-@Test func failedRefreshSaysWhy() async throws {
-    let t = MockTransport(replies: [url.absoluteString: .success((200, body, [:]))])
-    let headers = MockHeaders()
-    let s = ConfigStore(directory: .temporaryDirectory.appending(path: UUID().uuidString), transport: t, headers: headers)
-    let source = ConfigSource.url(url, headerName: "Authorization")
-    _ = try await s.load(source, header: "token x", now: t0)
+    _ = try await s.load(url, now: t0)
+    t.replies[url.absoluteString] = .failure(URLError(.cannotFindHost))
+    let offTailnet = try await s.load(url, now: t1)
+    #expect(offTailnet.failure == "can't reach the Mini: is Tailscale on?" && offTailnet.at == t0)
     t.replies[url.absoluteString] = .success((404, "", [:]))
-    #expect(try await s.refresh(source, now: t1).failure == "HTTP 404")
-    t.replies[url.absoluteString] = .failure(URLError(.timedOut))
-    let timedOut = try await s.refresh(source, now: t1)
-    #expect(timedOut.failure == "timed out" && timedOut.at == t0)
-    try headers.setHeader("")
-    #expect(try await s.refresh(source, now: t1).failure == "no header")
-    #expect(t.requests.count == 3, "no header sends no request")
+    #expect(try await s.load(url, now: t1).failure == "HTTP 404")
+    t.replies[url.absoluteString] = .success((200, "{\"version\":1}", [:]))
+    #expect(try await s.load(url, now: t1).failure == "not a Beacon config: monitors: missing", "a bad body keeps the cache")
+}
+
+@Test func failedConnectWithoutCacheOfThatURLSaysWhy() async throws {
+    let t = MockTransport(replies: [url.absoluteString: .success((200, body, [:]))])
+    let s = store(t)
+    _ = try await s.load(url)
+    let other = URL(string: "https://other.example/config")!
+    t.replies[other.absoluteString] = .failure(URLError(.timedOut))
+    await #expect { try await s.load(other) } throws: { describe($0) == "can't reach the Mini: is Tailscale on?" }
+    t.replies[other.absoluteString] = .success((404, "", [:]))
+    await #expect { try await s.load(other) } throws: { describe($0) == "HTTP 404" }
+    t.replies[other.absoluteString] = .success((200, "<html>", [:]))
+    await #expect { try await s.load(other) } throws: { describe($0).hasPrefix("not a Beacon config") }
+}
+
+@Test func savedSourceKeepsAHeaderlessURLAndDropsHeaderOrLocal() throws {
+    #expect(ConfigSource.url(from: ConfigSource.data(url)) == url)
+    #expect(ConfigSource.url(from: Data(#"{"url":{"_0":"https:\/\/gist.example\/m.json"}}"#.utf8))?.host() == "gist.example")
+    #expect(ConfigSource.url(from: Data(#"{"url":{"_0":"https://gist.example/m.json","headerName":"Authorization"}}"#.utf8)) == nil)
+    #expect(ConfigSource.url(from: Data(#"{"local":{}}"#.utf8)) == nil)
 }
