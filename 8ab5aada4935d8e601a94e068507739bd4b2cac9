@@ -1,0 +1,5 @@
+Decided: set line_cap = 3526 under [fleet.beacon] and add a cap-history note
+Because: "`ci/cap.toml`: `line_cap = 3526` under `[fleet.beacon]`"
+Rejected: a ci/cap.d/ raise file — Beacon's script reads only ci/cap.toml
+Check: sh scripts/line-cap.sh reports 2999 / 3526 and exits 0; line-cap.test.sh exits 0
+Owner: The line cap is now 3,526, as chosen in t133.
