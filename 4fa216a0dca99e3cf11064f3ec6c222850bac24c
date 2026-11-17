@@ -1,0 +1,19 @@
+Decided: connect and refresh share one ConfigStore.load(url); the header seam, importLocal and .local are deleted
+Because: q1895
+Decided: the saved source keeps the old .url JSON so a header-less URL and the verify -source arg still load
+Because: "a saved source that has a header, or the `.local` source, is dropped"
+Decided: the Keychain config-header item is deleted on every launch, which is idempotent
+Because: "The app clears the old `config-header` Keychain item once on launch"
+Decided: with no source but cached rows, the start page is an undismissable sheet over the list
+Because: "The cached rows stay visible until Connect succeeds"
+Decided: URL errors for host, connect, DNS and timeout read "can't reach the Mini: is Tailscale on?"
+Because: app/BeaconKit/Sources/BeaconKit/ConfigStore.swift:67
+Rejected: a new UserDefaults key for the URL — it would drop header-less sources and break the verify recipe
+Check: ConfigStoreTests covers the reasons, the cache fallback, no header sent, and the dropped legacy sources
+Owner: The app now connects to the Mini with one address and a connect button; no token is needed anywhere.
+
+Decided: Key draws a disabled key in mute only; it blocks taps with allowsHitTesting and guards the action instead of using .disabled
+Because: app/Beacon/Views.swift:62
+Rejected: keeping .disabled and raising the opacity back — it relies on SwiftUI's private dimming amount
+Check: in the connecting state [connect] has the same mute colour as the connecting text and cannot be tapped
+Owner: While the app connects, the connect button now looks the way the design shows.
