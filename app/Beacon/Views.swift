@@ -56,7 +56,9 @@ struct Key: View {
     var enabled = true
     let action: () -> Void
     var body: some View {
-        Button(action: action) {
+        Button {
+            if enabled { action() }
+        } label: {
             Text("[\(title)]")
                 .font(T.font())
                 .foregroundStyle(enabled ? T.accent : T.mute)
@@ -64,7 +66,7 @@ struct Key: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!enabled)
+        .allowsHitTesting(enabled)
     }
 }
 
