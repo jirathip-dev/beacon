@@ -1,5 +1,6 @@
 import BackgroundTasks
 import BeaconKit
+import Security
 import SwiftUI
 import UserNotifications
 import WidgetKit
@@ -30,20 +31,19 @@ func scheduleRefresh() {
 }
 
 @MainActor @Observable final class Model {
-    private(set) var source: ConfigSource? = UserDefaults.standard.data(forKey: "source")
-        .flatMap { try? JSONDecoder().decode(ConfigSource.self, from: $0) }
+    private(set) var source = savedSource()
     private(set) var snapshot = StatusSnapshot.load()
     /// The monitor count while the first check after a config change is out.
     private(set) var checking: Int?
     private(set) var config: MonitorsConfig?
-    let store = ConfigStore(headers: Keychain())
+    let store = ConfigStore()
     private let refresher = Refresher()
     private var inFlight: Task<Void, Never>?
 
     /// Makes `source` current once its config has loaded; the caller shows a thrown error as "refused".
-    func use(_ source: ConfigSource, loaded: LoadedConfig) {
+    func use(_ source: URL, loaded: LoadedConfig) {
         self.source = source
-        UserDefaults.standard.set(try? JSONEncoder().encode(source), forKey: "source")
+        UserDefaults.standard.set(ConfigSource.data(source), forKey: "source")
         snapshot = nil
         checking = loaded.config.monitors.count
         Task {
@@ -74,7 +74,7 @@ func scheduleRefresh() {
         let online = await networkAvailable()
         let next: StatusSnapshot
         do {
-            let loaded = try await store.refresh(source)
+            let loaded = try await store.load(source)
             config = loaded.config
             let rows = await refresher.run(
                 loaded.config, previous: previous, online: online, timeoutCap: background ? 10 : nil)
@@ -96,4 +96,15 @@ func scheduleRefresh() {
                 .add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
         }
     }
+}
+
+/// The saved config URL; an older build's header or `.local` source is dropped, and its Keychain header with it.
+func savedSource() -> URL? {
+    let header: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: "dev.jirathip.beacon", kSecAttrAccount: "config-header"]
+    SecItemDelete(header as CFDictionary)
+    guard let url = UserDefaults.standard.data(forKey: "source").flatMap(ConfigSource.url(from:)) else {
+        UserDefaults.standard.removeObject(forKey: "source")
+        return nil
+    }
+    return url
 }

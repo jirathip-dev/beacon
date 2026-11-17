@@ -66,6 +66,11 @@ enum Fixture {
     static let widgetDown = WidgetState(up: 3, downNames: ["API", "Disk space", "Snapshots", "Scrub"], checkedAt: "09:31")
     static let widgetUp = WidgetState(up: 7, downNames: [], checkedAt: "09:31")
 
-    static let configURL = "https://gist.githubusercontent.com/jk/beacon/raw/monitors.json"
-    static let decodeError = "monitors[2]: unknown type \"ping\""
+    static let fresh = ListState(groups: groups, configFrom: nil, offline: false, checked: "09:31")
+
+    static let miniHost = "jirathips-mac-mini.tail8c3301.ts.net"
+    static let miniURL = "https://\(miniHost)/config"
+    static let unreachable = "can't reach the Mini: is Tailscale on?"
+    static let connected = Connected(host: miniHost, fetched: "09:31", lastError: nil)
+    static let connectedError = Connected(host: miniHost, fetched: "08:40", lastError: "HTTP 404")
 }

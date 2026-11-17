@@ -242,14 +242,15 @@ struct Field: View {
     let label: String
     let value: String
     var placeholder = ""
+    var dim = false
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label).font(T.font(11)).foregroundStyle(T.mute)
             Text(value.isEmpty ? placeholder : value)
-                .foregroundStyle(value.isEmpty ? T.mute.opacity(0.7) : T.fg)
-                .lineLimit(1).truncationMode(.middle)
+                .foregroundStyle(value.isEmpty || dim ? T.mute : T.fg)
+                .lineLimit(2)
                 .frame(maxWidth: .infinity, minHeight: T.hit, alignment: .leading)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(T.card)
                 .overlay(RoundedRectangle(cornerRadius: T.radius).stroke(T.edge, lineWidth: 1))
                 .clipShape(RoundedRectangle(cornerRadius: T.radius))
@@ -257,42 +258,41 @@ struct Field: View {
     }
 }
 
-/// The config-source controls: first run and settings use the same block.
+/// What the start page or cfg shows under the URL field: nothing, a connect in flight, or why it was refused.
+enum Attempt {
+    case idle
+    case connecting
+    case refused(String)
+}
+
+/// Fetched config: where from, when, and the last fetch error (nil = none).
+struct Connected {
+    let host: String
+    let fetched: String
+    let lastError: String?
+}
+
+/// The config-source controls: one https URL and [connect]. The start page and cfg use the same block.
 struct SourceForm: View {
-    var url = ""
-    var headerName = ""
-    var headerValue = ""
-    var current: [(String, String)] = []
-    var error: String? = nil
+    var url = Fixture.miniURL
+    var attempt = Attempt.idle
+    var connected: Connected? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if !current.isEmpty {
-                Card(rule: T.accent) {
-                    ForEach(Array(current.enumerated()), id: \.offset) { i, kv in
-                        if i > 0 { T.line.frame(height: 1).padding(.leading, 12) }
-                        HStack {
-                            Text(kv.0).foregroundStyle(T.mute)
-                            Spacer()
-                            Text(kv.1).foregroundStyle(T.fg).lineLimit(1).truncationMode(.middle)
-                        }
-                        .padding(.horizontal, 12).padding(.vertical, 8)
-                    }
-                    Spacer().frame(height: 2)
+            Field(label: "config url", value: url, placeholder: "https://…/config", dim: isConnecting)
+            HStack(spacing: 8) {
+                Key(title: "connect", enabled: !url.isEmpty && !isConnecting)
+                if isConnecting {
+                    Text("↻ connecting · reaching the Mini").font(T.font(11)).foregroundStyle(T.mute)
+                        .lineLimit(1).truncationMode(.middle)
                 }
             }
-            Field(label: "config url", value: url, placeholder: "https://…/monitors.json")
-            Field(label: "header name (optional)", value: headerName, placeholder: "Authorization")
-            Field(label: "header value (keychain)", value: headerValue.isEmpty ? "" : "••••••••")
-            HStack(spacing: 4) {
-                Key(title: "load", enabled: !url.isEmpty)
-                Key(title: "import from files")
-            }
-            if let error {
+            if case .refused(let why) = attempt {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Dot(color: T.red).alignmentGuide(.firstTextBaseline) { $0[.bottom] }
                     Text("refused").foregroundStyle(T.red)
-                    Text(error).foregroundStyle(T.mute).lineLimit(2)
+                    Text(why).foregroundStyle(T.mute).lineLimit(2)
                 }
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -300,33 +300,66 @@ struct SourceForm: View {
                 .overlay(alignment: .leading) { T.red.frame(width: 3) }
                 .clipShape(RoundedRectangle(cornerRadius: T.radius))
             }
+            if let connected { SourceCard(connected: connected) }
             Spacer()
         }
         .font(T.font())
         .padding(16)
     }
+
+    var isConnecting: Bool { if case .connecting = attempt { true } else { false } }
 }
 
-struct FirstRun: View {
-    var error: String? = nil
+/// cfg's card under the form: source host, fetched time, last error.
+struct SourceCard: View {
+    let connected: Connected
+    var body: some View {
+        Card(rule: T.accent) {
+            row("source") { Text(connected.host).foregroundStyle(T.fg).lineLimit(1).truncationMode(.middle) }
+            T.line.frame(height: 1).padding(.leading, 12)
+            row("fetched") { Text(connected.fetched).foregroundStyle(T.fg) }
+            T.line.frame(height: 1).padding(.leading, 12)
+            row("last error") {
+                Text(connected.lastError ?? "none")
+                    .foregroundStyle(connected.lastError == nil ? T.mute : T.red)
+                    .lineLimit(2).multilineTextAlignment(.trailing)
+            }
+            Spacer().frame(height: 2)
+        }
+    }
+
+    func row(_ label: String, @ViewBuilder value: () -> some View) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(label).foregroundStyle(T.mute).fixedSize()
+            Spacer(minLength: 0)
+            value().font(T.font(11))
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+    }
+}
+
+/// No source yet (or an upgrade dropped a header or `.local` source): the Mini's URL prefilled, [connect].
+struct StartPage: View {
+    var attempt = Attempt.idle
     var body: some View {
         VStack(spacing: 0) {
             TopBar(title: "beacon")
-            SourceForm(error: error)
+            SourceForm(attempt: attempt)
         }
         .background(T.bg)
     }
 }
 
-struct Settings: View {
+/// [cfg]'s sheet over the list: the same form, then the source card.
+struct Cfg: View {
+    let connected: Connected
+    var list = Fixture.list
     var body: some View {
-        MonitorList(state: Fixture.list)
+        MonitorList(state: list)
             .sheet(isPresented: .constant(true)) {
                 VStack(spacing: 0) {
                     TopBar(title: "config", key: "done")
-                    SourceForm(
-                        url: Fixture.configURL, headerName: "Authorization", headerValue: "x",
-                        current: [("source", "url"), ("fetched", "08:40"), ("header", "Authorization ••••")])
+                    SourceForm(connected: connected)
                 }
                 .background(T.bg)
                 .presentationBackground(T.bg)
@@ -404,6 +437,9 @@ struct MediumWidget: View {
 #Preview("list offline") { MonitorList(state: Fixture.offline) }
 #Preview("list empty") { MonitorList(state: Fixture.empty) }
 #Preview("list loading") { MonitorList(state: Fixture.loading) }
-#Preview("first run") { FirstRun() }
-#Preview("settings") { Settings() }
+#Preview("start") { StartPage() }
+#Preview("start connecting") { StartPage(attempt: .connecting) }
+#Preview("start refused") { StartPage(attempt: .refused(Fixture.unreachable)) }
+#Preview("cfg") { Cfg(connected: Fixture.connected, list: Fixture.fresh) }
+#Preview("cfg error") { Cfg(connected: Fixture.connectedError) }
 #Preview("widgets") { WidgetBoard() }
