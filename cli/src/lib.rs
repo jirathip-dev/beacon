@@ -1,4 +1,5 @@
 pub mod config;
+pub mod install;
 pub mod metrics;
 pub mod probe;
 pub mod run;
