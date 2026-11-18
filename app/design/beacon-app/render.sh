@@ -22,7 +22,7 @@ shot() { # shot <screen> <png name> [dark]
   sleep 3
   xcrun simctl io "$sim" screenshot "$out/$2.png" >/dev/null 2>&1
 }
-for s in first-run first-run-error list list-offline list-empty list-loading settings; do
+for s in start start-connecting start-refused cfg cfg-error list list-offline list-empty list-loading; do
   shot "$s" "$s-light"
   shot "$s" "$s-dark" dark
 done

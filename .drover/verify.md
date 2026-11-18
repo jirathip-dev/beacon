@@ -48,7 +48,7 @@ To drive one screen, use `-only-testing:BeaconUITests/VerifyUITests/<test>` (see
   - `buttons["[cfg]"]`: opens settings.
   - `staticTexts["fetched"]`: the settings source card.
   - `buttons["[done]"]`: closes settings.
-  - `buttons["[load]"]` and `buttons["[import from files]"]`: the form's actions.
+  - `buttons["[connect]"]`: the form's only action.
 - SpringBoard (`com.apple.springboard`):
   - Press Home until the app's state is `runningBackground`, then long-press `icons["Beacon"]` → `buttons["Edit Home Screen"]`, then `buttons["Edit"]` → `buttons["Add Widget"]`.
   - Every SpringBoard step waits for its element to exist, and each add waits for the widget count to grow (no fixed sleeps).

@@ -67,12 +67,14 @@ struct DesignApp: App {
 
     @ViewBuilder func screen(_ name: String) -> some View {
         switch name {
-        case "first-run": FirstRun()
-        case "first-run-error": FirstRun(error: Fixture.decodeError)
+        case "start": StartPage()
+        case "start-connecting": StartPage(attempt: .connecting)
+        case "start-refused": StartPage(attempt: .refused(Fixture.unreachable))
+        case "cfg": Cfg(connected: Fixture.connected, list: Fixture.fresh)
+        case "cfg-error": Cfg(connected: Fixture.connectedError)
         case "list-offline": MonitorList(state: Fixture.offline)
         case "list-empty": MonitorList(state: Fixture.empty)
         case "list-loading": MonitorList(state: Fixture.loading)
-        case "settings": Settings()
         case "widgets": WidgetBoard()
         default: MonitorList(state: Fixture.list)
         }

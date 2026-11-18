@@ -8,12 +8,8 @@ struct Root: View {
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
-        if model.source == nil {
-            VStack(spacing: 0) {
-                TopBar(title: "beacon")
-                SourceForm(model: model)
-            }
-            .background(T.bg)
+        if model.source == nil, model.snapshot == nil {
+            start
         } else {
             Group {
                 if let host, let h = model.config?.hosts?[host] {
@@ -28,15 +24,29 @@ struct Root: View {
                         try? await Task.sleep(for: .seconds(60))
                     }
                 }
-                .sheet(isPresented: $settings) {
-                    VStack(spacing: 0) {
-                        TopBar(title: "config", key: "done") { settings = false }
-                        SourceForm(model: model, current: true) { settings = false }
+                .sheet(isPresented: Binding { settings || model.source == nil } set: { settings = $0 }) {
+                    Group {
+                        if model.source == nil {
+                            start.interactiveDismissDisabled()
+                        } else {
+                            VStack(spacing: 0) {
+                                TopBar(title: "config", key: "done") { settings = false }
+                                SourceForm(model: model, current: true) { settings = false }
+                            }
+                        }
                     }
                     .background(T.bg)
                     .presentationBackground(T.bg)
                 }
         }
+    }
+
+    var start: some View {
+        VStack(spacing: 0) {
+            TopBar(title: "beacon")
+            SourceForm(model: model)
+        }
+        .background(T.bg)
     }
 }
 
@@ -46,7 +56,9 @@ struct Key: View {
     var enabled = true
     let action: () -> Void
     var body: some View {
-        Button(action: action) {
+        Button {
+            if enabled { action() }
+        } label: {
             Text("[\(title)]")
                 .font(T.font())
                 .foregroundStyle(enabled ? T.accent : T.mute)
@@ -54,7 +66,7 @@ struct Key: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!enabled)
+        .allowsHitTesting(enabled)
     }
 }
 
@@ -259,47 +271,42 @@ struct Field: View {
     let label: String
     @Binding var value: String
     var placeholder = ""
-    var secure = false
+    var dim = false
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label).font(T.font(11)).foregroundStyle(T.mute)
-            Group {
-                if secure { SecureField("", text: $value, prompt: prompt) }
-                else { TextField("", text: $value, prompt: prompt) }
-            }
-            .textInputAutocapitalization(.never).autocorrectionDisabled()
-            .foregroundStyle(T.fg)
-            .frame(maxWidth: .infinity, minHeight: T.hit, alignment: .leading)
-            .padding(.horizontal, 10)
-            .background(T.card)
-            .overlay(RoundedRectangle(cornerRadius: T.radius).stroke(T.edge, lineWidth: 1))
-            .clipShape(RoundedRectangle(cornerRadius: T.radius))
+            TextField("", text: $value, prompt: Text(placeholder).foregroundStyle(T.mute), axis: .vertical)
+                .lineLimit(1...2)
+                .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                .foregroundStyle(dim ? T.mute : T.fg)
+                .disabled(dim)
+                .frame(maxWidth: .infinity, minHeight: T.hit, alignment: .leading)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(T.card)
+                .overlay(RoundedRectangle(cornerRadius: T.radius).stroke(T.edge, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: T.radius))
         }
     }
-
-    var prompt: Text { Text(placeholder).foregroundStyle(T.mute.opacity(0.7)) }
 }
 
-/// The config-source controls: first run and settings use the same block (q1578).
+/// The config-source controls: one https URL and [connect]. The start page and cfg use the same block (q1895).
 struct SourceForm: View {
     let model: Model
     var current = false
     var done: () -> Void = {}
-    @State private var url = ""
-    @State private var headerName = ""
-    @State private var headerValue = ""
+    @State private var url = "https://jirathips-mac-mini.tail8c3301.ts.net/config"
     @State private var error: String?
-    @State private var importing = false
+    @State private var connecting = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if current { currentCard }
-            Field(label: "config url", value: $url, placeholder: "https://…/monitors.json")
-            Field(label: "header name (optional)", value: $headerName, placeholder: "Authorization")
-            Field(label: "header value (keychain)", value: $headerValue, secure: true)
-            HStack(spacing: 4) {
-                Key(title: "load", enabled: !url.isEmpty) { Task { await load() } }
-                Key(title: "import from files") { importing = true }
+            Field(label: "config url", value: $url, placeholder: "https://…/config", dim: connecting)
+            HStack(spacing: 8) {
+                Key(title: "connect", enabled: !url.isEmpty && !connecting) { Task { await connect() } }
+                if connecting {
+                    Text("↻ connecting · reaching the Mini").font(T.font(11)).foregroundStyle(T.mute)
+                        .lineLimit(1).truncationMode(.middle)
+                }
             }
             if let error {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -313,56 +320,46 @@ struct SourceForm: View {
                 .overlay(alignment: .leading) { T.red.frame(width: 3) }
                 .clipShape(RoundedRectangle(cornerRadius: T.radius))
             }
+            if current, let source = model.source { sourceCard(source) }
             Spacer()
         }
         .font(T.font())
         .padding(16)
-        .onAppear {
-            guard case .url(let u, let name) = model.source else { return }
-            (url, headerName, headerValue) = (u.absoluteString, name ?? "", Keychain().header ?? "")
-        }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
-            do {
-                let file = try result.get()
-                let scoped = file.startAccessingSecurityScopedResource()
-                defer { if scoped { file.stopAccessingSecurityScopedResource() } }
-                model.use(.local, loaded: try model.store.importLocal(Data(contentsOf: file)))
-                done()
-            } catch {
-                self.error = describe(error)
-            }
-        }
+        .onAppear { if let source = model.source { url = source.absoluteString } }
     }
 
-    var currentCard: some View {
-        let header: String = if case .url(_, let name?) = model.source { "\(name) ••••" } else { "none" }
-        let rows = [
-            ("source", model.source == .local ? "local" : "url"),
-            ("fetched", model.snapshot.map { T.stamp($0.configAt) } ?? "--"), ("header", header),
-        ]
+    func sourceCard(_ source: URL) -> some View {
+        let failure = model.snapshot?.configFailure
         return Card(rule: T.accent) {
-            ForEach(Array(rows.enumerated()), id: \.offset) { i, kv in
-                if i > 0 { T.line.frame(height: 1).padding(.leading, 12) }
-                HStack {
-                    Text(kv.0).foregroundStyle(T.mute)
-                    Spacer()
-                    Text(kv.1).foregroundStyle(T.fg).lineLimit(1).truncationMode(.middle)
-                }
-                .padding(.horizontal, 12).padding(.vertical, 8)
+            row("source") { Text(source.host() ?? "--").foregroundStyle(T.fg).lineLimit(1).truncationMode(.middle) }
+            T.line.frame(height: 1).padding(.leading, 12)
+            row("fetched") { Text(model.snapshot.map { T.stamp($0.configAt) } ?? "--").foregroundStyle(T.fg) }
+            T.line.frame(height: 1).padding(.leading, 12)
+            row("last error") {
+                Text(failure ?? "none").foregroundStyle(failure == nil ? T.mute : T.red)
+                    .lineLimit(2).multilineTextAlignment(.trailing)
             }
             Spacer().frame(height: 2)
         }
     }
 
-    func load() async {
-        let name = headerName.trimmingCharacters(in: .whitespaces)
-        guard let u = URL(string: url.trimmingCharacters(in: .whitespaces)), u.scheme == "https" else {
+    func row(_ label: String, @ViewBuilder value: () -> some View) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(label).foregroundStyle(T.mute).fixedSize()
+            Spacer(minLength: 0)
+            value().font(T.font(11))
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+    }
+
+    func connect() async {
+        guard let u = URL(string: url.trimmingCharacters(in: .whitespacesAndNewlines)), u.scheme == "https" else {
             return error = "config url must be https"
         }
-        let source = ConfigSource.url(u, headerName: name.isEmpty ? nil : name)
+        (connecting, error) = (true, nil)
+        defer { connecting = false }
         do {
-            let loaded = try await model.store.load(source, header: headerValue)
-            model.use(source, loaded: loaded)
+            model.use(u, loaded: try await model.store.load(u))
             done()
         } catch {
             self.error = describe(error)

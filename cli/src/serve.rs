@@ -1,12 +1,15 @@
-use crate::config::Host;
+use crate::config::{self, Host, HostCheck, Id};
 use crate::metrics::{EVERY_S, Ring};
 use crate::probe;
 use crate::sampler::Sampler;
 use crate::status::{Rendered, StatusBody};
+use std::path::Path;
 use std::sync::Mutex;
-use std::thread;
+use std::thread::{self, Scope};
 use std::time::{Duration, Instant, SystemTime};
 use tiny_http::{Header, Response, Server};
+
+const PULL_EVERY: Duration = Duration::from_secs(300);
 
 struct Cell(Mutex<Rendered>);
 
@@ -20,8 +23,20 @@ impl Cell {
     }
 }
 
-/// Serves `/status` and `/metrics` for `host` on `listen`; returns only when it cannot listen.
-pub fn serve(name: &str, host: &Host, listen: &str) -> String {
+struct Live {
+    generation: u64,
+    body: StatusBody,
+}
+
+/// Serves `/status`, `/metrics` and `/config` for `name` on `listen`; returns only when it cannot start.
+pub fn serve(name: &str, path: &str, listen: &str) -> String {
+    let (raw, host) = match std::fs::read(path).map_err(|e| e.to_string()) {
+        Ok(raw) => match host_of(&raw, name) {
+            Ok(host) => (raw, host),
+            Err(e) => return format!("{path}: {e}"),
+        },
+        Err(e) => return format!("{path}: {e}"),
+    };
     let server = match Server::http(listen) {
         Ok(s) => s,
         Err(e) => return format!("listen {listen}: {e}"),
@@ -42,25 +57,48 @@ pub fn serve(name: &str, host: &Host, listen: &str) -> String {
         checks.join(", "),
         disks.join(", ")
     );
-    let body = Mutex::new(StatusBody::new(name));
-    let status = Cell(Mutex::new(body.lock().unwrap().render()));
+    let live = Mutex::new(Live {
+        generation: 0,
+        body: StatusBody::new(name),
+    });
+    let status = Cell(Mutex::new(live.lock().unwrap().body.render()));
     let metrics = Cell(Mutex::new(Ring::new().render(name, &host.disks)));
+    let config = Cell(Mutex::new(Rendered::of(raw.clone())));
     thread::scope(|s| {
-        for c in &host.checks {
-            let (body, status) = (&body, &status);
-            s.spawn(move || {
-                loop {
-                    let (st, message) =
-                        probe::run(&c.command, Duration::from_secs(c.timeout_s.into()));
-                    let mut b = body.lock().unwrap();
-                    if b.record(&c.id, st, message, unix_now()) {
-                        status.set(b.render());
+        run_checks(s, 0, host.checks.clone(), &live, &status);
+        let (live, status, config) = (&live, &status, &config);
+        s.spawn(move || {
+            let dir = Path::new(path).parent().unwrap_or(Path::new(""));
+            let git = dir.join(".git").exists();
+            let (mut seen, mut pulled) = (Ok(raw), None::<Instant>);
+            loop {
+                if git && pulled.is_none_or(|p| p.elapsed() >= PULL_EVERY) {
+                    pulled = Some(Instant::now());
+                    let args = ["-C", &dir.to_string_lossy(), "pull", "--ff-only", "-q"];
+                    if probe::output("git", &args, Duration::from_secs(60)).is_none() {
+                        eprintln!("git pull --ff-only in {}: failed", dir.display());
                     }
-                    drop(b);
-                    thread::sleep(Duration::from_secs(c.every_s.into()));
                 }
-            });
-        }
+                let read = std::fs::read(path).map_err(|e| e.to_string());
+                if read != seen {
+                    seen = read.clone();
+                    match read.and_then(|raw| host_of(&raw, name).map(|h| (raw, h))) {
+                        Ok((raw, host)) => {
+                            config.set(Rendered::of(raw));
+                            let mut l = live.lock().unwrap();
+                            l.generation += 1;
+                            let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
+                            l.body.keep(&ids);
+                            status.set(l.body.render());
+                            eprintln!("reload {path}: {} checks", ids.len());
+                            run_checks(s, l.generation, host.checks.clone(), live, status);
+                        }
+                        Err(e) => eprintln!("{path}: {e}; serving the last valid config"),
+                    }
+                }
+                thread::sleep(Duration::from_secs(1));
+            }
+        });
         s.spawn(|| {
             let (mut sampler, mut ring, started) = (Sampler::new(), Ring::new(), Instant::now());
             loop {
@@ -73,8 +111,9 @@ pub fn serve(name: &str, host: &Host, listen: &str) -> String {
         });
         for request in server.incoming_requests() {
             let cell = match request.url() {
-                "/status" => &status,
+                "/status" => status,
                 "/metrics" => &metrics,
+                "/config" => config,
                 _ => {
                     let _ = request.respond(Response::empty(404));
                     continue;
@@ -99,6 +138,40 @@ pub fn serve(name: &str, host: &Host, listen: &str) -> String {
         }
         "listener closed".into()
     })
+}
+
+fn host_of(raw: &[u8], name: &str) -> Result<Host, String> {
+    let text = std::str::from_utf8(raw).map_err(|e| e.to_string())?;
+    let mut config = config::parse(text)?;
+    Id::try_from(name.to_string())
+        .ok()
+        .and_then(|id| config.hosts.remove(&id))
+        .ok_or(format!("no host {name:?} in hosts"))
+}
+
+fn run_checks<'s>(
+    s: &'s Scope<'s, '_>,
+    generation: u64,
+    checks: Vec<HostCheck>,
+    live: &'s Mutex<Live>,
+    status: &'s Cell,
+) {
+    for c in checks {
+        s.spawn(move || {
+            loop {
+                let (st, message) = probe::run(&c.command, Duration::from_secs(c.timeout_s.into()));
+                let mut l = live.lock().unwrap();
+                if l.generation != generation {
+                    return;
+                }
+                if l.body.record(&c.id, st, message, unix_now()) {
+                    status.set(l.body.render());
+                }
+                drop(l);
+                thread::sleep(Duration::from_secs(c.every_s.into()));
+            }
+        });
+    }
 }
 
 fn unix_now() -> u64 {

@@ -1,8 +1,8 @@
 ## Summary
 
-Decision: the summary line also says when the app last checked, `checked 09:31`, after the counts in the muted small type; the offline line keeps its words and gets the same stamp (#20).
-Screens: the monitor list and the offline list, at 390 pt, light and dark. Nothing else changed.
-Open questions: none. Before the first check (loading, empty) there is no time to show, so no stamp is drawn.
+Decision: no token anywhere. The start page and cfg are one `config url` field, prefilled with the Mini's `/config`, plus `[connect]`. A failed connect says why in plain words on the red refused row. cfg puts a card under the form with the source host, the fetched time and the last error (#32).
+Screens: start page (empty, connecting, refused) and cfg (connected, last error), at 390 pt, light and dark. The header fields and `[import from files]` are gone.
+Open questions: none. On upgrade, the start page opens as a sheet over the cached list (no `[done]`), so the old rows stay visible until a connect works.
 
 # Beacon app design (issue #3)
 
@@ -59,11 +59,18 @@ System light/dark setting. Type: SF Mono 13 pt (meta 11 pt, titles 15 pt bold). 
 - **Worded states** follow Cooee's `phrase · plain words` form in a centred card. Loading (config in, first
   check pending): `↻ lighting up · checking 7 monitors`. Empty (config has no monitors):
   `dark coast · no monitors` with `[change config]`.
-- **First run = Settings form** (q1578): config URL, an optional header name, and a header value (secure,
-  Keychain), then `[load]` (mute until there is a URL) and `[import from files]`. A refused file or URL body shows
-  `● refused <decode error>` under the keys, in a card with a red left rule. Settings is the same form in a sheet
-  from `[cfg]`, titled `config` with `[done]`. The current source, fetched time and masked header come first, in
-  a card with an accent rule.
+- **Start page** (#32, q1890, q1895, replaces the q1578 form): one `config url` field, prefilled with
+  `https://jirathips-mac-mini.tail8c3301.ts.net/config`, and `[connect]`. The field wraps to two lines so the whole URL
+  can be read on a phone. There is no header field, no Keychain and no file import. Only https URLs are accepted.
+- **Connecting**: `[connect]` turns mute and can't be tapped, the URL dims, and `↻ connecting · reaching the Mini`
+  shows beside the key in the 11 pt meta style.
+- **Refused**: the existing card with a red left rule, `● refused <reason>`. The reason is in plain words, up to
+  two lines: `can't reach the Mini: is Tailscale on?`, `HTTP 404`, `not a Beacon config`, `config url must be https`.
+- **cfg** is the same form in a sheet from `[cfg]`, titled `config` with `[done]`. The field holds the current URL.
+  Under `[connect]` is a card with an accent rule: `source` (the URL's host, middle-ellipsised), `fetched` (`HH:MM`)
+  and `last error` (red, or `none` in mute). A failed connect in cfg shows the same refused row above the card.
+- **Upgrade**: a saved source with a header, or the `.local` source, is dropped. The start page (prefilled) then opens
+  as a sheet that can't be dismissed, over the cached list, until a connect works.
 - **Widgets** (D8) use the same palette in both modes and show only what `StatusSnapshot` holds: the down count
   (or `all up`), the up count, the down names with red dots (small: 3, then `+N more`; medium: 5), and
   `checked <t>`.
@@ -72,13 +79,15 @@ System light/dark setting. Type: SF Mono 13 pt (meta 11 pt, titles 15 pt bold). 
 
 | PNG | Shows |
 |---|---|
-| `first-run-*.png` | First run: three fields, `[load]` dim (no URL yet), `[import from files]` |
-| `first-run-error-*.png` | `● refused monitors[2]: unknown type "ping"` card with a red rule |
+| `start-*.png` | Start page: the `config url` field prefilled with the Mini's URL, `[connect]` (#32) |
+| `start-connecting-*.png` | `[connect]` mute, URL dimmed, `↻ connecting · reaching the Mini` |
+| `start-refused-*.png` | `● refused can't reach the Mini: is Tailscale on?` card with a red rule |
 | `list-*.png` | Summary `4 down  3 up  checked 09:31` (#20), config-from line, four group cards with red/green top rules and counts, down rows with a red left rule, ellipsised name and error |
 | `list-offline-*.png` | `no network · 7 unknown  checked 09:31` (#20); all rows `--`, all rules grey |
 | `list-loading-*.png` | `↻ lighting up · checking 7 monitors` |
 | `list-empty-*.png` | `dark coast · no monitors` + `[change config]` |
-| `settings-*.png` | `config` sheet: current-source card, the same fields filled in, `[done]` |
+| `cfg-*.png` | `config` sheet: the URL and `[connect]`, then a card with `source` (the Mini's host), `fetched 09:31`, `last error none` |
+| `cfg-error-*.png` | The same card with `fetched 08:40` and `last error HTTP 404` in red (the list behind keeps its amber stale line, #19) |
 | `widget-small-*.png` | `4 down` / `3 up`, three red-dot names + `+1 more`, `checked 09:31` |
 | `widget-small-all-up-*.png` | `all up` / `7 up` |
 | `widget-medium-*.png` | `beacon`, counts and time on the left; down names on the right of a divider |
