@@ -31,7 +31,8 @@ fn defaults_fill_omitted_fields() {
     let Monitor::Http(api) = &config.monitors[1] else {
         panic!()
     };
-    assert_eq!(api.timeout_s, 10);
+    assert_eq!((api.timeout_s, api.cert_warn_days), (10, 14));
+    assert!(config.prober.is_none());
     assert_eq!(api.expect_status, None);
     let disk = &config.hosts.values().next().unwrap().checks[1];
     assert_eq!((disk.every_s, disk.timeout_s), (60, 5));
@@ -105,6 +106,26 @@ fn rejects_cross_field_violations() {
         |v| v["hosts"]["macmini"]["checks"][0]["timeout_s"] = json!(300),
         "timeout_s must be less than every_s",
     );
+    rejects(
+        |v| v["prober"] = json!("nope"),
+        "prober \"nope\" is not a key of hosts",
+    );
+    rejects(
+        |v| v["monitors"][1]["cert_warn_days"] = json!(366),
+        "cert_warn_days 366 out of 0..=365",
+    );
+    rejects(
+        |v| {
+            v["prober"] = json!("macmini");
+            v["monitors"][1]["name"] = json!("Blog");
+        },
+        "group/name Web/Blog is not unique",
+    );
+    let mut v = example();
+    v["prober"] = json!("macmini");
+    v["monitors"][4]["name"] = json!("Nightly backup");
+    v["monitors"][1]["cert_warn_days"] = json!(0);
+    assert!(parse(&v.to_string()).is_ok());
 }
 
 #[test]

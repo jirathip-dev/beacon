@@ -1,9 +1,13 @@
 pub mod config;
+pub mod history;
 pub mod install;
 pub mod metrics;
+pub mod monitor;
+pub mod net;
 pub mod notify;
 pub mod out;
 pub mod probe;
+pub mod prober;
 pub mod run;
 pub mod sampler;
 pub mod serve;

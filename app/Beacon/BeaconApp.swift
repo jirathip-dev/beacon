@@ -52,12 +52,26 @@ func scheduleRefresh() {
         }
     }
 
+    func monitor(of row: MonitorResult) -> Monitor? {
+        config?.monitors.first { $0.name == row.name && $0.group == row.group }
+    }
+
     /// The serve host a list row reads: a heartbeat whose host is in `hosts`.
     func host(of row: MonitorResult) -> String? {
-        for case .heartbeat(let m) in config?.monitors ?? [] where m.name == row.name && m.group == row.group {
-            return config?.hosts?[m.host] == nil ? nil : m.host
+        guard case .heartbeat(let m) = monitor(of: row), config?.hosts?[m.host] != nil else { return nil }
+        return m.host
+    }
+
+    /// A heartbeat's history on its own host; an http or tcp monitor's on the `prober`, if any (ADR H1).
+    func history(of row: MonitorResult) -> HistoryTarget? {
+        switch monitor(of: row) {
+        case .heartbeat(let m): HistoryTarget(title: m.id, sub: "check on \(m.host)", host: m.host, check: m.id)
+        case .http(let m) where config?.prober != nil:
+            HistoryTarget(title: m.name, sub: "\(m.group.lowercased()) · http", host: config?.prober)
+        case .tcp(let m) where config?.prober != nil:
+            HistoryTarget(title: m.name, sub: "\(m.group.lowercased()) · tcp", host: config?.prober)
+        default: nil
         }
-        return nil
     }
 
     func refresh(background: Bool = false) async {

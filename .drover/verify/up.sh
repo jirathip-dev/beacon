@@ -21,7 +21,7 @@ test -n "$live" || { echo "beacon serve did not start: $(cat shots/live.log)" >&
 for f in monitors.json status ok.html; do
   sed -e "s/PORT/$DROVER_PORT/g" -e "s/LIVE/$live/g" ".drover/verify/$f" >"shots/serve/$f"
 done
-python3 -m http.server "$DROVER_PORT" --bind 127.0.0.1 --directory shots/serve >shots/server.log 2>&1 &
+python3 .drover/verify/serve.py "$DROVER_PORT" shots/serve >shots/server.log 2>&1 &
 echo $! >shots/server.pid
 xcodebuild -project app/Beacon.xcodeproj -scheme Beacon -sdk iphonesimulator -derivedDataPath .build/verify \
   CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= build-for-testing >shots/build.log 2>&1

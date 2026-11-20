@@ -7,6 +7,7 @@ struct HostDetail: View {
     let name: String
     let host: Host
     let close: () -> Void
+    let open: (HistoryTarget) -> Void
     @State private var shown: (body: MetricsBody, etag: String?)?
     @State private var note: Note?
     @State private var chart: Series?
@@ -16,18 +17,16 @@ struct HostDetail: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Text(name).font(T.font(15, .bold)).foregroundStyle(T.fg)
-                HStack { Key(title: "‹ monitors", action: close); Spacer() }
-            }
-            .frame(minHeight: T.hit)
-            .padding(.horizontal, 12)
-            .overlay(alignment: .bottom) { T.line.frame(height: 1) }
+            Header(title: name, back: "monitors", close: close)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     metrics
                     let rows = model.snapshot?.rows.filter { model.host(of: $0) == name } ?? []
-                    if !rows.isEmpty { GroupCard(name: "checks on \(name)", rows: rows, ruled: false) }
+                    if !rows.isEmpty {
+                        GroupCard(name: "checks on \(name)", rows: rows, ruled: false) { row in
+                            model.history(of: row).map { t in { open(t) } }
+                        }
+                    }
                 }
                 .font(T.font())
                 .padding(.horizontal, 16).padding(.vertical, 12)
@@ -178,7 +177,7 @@ func trace(_ ctx: GraphicsContext, _ w: Window, top: Double, in rect: CGRect, do
 struct WordCard: View {
     var art = false
     let phrase: String
-    let plain: String
+    var plain = ""
     var color = T.fg
     var body: some View {
         Card {
@@ -188,7 +187,7 @@ struct WordCard: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16)).padding(.bottom, 6)
                 }
                 Text(phrase).foregroundStyle(color)
-                Text(plain).foregroundStyle(T.mute)
+                if !plain.isEmpty { Text(plain).foregroundStyle(T.mute) }
             }
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
@@ -204,7 +203,6 @@ struct ChartSheet: View {
     let host: String
     let done: () -> Void
     @State private var range = ChartRange.hour
-    @State private var scrub: Int?
 
     var body: some View {
         let w = Window(t, series.values, range: range)
@@ -220,28 +218,16 @@ struct ChartSheet: View {
             .overlay(alignment: .bottom) { T.line.frame(height: 1) }
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 0) {
-                    ForEach(ChartRange.allCases, id: \.self) { r in
-                        Button { (range, scrub) = (r, nil) } label: {
-                            Text("[\(r.rawValue)]").fontWeight(r == range ? .bold : .regular)
-                                .underline(r == range).foregroundStyle(r == range ? T.fg : T.accent)
-                                .padding(.horizontal, 8).frame(minWidth: T.hit, minHeight: T.hit)
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    ForEach(ChartRange.allCases, id: \.self) { r in RangeKey(title: r.rawValue, on: r == range) { range = r } }
                 }
                 Card {
-                    plot(w).padding(.top, scrub == nil ? 12 : 40).padding(.bottom, 4)
+                    Plot(w: w, top: series.top(w.values), step: range == .hour ? 900 : range == .six ? 3600 : 21_600,
+                         unit: series.percent ? "%" : "") { "\(value(series, $0))\(unit)" }
+                        .id(range)
                     T.line.frame(height: 1)
-                    HStack(spacing: 0) {
-                        ForEach([("now", series.now), ("min", w.min), ("avg", w.avg), ("max", w.max)], id: \.0) { k, v in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(k).font(T.font(11)).foregroundStyle(T.mute)
-                                Text(v == nil ? "--" : value(series, v) + unit).bold().foregroundStyle(T.fg)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                    .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 10)
+                    Stats(items: [("now", series.now), ("min", w.min), ("avg", w.avg), ("max", w.max)].map { k, v in
+                        (k, v == nil ? "--" : value(series, v) + unit)
+                    })
                 }
                 Text((range == .hour ? "every sample" : "mean of every \(range.bucket) min")
                      + (w.missing > 0 ? " · \(w.missing) missing, left blank" : "") + " · hold and drag to read a point")
@@ -256,11 +242,37 @@ struct ChartSheet: View {
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
+}
 
-    func plot(_ w: Window) -> some View {
-        let top = series.top(w.values)
-        let (left, right, above, below) = (34.0, 8.0, 10.0, 22.0)
-        return GeometryReader { geo in
+struct Stats: View {
+    let items: [(String, String)]
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(items, id: \.0) { k, v in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(k).font(T.font(11)).foregroundStyle(T.mute)
+                    Text(v).bold().foregroundStyle(T.fg)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 10)
+    }
+}
+
+/// A chart of `w` with a y axis to `top`; hold and drag to read a point.
+struct Plot: View {
+    let w: Window
+    let top: Double
+    let step: Int
+    var unit = ""
+    let read: (Double) -> String
+    var extra: (GraphicsContext, CGRect, (Int) -> CGFloat) -> Void = { _, _, _ in }
+    @State private var scrub: Int?
+
+    var body: some View {
+        let (left, right, above, below) = (unit == "ms" ? 46.0 : 34.0, 8.0, 10.0, 22.0)
+        GeometryReader { geo in
             let rect = CGRect(x: left, y: above, width: geo.size.width - left - right,
                               height: geo.size.height - above - below)
             let (t0, t1) = (w.t.first ?? 0, w.t.last ?? 0)
@@ -272,19 +284,16 @@ struct ChartSheet: View {
                     let v = f * top
                     ctx.stroke(Path { $0.addLines([CGPoint(x: rect.minX, y: y(v)), CGPoint(x: rect.maxX, y: y(v))]) },
                                with: .color(T.line))
-                    let text = String(format: "%g", (v * 10).rounded() / 10) + (series.percent && f == 1 ? "%" : "")
+                    let text = String(format: "%g", (v * 10).rounded() / 10) + (f == 1 ? unit : "")
                     ctx.draw(label(text), at: CGPoint(x: rect.minX - 6, y: y(v)), anchor: .trailing)
-                }
-                let step = switch range {
-                case .hour: 900
-                case .six: 3600
-                case .day: 21600
                 }
                 for tick in stride(from: (t0 + step - 1) / step * step, through: t1, by: step)
                 where x(tick) > rect.minX + 14 && x(tick) < rect.maxX - 44 {
-                    ctx.draw(label(hhmm(tick)), at: CGPoint(x: x(tick), y: size.height - 6), anchor: .bottom)
+                    ctx.draw(label(step >= 86_400 ? md(at(tick)) : hhmm(tick)),
+                             at: CGPoint(x: x(tick), y: size.height - 6), anchor: .bottom)
                 }
                 ctx.draw(label("now"), at: CGPoint(x: rect.maxX, y: size.height - 6), anchor: .bottomTrailing)
+                extra(ctx, rect, x)
                 trace(ctx, w, top: top, in: rect, dot: scrub == nil)
                 guard let i = scrub, let v = w.values[i] else { return }
                 let p = CGPoint(x: x(w.t[i]), y: y(v))
@@ -293,8 +302,7 @@ struct ChartSheet: View {
                 let dot = Path(ellipseIn: CGRect(x: p.x - 4, y: p.y - 4, width: 8, height: 8))
                 ctx.fill(dot, with: .color(T.accent))
                 ctx.stroke(dot, with: .color(T.bg), lineWidth: 2)
-                let text = ctx.resolve(Text("\(hhmm(w.t[i]))  \(value(series, v))\(series.percent ? "%" : "")")
-                    .font(T.font(12, .bold)).foregroundStyle(T.fg))
+                let text = ctx.resolve(Text("\(hhmm(w.t[i]))  \(read(v))").font(T.font(12, .bold)).foregroundStyle(T.fg))
                 let width = text.measure(in: size).width + 16
                 let box = CGRect(x: min(max(p.x - width / 2, rect.minX), rect.maxX - width), y: rect.minY - 30,
                                  width: width, height: 22)
@@ -314,5 +322,6 @@ struct ChartSheet: View {
                 .onEnded { _ in scrub = nil })
         }
         .frame(height: 230)
+        .padding(.top, scrub == nil ? 12 : 40).padding(.bottom, 4)
     }
 }

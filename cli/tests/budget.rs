@@ -1,3 +1,6 @@
+use rustls::pki_types::pem::PemObject;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer};
+use rustls::{ServerConfig, ServerConnection, StreamOwned};
 use serde_json::{Value, json};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -13,6 +16,7 @@ const REAL_S: f64 = 600.0;
 const DAY_SPEEDUP: u64 = 8640;
 const CLIENTS: usize = 50;
 const POLLS: usize = 60;
+const TLS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tls");
 static ALONE: Mutex<()> = Mutex::new(());
 
 struct Serve {
@@ -28,6 +32,7 @@ impl Serve {
         name: &str,
         host_urls: &[String],
         checks: &[Value],
+        monitors: usize,
         speedup: u64,
         prefill: bool,
     ) -> Serve {
@@ -44,7 +49,7 @@ impl Serve {
         git(&root, &["init", "-q", "--bare", &origin]);
         git(&root, &["clone", "-q", &origin, &clone]);
         let config = format!("{clone}/monitors.json");
-        std::fs::write(&config, config_json(host_urls, checks)).unwrap();
+        std::fs::write(&config, config_json(host_urls, checks, monitors)).unwrap();
         git(&clone, &["add", "."]);
         git(&clone, &["commit", "-qm", "one"]);
         git(&clone, &["push", "-q", "origin", "HEAD"]);
@@ -59,6 +64,7 @@ impl Serve {
             .env("BEACON_SPEEDUP", speedup.to_string())
             .env("HOME", format!("{root}/home"))
             .env("TMPDIR", format!("{root}/tmp"))
+            .env("SSL_CERT_FILE", format!("{TLS}/ca.pem"))
             .stdout(Stdio::piped())
             .stderr(log)
             .spawn()
@@ -152,12 +158,85 @@ fn check(id: &str) -> Value {
     json!({ "id": id, "command": "true", "every_s": 60, "timeout_s": 5 })
 }
 
-fn config_json(host_urls: &[String], checks: &[Value]) -> String {
+fn config_json(host_urls: &[String], checks: &[Value], monitors: usize) -> String {
     let mut hosts = json!({ "box": { "url": "https://box/status", "checks": checks } });
     for (i, url) in host_urls.iter().enumerate() {
         hosts[format!("r{i}")] = json!({ "url": url, "checks": [check("c")] });
     }
-    json!({ "version": 1, "monitors": [], "hosts": hosts }).to_string()
+    let port = (monitors > 0).then(web).unwrap_or_default();
+    let monitors: Vec<_> = (0..monitors)
+        .map(|i| json!({ "type": "http", "name": format!("m{i}"), "group": "Web", "url": format!("https://127.0.0.1:{port}/m{i}"), "keyword": "ok" }))
+        .collect();
+    json!({ "version": 1, "prober": "box", "monitors": monitors, "hosts": hosts }).to_string()
+}
+
+fn web() -> u16 {
+    static PORT: OnceLock<u16> = OnceLock::new();
+    *PORT.get_or_init(|| {
+        let certs = CertificateDer::pem_file_iter(format!("{TLS}/cert.pem"))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        let key = PrivateKeyDer::from_pem_file(format!("{TLS}/key.pem")).unwrap();
+        let provider = Arc::new(rustls::crypto::ring::default_provider());
+        let tls = ServerConfig::builder_with_provider(provider)
+            .with_safe_default_protocol_versions()
+            .unwrap()
+            .with_no_client_auth()
+            .with_single_cert(certs, key)
+            .unwrap();
+        let (tls, listener) = (Arc::new(tls), TcpListener::bind("127.0.0.1:0").unwrap());
+        let port = listener.local_addr().unwrap().port();
+        thread::spawn(move || {
+            for tcp in listener.incoming().flatten() {
+                let tls = tls.clone();
+                thread::spawn(move || {
+                    let mut s = StreamOwned::new(ServerConnection::new(tls).unwrap(), tcp);
+                    let mut line = String::new();
+                    let mut r = BufReader::new(&mut s);
+                    while line != "\r\n" {
+                        line.clear();
+                        if r.read_line(&mut line).unwrap_or(0) == 0 {
+                            return;
+                        }
+                    }
+                    let ok = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok";
+                    s.write_all(ok.as_bytes()).ok();
+                    s.conn.send_close_notify();
+                    s.flush().ok();
+                });
+            }
+        });
+        port
+    })
+}
+
+fn monitor_path(addr: &str) -> String {
+    for _ in 0..100 {
+        let mut s = TcpStream::connect(addr).unwrap();
+        write!(
+            s,
+            "GET /history HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n"
+        )
+        .unwrap();
+        let mut raw = String::new();
+        s.read_to_string(&mut raw).unwrap();
+        let body: Value = serde_json::from_str(raw.split_once("\r\n\r\n").unwrap().1).unwrap();
+        let path = format!("/history/{}", body["monitors"][0]["id"].as_str().unwrap());
+        let mut s = TcpStream::connect(addr).unwrap();
+        write!(
+            s,
+            "GET {path} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n"
+        )
+        .unwrap();
+        let mut raw = String::new();
+        s.read_to_string(&mut raw).unwrap();
+        if raw.starts_with("HTTP/1.1 200") {
+            return path;
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
+    panic!("no monitor times served");
 }
 
 fn size(path: &Path) -> u64 {
@@ -209,8 +288,8 @@ fn idle() -> &'static (Reading, f64) {
     static IDLE: OnceLock<(Reading, f64)> = OnceLock::new();
     IDLE.get_or_init(|| {
         let urls: Vec<_> = (0..5).map(|i| format!("https://r{i}/status")).collect();
-        let serve = Serve::start("idle", &urls, &[check("a"), check("b")], SPEEDUP, false);
-        let quiet = Serve::start("quiet", &[], &[], SPEEDUP, false);
+        let serve = Serve::start("idle", &urls, &[check("a"), check("b")], 20, SPEEDUP, false);
+        let quiet = Serve::start("quiet", &[], &[], 0, SPEEDUP, false);
         thread::sleep(Duration::from_secs(1));
         let pid = quiet.child.id();
         let before = peek(pid).wakeups;
@@ -248,8 +327,9 @@ fn serve_resident_peak_is_at_most_10_mb() {
 #[test]
 fn an_unchanged_poll_is_a_304_of_at_most_1_kb_both_ways() {
     let _alone = ALONE.lock().unwrap();
-    let serve = Serve::start("polls", &[], &[], SPEEDUP, false);
-    for path in ["/status", "/metrics", "/config"] {
+    let serve = Serve::start("polls", &[], &[], 1, 1, false);
+    let times = monitor_path(&serve.addr);
+    for path in ["/status", "/metrics", "/config", "/history", &times] {
         let etag = etag(&serve.addr, path);
         let conn = TcpStream::connect(&serve.addr).unwrap();
         conn.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
@@ -271,14 +351,14 @@ fn a_flapping_day_keeps_logs_at_512_kb_state_at_20_mb_and_logs_each_outage_once(
         "every_s": 3600,
         "timeout_s": 5,
     });
-    let serve = Serve::start("soak", &[], &[flap], DAY_SPEEDUP, true);
+    let serve = Serve::start("soak", &[], &[flap], 4, DAY_SPEEDUP, true);
     let logs = |state: &Path| {
         ["serve.log", "serve.log.1"]
             .map(|f| std::fs::read_to_string(state.join(f)).unwrap_or_default())
             .concat()
     };
     let (off, started) = (format!("{}.off", serve.origin), Instant::now());
-    let (mut outages, mut log_peak, mut state_peak) = (0, 0, 0);
+    let (mut outages, mut log_peak, mut state_peak, mut history_peak) = (0, 0, 0, 0);
     thread::sleep(Duration::from_millis(500));
     while started.elapsed() < WINDOW {
         let (from, to) = if Path::new(&serve.origin).exists() {
@@ -291,15 +371,21 @@ fn a_flapping_day_keeps_logs_at_512_kb_state_at_20_mb_and_logs_each_outage_once(
         thread::sleep(Duration::from_millis(250));
         log_peak = log_peak.max(logs(&serve.state).len());
         state_peak = state_peak.max(size(&serve.state));
+        history_peak = history_peak.max(size(&serve.state.join("history")));
     }
     let state = serve.state.clone();
     serve.stop();
     let pull_errors = logs(&state).matches("git pull").count();
     eprintln!(
-        "a simulated day: {outages} outages, {pull_errors} pull errors logged, logs peak {log_peak} bytes, state peak {state_peak} bytes"
+        "a simulated day: {outages} outages, {pull_errors} pull errors logged, logs peak {log_peak} bytes, state peak {state_peak} bytes, history peak {history_peak} bytes"
     );
     assert!(log_peak <= 512 << 10, "logs {log_peak} bytes > 512 KB");
     assert!(state_peak <= 20 << 20, "state {state_peak} bytes > 20 MB");
+    assert!(history_peak > 0, "history/ never written");
+    assert!(
+        history_peak <= 1 << 20,
+        "history {history_peak} bytes > 1 MB"
+    );
     assert!(
         pull_errors <= outages,
         "{pull_errors} pull errors logged for {outages} outages"
@@ -319,7 +405,7 @@ fn status_and_metrics_p99_is_at_most_2_ms_for_50_clients_with_a_hung_host_and_a_
         "every_s": 60,
         "timeout_s": 25,
     });
-    let serve = Serve::start("loaded", &[], &[probe], 1, false);
+    let serve = Serve::start("loaded", &[], &[probe], 1, 1, false);
     std::fs::remove_file(&serve.config).unwrap();
     assert!(
         Command::new("mkfifo")
@@ -329,7 +415,8 @@ fn status_and_metrics_p99_is_at_most_2_ms_for_50_clients_with_a_hung_host_and_a_
             .success()
     );
     thread::sleep(Duration::from_millis(1500));
-    let paths = ["/status", "/metrics", "/config"];
+    let times: &'static str = monitor_path(&serve.addr).leak();
+    let paths = ["/status", "/metrics", "/config", "/history", times];
     let etags: Vec<_> = paths.iter().map(|p| etag(&serve.addr, p)).collect();
     let run = || {
         let start = Arc::new(Barrier::new(CLIENTS));

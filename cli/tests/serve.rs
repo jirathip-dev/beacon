@@ -41,6 +41,7 @@ fn start_at(path: &str) -> (Serve, String, String) {
             "--listen",
             "127.0.0.1:0",
         ])
+        .env("HOME", env!("CARGO_TARGET_TMPDIR"))
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
@@ -130,6 +131,7 @@ fn serve_exits_2_when_it_cannot_listen() {
         .args([
             "serve", "--config", &path, "--host", "box", "--listen", &addr,
         ])
+        .env("HOME", env!("CARGO_TARGET_TMPDIR"))
         .output()
         .unwrap();
     assert_eq!(out.status.code(), Some(2));
