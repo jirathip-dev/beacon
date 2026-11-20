@@ -1,0 +1,13 @@
+Decided: serve gets one interval hook, BEACON_SPEEDUP, dividing the reload tick, sampler, git pull and check intervals
+Because: "Intervals are shortened through the same test hooks the other serve tests use"
+Decided: log, state and p99 lines join the gate at the tighter limits
+Because: q2462
+Decided: breakers live behind the over-budget cargo feature and compile to false without it
+Because: "a test-only build flag that adds a busy loop, a 20 MB allocation or an uncached poll"
+Decided: wake-ups count serve's own threads in a minute with no check due
+Because: "≤ 70 in an idle 60 s window (no busy loops or tight sleeps)"
+Rejected: wait4 ru_maxrss and ru_nvcsw — they include git and the checks; Linux CI read 97.3 wake-ups a minute
+Rejected: one fresh connection per p99 sample — on this loaded host a single round swung 0.2 to 4 ms
+Check: each BEACON_OVER_BUDGET breaker fails exactly its own test (PR body lists them)
+Check: a Linux minute with checks firing is ~77 wake-ups (60 tick + ~5 a check); the ADR says the 70 holds with no check due
+Owner: CI now fails when beacon serve goes over its CPU, memory, network, wake-up, log, disk or latency budget
