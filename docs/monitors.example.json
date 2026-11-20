@@ -14,7 +14,12 @@
       "checks": [
         { "id": "backup", "command": "test -f /var/log/backup.ok && test $(( $(date +%s) - $(stat -f %m /var/log/backup.ok) )) -lt 93600", "every_s": 300 },
         { "id": "disk", "command": "df -P / | awk 'NR==2 { gsub(\"%\",\"\",$5); print $5 \"% used\"; exit ($5 < 90 ? 0 : 1) }'", "timeout_s": 5 }
-      ]
+      ],
+      "jobs": {
+        "com.example.caffeinate": "ignore",
+        "dev.example.old": "removed",
+        "dev.example.tick": {"keep":{"name":"tick","group":"macmini"}}
+      }
     }
   }
 }

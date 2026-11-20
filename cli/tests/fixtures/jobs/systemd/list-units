@@ -1,0 +1,9 @@
+agent.service        loaded active   running Agent
+beacon-serve.service loaded active   running beacon serve
+boat-rt.service      loaded inactive dead    boat rt
+boat-rt.timer        loaded active   waiting boat rt every 5 min
+dbus.service         loaded active   running D-Bus User Message Bus
+once.service         loaded failed   failed  one shot
+tick.service         loaded failed   failed  nightly tick
+tick.timer           loaded active   waiting nightly tick
+worker.service       loaded inactive dead    worker

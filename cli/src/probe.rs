@@ -80,3 +80,15 @@ fn last_line(output: &str) -> String {
 fn cut(s: &str) -> String {
     s.chars().take(200).collect()
 }
+
+/// The short hostname, lower case: a host's default name in the config.
+pub fn hostname() -> Result<String, String> {
+    let out = Command::new("hostname")
+        .arg("-s")
+        .output()
+        .map_err(|e| format!("hostname: {e}"))?;
+    let name = String::from_utf8_lossy(&out.stdout).trim().to_lowercase();
+    (out.status.success() && !name.is_empty())
+        .then_some(name)
+        .ok_or("hostname -s failed; pass --host <name>".into())
+}

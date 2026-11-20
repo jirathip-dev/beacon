@@ -1,0 +1,4 @@
+TimersMonotonic=
+TimersCalendar={ OnCalendar=*-*-* 03:30:00 ; next_elapse=@1763695800 }
+LastTriggerUSec=@1763609400
+NextElapseUSecRealtime=@1763695800
