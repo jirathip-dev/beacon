@@ -45,8 +45,8 @@ public struct MetricsBody: Decodable, Sendable {
             Series(id: "load", values: load1, percent: false),
             Series(id: "cpu", values: cpu_pct, percent: true),
             Series(id: "mem", values: mem.used_bytes.map { pct($0, mem.total_bytes) }, percent: true),
-        ] + mounts(order: order).map { m in
-            let d = disks[m]!
+        ] + mounts(order: order).compactMap { m in
+            guard let d = disks[m] else { return nil }
             return Series(id: "disk \(m)", values: zip(d.used_bytes, d.free_bytes).map { u, f in
                 pct(u, u.flatMap { u in f.map { u + $0 } })
             }, percent: true)
@@ -74,7 +74,13 @@ public struct Series: Sendable, Identifiable {
 public enum ChartRange: String, CaseIterable, Sendable {
     case hour = "1h", six = "6h", day = "24h"
 
-    public var seconds: Int { ["1h": 3600, "6h": 6 * 3600, "24h": 24 * 3600][rawValue]! }
+    public var seconds: Int {
+        switch self {
+        case .hour: 3600
+        case .six: 6 * 3600
+        case .day: 24 * 3600
+        }
+    }
     public var bucket: Int { self == .day ? 4 : 1 }
 }
 
@@ -137,5 +143,5 @@ public struct HostMetrics: Sendable {
 
 extension Host {
     /// The status URL with `metrics` as its last segment.
-    public var metricsURL: URL { URL(string: "metrics", relativeTo: url)!.absoluteURL }
+    public var metricsURL: URL { URL(string: "metrics", relativeTo: url)?.absoluteURL ?? url }
 }

@@ -8,32 +8,8 @@ use std::time::{Duration, Instant};
 
 const SPEEDUP: u64 = 60;
 const WINDOW: Duration = Duration::from_secs(10);
-const REAL_S: f64 = (WINDOW.as_secs() * SPEEDUP) as f64;
+const REAL_S: f64 = 600.0;
 const DAY_S: f64 = 86400.0;
-
-#[repr(C)]
-#[derive(Default)]
-struct Timeval {
-    sec: i64,
-    usec: Usec,
-}
-
-#[cfg(target_os = "macos")]
-type Usec = i32;
-#[cfg(not(target_os = "macos"))]
-type Usec = i64;
-
-#[repr(C)]
-#[derive(Default)]
-struct Rusage {
-    utime: Timeval,
-    stime: Timeval,
-    _unused: [i64; 14],
-}
-
-unsafe extern "C" {
-    fn wait4(pid: i32, status: *mut i32, options: i32, rusage: *mut Rusage) -> i32;
-}
 
 #[derive(Debug)]
 struct Usage {
@@ -54,7 +30,7 @@ struct Serve {
 impl Serve {
     fn start(name: &str, host_urls: &[String], checks: &[&str], speedup: u64) -> Serve {
         let root = format!("{}/budget-{name}", env!("CARGO_TARGET_TMPDIR"));
-        let _ = std::fs::remove_dir_all(&root);
+        std::fs::remove_dir_all(&root).ok();
         for d in ["home", "tmp"] {
             std::fs::create_dir_all(format!("{root}/{d}")).unwrap();
         }
@@ -82,7 +58,8 @@ impl Serve {
         let addr = line.split(' ').nth(3).unwrap().trim_end_matches(':').into();
         let count = |mut r: Box<dyn Read + Send>, first: usize| {
             thread::spawn(move || {
-                first + std::io::copy(&mut r, &mut std::io::sink()).unwrap() as usize
+                let n = std::io::copy(&mut r, &mut std::io::sink()).unwrap();
+                first + usize::try_from(n).unwrap()
             })
         };
         let logs = vec![
@@ -99,50 +76,67 @@ impl Serve {
     }
 
     fn stop(mut self) -> Usage {
-        let pid = self.child.id() as i32;
-        let (rss_bytes, _) = peek(pid);
+        let now = peek(self.child.id());
         self.child.kill().unwrap();
-        let (mut status, mut ru) = (0, Rusage::default());
-        // SAFETY: `pid` is this process's unwaited child; `status` and `ru` are owned, writable and C-shaped.
-        assert_eq!(unsafe { wait4(pid, &mut status, 0, &mut ru) }, pid);
-        let secs = |t: &Timeval| t.sec as f64 + t.usec as f64 / 1e6;
+        self.child.wait().unwrap();
         Usage {
-            cpu_s: secs(&ru.utime) + secs(&ru.stime),
-            rss_bytes,
+            cpu_s: now.cpu_s,
+            rss_bytes: now.peak_bytes,
             log_bytes: self.logs.into_iter().map(|h| h.join().unwrap()).sum(),
             state_bytes: state(&self.root).saturating_sub(self.state_before),
         }
     }
 }
 
+struct Reading {
+    cpu_s: f64,
+    peak_bytes: u64,
+    wakeups: u64,
+}
+
 #[cfg(target_os = "linux")]
-fn peek(pid: i32) -> (u64, u64) {
+fn peek(pid: u32) -> Reading {
+    let field = |text: &str, key: &str| -> u64 {
+        let line = text.lines().find_map(|l| l.strip_prefix(key)).unwrap();
+        line.trim().trim_end_matches("kB").trim().parse().unwrap()
+    };
+    let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).unwrap();
+    let ticks: Vec<u64> = stat
+        .rsplit_once(") ")
+        .unwrap()
+        .1
+        .split(' ')
+        .map(|f| f.parse().unwrap_or(0))
+        .collect();
     let status = std::fs::read_to_string(format!("/proc/{pid}/status")).unwrap();
-    let hwm = status
-        .lines()
-        .find_map(|l| l.strip_prefix("VmHWM:"))
-        .unwrap();
-    let kb: u64 = hwm.trim().trim_end_matches("kB").trim().parse().unwrap();
     let switches = |t: std::fs::DirEntry| {
         let status = std::fs::read_to_string(t.path().join("status")).unwrap_or_default();
-        let n = status
-            .lines()
-            .find_map(|l| l.strip_prefix("voluntary_ctxt_switches:"));
-        n.map_or(0, |n| n.trim().parse::<u64>().unwrap())
+        field(&status, "voluntary_ctxt_switches:")
     };
     let tasks = std::fs::read_dir(format!("/proc/{pid}/task")).unwrap();
-    (kb * 1024, tasks.flatten().map(switches).sum())
+    Reading {
+        cpu_s: f(ticks[11..15].iter().sum()) / 100.0,
+        peak_bytes: field(&status, "VmHWM:") * 1024,
+        wakeups: tasks.flatten().map(switches).sum(),
+    }
 }
 
 #[cfg(target_os = "macos")]
-fn peek(pid: i32) -> (u64, u64) {
-    unsafe extern "C" {
-        fn proc_pid_rusage(pid: i32, flavor: i32, buffer: *mut u64) -> i32;
+fn peek(pid: u32) -> Reading {
+    let u = beacon_sys::proc_usage(i32::try_from(pid).unwrap()).unwrap();
+    Reading {
+        cpu_s: f(u.cpu_ns) / 1e9,
+        peak_bytes: u.peak_bytes,
+        wakeups: u.wakeups,
     }
-    let mut info = [0u64; 64];
-    // SAFETY: flavor 4 writes one rusage_info_v4, smaller than the 512 bytes of `info`.
-    assert_eq!(unsafe { proc_pid_rusage(pid, 4, info.as_mut_ptr()) }, 0);
-    (info[30], info[4] + info[5])
+}
+
+#[expect(
+    clippy::as_conversions,
+    reason = "test counts stay far below f64's 2^53 exact range"
+)]
+fn f(n: u64) -> f64 {
+    n as f64
 }
 
 fn git(dir: &str, args: &[&str]) {
@@ -170,9 +164,12 @@ fn state(dir: &str) -> u64 {
     std::fs::read_dir(dir).map_or(0, |entries| {
         entries
             .flatten()
-            .map(|e| match e.file_type().unwrap().is_dir() {
-                true => state(&e.path().to_string_lossy()),
-                false => e.metadata().map_or(0, |m| m.len()),
+            .map(|e| {
+                if e.file_type().unwrap().is_dir() {
+                    state(&e.path().to_string_lossy())
+                } else {
+                    e.metadata().map_or(0, |m| m.len())
+                }
             })
             .sum()
     })
@@ -193,7 +190,7 @@ fn fake_hosts() -> (Vec<String>, Arc<Mutex<Vec<usize>>>) {
                         head.push(b[0]);
                     }
                     let reply = b"HTTP/1.1 304 Not Modified\r\nETag: \"same\"\r\n\r\n";
-                    let _ = s.write_all(reply);
+                    s.write_all(reply).ok();
                     polls.lock().unwrap().push(head.len() + reply.len());
                 }
             });
@@ -237,10 +234,10 @@ fn idle() -> &'static (Usage, Vec<usize>, f64) {
         let serve = Serve::start("idle", &urls, &["a", "b"], SPEEDUP);
         let quiet = Serve::start("quiet", &[], &[], SPEEDUP);
         thread::sleep(Duration::from_secs(1));
-        let pid = quiet.child.id() as i32;
-        let before = peek(pid).1;
+        let pid = quiet.child.id();
+        let before = peek(pid).wakeups;
         thread::sleep(WINDOW);
-        let wakeups_a_minute = (peek(pid).1 - before) as f64 * 60.0 / REAL_S;
+        let wakeups_a_minute = f(peek(pid).wakeups - before) * 60.0 / REAL_S;
         quiet.stop();
         let usage = serve.stop();
         eprintln!("idle over {REAL_S} real s: {usage:?}");
@@ -265,7 +262,7 @@ fn serve_wakes_at_most_70_times_an_idle_minute() {
 
 #[test]
 fn serve_logs_at_most_512_kb_a_day() {
-    let per_day = idle().0.log_bytes as f64 * DAY_S / REAL_S;
+    let per_day = f(u64::try_from(idle().0.log_bytes).unwrap()) * DAY_S / REAL_S;
     eprintln!("logs {per_day:.0} bytes a day");
     assert!(
         per_day <= 512.0 * 1024.0,
@@ -275,7 +272,7 @@ fn serve_logs_at_most_512_kb_a_day() {
 
 #[test]
 fn serve_state_grows_at_most_20_mb_a_day() {
-    let per_day = idle().0.state_bytes as f64 * DAY_S / REAL_S;
+    let per_day = f(idle().0.state_bytes) * DAY_S / REAL_S;
     eprintln!("state {per_day:.0} bytes a day");
     assert!(
         per_day <= 20.0 * 1024.0 * 1024.0,

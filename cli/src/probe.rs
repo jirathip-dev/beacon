@@ -44,29 +44,28 @@ fn spawn_and_wait(mut cmd: Command, timeout: Duration) -> std::io::Result<Option
     let pgid = child.id();
     let output = std::thread::spawn(move || {
         let mut buf = Vec::new();
-        let _ = reader.read_to_end(&mut buf);
+        reader.read_to_end(&mut buf).ok();
         String::from_utf8_lossy(&buf).into_owned()
     });
     let (tx, rx) = mpsc::channel();
     std::thread::spawn(move || tx.send(child.wait()));
-    let exit = match rx.recv_timeout(timeout) {
-        Ok(exit) => exit?,
-        Err(_) => {
-            kill_group(pgid);
-            let _ = rx.recv();
-            let _ = output.join();
-            return Ok(None);
-        }
+    let Ok(exit) = rx.recv_timeout(timeout) else {
+        kill_group(pgid);
+        rx.recv().ok();
+        output.join().ok();
+        return Ok(None);
     };
+    let exit = exit?;
     kill_group(pgid);
     Ok(Some((exit.success(), output.join().unwrap_or_default())))
 }
 
 fn kill_group(pgid: u32) {
-    let _ = Command::new("kill")
+    Command::new("kill")
         .args(["-KILL", "--", &format!("-{pgid}")])
         .stderr(Stdio::null())
-        .status();
+        .status()
+        .ok();
 }
 
 fn last_line(output: &str) -> String {

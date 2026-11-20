@@ -140,7 +140,7 @@ fn disks_default_to_root_and_reject_relative_duplicate_or_too_many() {
         .unwrap()
         .disks
         .iter()
-        .map(|d| d.as_str())
+        .map(beacon::config::MountPath::as_str)
         .collect();
     assert_eq!(disks, ["/"]);
     let set = |d: Value| move |v: &mut Value| v["hosts"]["macmini"]["disks"] = d;

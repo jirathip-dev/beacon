@@ -85,7 +85,7 @@ impl Ring {
         let load = |i: usize| {
             self.0
                 .iter()
-                .map(|s| s.load.map(|l| round(l[i], 100.0)))
+                .map(|s| s.load.and_then(|l| l.get(i).map(|x| round(*x, 100.0))))
                 .collect()
         };
         let gauge = |f: fn(&Sample) -> Option<Gauge>| GaugeBody {
@@ -123,7 +123,7 @@ impl Ring {
                 })
                 .collect(),
         };
-        Rendered::of(serde_json::to_vec(&body).unwrap())
+        Rendered::json(&body)
     }
 }
 
