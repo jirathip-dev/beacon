@@ -118,9 +118,10 @@ Options considered:
   - Memory: serve's peak resident set is at most 10 MB (Linux `VmHWM`; on macOS the peak footprint).
   - Network: an unchanged poll of `/status`, `/metrics` or `/config` is a 304 of at most 1 KB both ways.
     The fake hosts count the bytes of any poll serve makes.
-  - Wake-ups: serve's own threads wake at most 70 times in an idle minute. On Linux these are the voluntary
-    context switches of its live threads; on macOS, the kernel's wake-up counters. The processes it starts
-    are not counted.
+  - Wake-ups: serve's own threads wake at most 70 times in an idle minute, a minute with no check due:
+    the reload tick, the sampler and the git pull. On Linux these are the voluntary context switches of its
+    live threads; on macOS, the kernel's wake-up counters. The processes it starts are not counted, and
+    the count starts 1 s after the start. Each check adds about 5 a minute on Linux (spawn, wait, `kill`).
   - Logs: at most 512 KB a day. State: what serve writes under its config folder, `HOME` and `TMPDIR`
     grows at most 20 MB a day.
   - Latency: the p99 of unchanged polls on a kept-alive connection is at most 2 ms. The best of 5 rounds

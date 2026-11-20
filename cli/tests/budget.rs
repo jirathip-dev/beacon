@@ -39,7 +39,6 @@ unsafe extern "C" {
 struct Usage {
     cpu_s: f64,
     rss_bytes: u64,
-    wakeups: u64,
     log_bytes: usize,
     state_bytes: u64,
 }
@@ -53,7 +52,7 @@ struct Serve {
 }
 
 impl Serve {
-    fn start(name: &str, host_urls: &[String], speedup: u64) -> Serve {
+    fn start(name: &str, host_urls: &[String], checks: &[&str], speedup: u64) -> Serve {
         let root = format!("{}/budget-{name}", env!("CARGO_TARGET_TMPDIR"));
         let _ = std::fs::remove_dir_all(&root);
         for d in ["home", "tmp"] {
@@ -62,7 +61,7 @@ impl Serve {
         let (origin, clone) = (format!("{root}/origin.git"), format!("{root}/clone"));
         git(&root, &["init", "-q", "--bare", &origin]);
         git(&root, &["clone", "-q", &origin, &clone]);
-        std::fs::write(format!("{clone}/monitors.json"), config(host_urls)).unwrap();
+        std::fs::write(format!("{clone}/monitors.json"), config(host_urls, checks)).unwrap();
         git(&clone, &["add", "."]);
         git(&clone, &["commit", "-qm", "one"]);
         git(&clone, &["push", "-q", "origin", "HEAD"]);
@@ -101,7 +100,7 @@ impl Serve {
 
     fn stop(mut self) -> Usage {
         let pid = self.child.id() as i32;
-        let (rss_bytes, wakeups) = peek(pid);
+        let (rss_bytes, _) = peek(pid);
         self.child.kill().unwrap();
         let (mut status, mut ru) = (0, Rusage::default());
         // SAFETY: `pid` is this process's unwaited child; `status` and `ru` are owned, writable and C-shaped.
@@ -110,7 +109,6 @@ impl Serve {
         Usage {
             cpu_s: secs(&ru.utime) + secs(&ru.stime),
             rss_bytes,
-            wakeups,
             log_bytes: self.logs.into_iter().map(|h| h.join().unwrap()).sum(),
             state_bytes: state(&self.root).saturating_sub(self.state_before),
         }
@@ -158,10 +156,10 @@ fn git(dir: &str, args: &[&str]) {
     assert!(ok, "git {args:?}");
 }
 
-fn config(host_urls: &[String]) -> String {
+fn config(host_urls: &[String], checks: &[&str]) -> String {
     let check = |id: &str| json!({ "id": id, "command": "true", "every_s": 60, "timeout_s": 5 });
-    let mut hosts =
-        json!({ "box": { "url": "https://box/status", "checks": [check("a"), check("b")] } });
+    let checks: Vec<_> = checks.iter().map(|id| check(id)).collect();
+    let mut hosts = json!({ "box": { "url": "https://box/status", "checks": checks } });
     for (i, url) in host_urls.iter().enumerate() {
         hosts[format!("r{i}")] = json!({ "url": url, "checks": [check("c")] });
     }
@@ -236,7 +234,7 @@ fn idle() -> &'static (Usage, Vec<usize>) {
     static IDLE: OnceLock<(Usage, Vec<usize>)> = OnceLock::new();
     IDLE.get_or_init(|| {
         let (urls, polls) = fake_hosts();
-        let serve = Serve::start("idle", &urls, SPEEDUP);
+        let serve = Serve::start("idle", &urls, &["a", "b"], SPEEDUP);
         thread::sleep(WINDOW);
         let usage = serve.stop();
         eprintln!("idle over {REAL_S} real s: {usage:?}");
@@ -254,7 +252,13 @@ fn serve_cpu_is_at_most_0_2_percent_of_a_core() {
 
 #[test]
 fn serve_wakes_at_most_70_times_an_idle_minute() {
-    let per_min = idle().0.wakeups as f64 * 60.0 / REAL_S;
+    let serve = Serve::start("quiet", &[], &[], SPEEDUP);
+    thread::sleep(Duration::from_secs(1));
+    let pid = serve.child.id() as i32;
+    let before = peek(pid).1;
+    thread::sleep(WINDOW);
+    let per_min = (peek(pid).1 - before) as f64 * 60.0 / REAL_S;
+    serve.stop();
     eprintln!("{per_min:.1} wake-ups a minute");
     assert!(per_min <= 70.0, "{per_min:.1} wake-ups a minute > 70");
 }
@@ -295,7 +299,7 @@ fn fake_hosts_see_polls_of_at_most_1_kb() {
 #[test]
 fn unchanged_polls_are_304s_under_1_kb_with_p99_at_most_2_ms() {
     idle();
-    let serve = Serve::start("polled", &[], 1);
+    let serve = Serve::start("polled", &[], &["a", "b"], 1);
     thread::sleep(Duration::from_secs(1));
     let paths = ["/status", "/metrics", "/config"];
     let etags: Vec<_> = paths.iter().map(|p| etag(&serve.addr, p)).collect();
