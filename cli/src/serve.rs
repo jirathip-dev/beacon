@@ -4,12 +4,12 @@ use crate::probe;
 use crate::sampler::Sampler;
 use crate::status::{Rendered, StatusBody};
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::thread::{self, Scope};
 use std::time::{Duration, Instant, SystemTime};
 use tiny_http::{Header, Response, Server};
 
-const PULL_EVERY: Duration = Duration::from_secs(300);
+const PULL_EVERY_S: u64 = 300;
 
 struct Cell(Mutex<Rendered>);
 
@@ -64,7 +64,33 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
     let status = Cell(Mutex::new(live.lock().unwrap().body.render()));
     let metrics = Cell(Mutex::new(Ring::new().render(name, &host.disks)));
     let config = Cell(Mutex::new(Rendered::of(raw.clone())));
+    if over_budget("mem") {
+        std::mem::forget(std::hint::black_box(vec![1u8; 20 << 20]));
+    }
+    if over_budget("state") {
+        let over = std::fs::File::create(Path::new(path).with_file_name("over"));
+        let _ = over.map(|mut f| {
+            std::io::copy(
+                &mut std::io::Read::take(std::io::repeat(1), 21 << 20),
+                &mut f,
+            )
+        });
+    }
     thread::scope(|s| {
+        if over_budget("cpu") {
+            s.spawn(|| {
+                loop {
+                    std::hint::black_box(0);
+                }
+            });
+        }
+        if over_budget("wake") {
+            s.spawn(|| {
+                loop {
+                    thread::sleep(Duration::from_millis(1));
+                }
+            });
+        }
         run_checks(s, 0, host.checks.clone(), &live, &status);
         let (live, status, config) = (&live, &status, &config);
         s.spawn(move || {
@@ -72,7 +98,7 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
             let git = dir.join(".git").exists();
             let (mut seen, mut pulled) = (Ok(raw), None::<Instant>);
             loop {
-                if git && pulled.is_none_or(|p| p.elapsed() >= PULL_EVERY) {
+                if git && pulled.is_none_or(|p| p.elapsed() >= every(PULL_EVERY_S)) {
                     pulled = Some(Instant::now());
                     let args = ["-C", &dir.to_string_lossy(), "pull", "--ff-only", "-q"];
                     if probe::output("git", &args, Duration::from_secs(60)).is_none() {
@@ -96,7 +122,10 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
                         Err(e) => eprintln!("{path}: {e}; serving the last valid config"),
                     }
                 }
-                thread::sleep(Duration::from_secs(1));
+                if over_budget("log") {
+                    eprintln!("over budget");
+                }
+                thread::sleep(every(1));
             }
         });
         s.spawn(|| {
@@ -104,8 +133,9 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
             loop {
                 ring.push(sampler.sample(unix_now(), &host.disks));
                 metrics.set(ring.render(name, &host.disks));
-                let next =
-                    Duration::from_secs((started.elapsed().as_secs() / EVERY_S + 1) * EVERY_S);
+                let period = every(EVERY_S);
+                let n = started.elapsed().as_nanos() / period.as_nanos() + 1;
+                let next = period * n as u32;
                 thread::sleep(next.saturating_sub(started.elapsed()));
             }
         });
@@ -119,12 +149,16 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
                     continue;
                 }
             };
+            if over_budget("slow") {
+                thread::sleep(Duration::from_millis(3));
+            }
             let r = cell.get();
             let header = |k: &str, v: &str| Header::from_bytes(k, v).unwrap();
-            let fresh = !request
-                .headers()
-                .iter()
-                .any(|h| h.field.equiv("If-None-Match") && h.value.as_str() == r.etag);
+            let fresh = over_budget("poll")
+                || !request
+                    .headers()
+                    .iter()
+                    .any(|h| h.field.equiv("If-None-Match") && h.value.as_str() == r.etag);
             let response = match fresh {
                 true => Response::from_data(r.body.to_vec())
                     .with_header(header("Content-Type", "application/json")),
@@ -168,7 +202,7 @@ fn run_checks<'s>(
                     status.set(l.body.render());
                 }
                 drop(l);
-                thread::sleep(Duration::from_secs(c.every_s.into()));
+                thread::sleep(every(c.every_s.into()));
             }
         });
     }
@@ -178,4 +212,19 @@ fn unix_now() -> u64 {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .map_or(0, |d| d.as_secs())
+}
+
+fn every(secs: u64) -> Duration {
+    static SPEEDUP: OnceLock<u32> = OnceLock::new();
+    let k = SPEEDUP.get_or_init(|| {
+        let k = std::env::var("BEACON_SPEEDUP")
+            .ok()
+            .and_then(|k| k.parse().ok());
+        k.filter(|&k| k > 0).unwrap_or(1)
+    });
+    Duration::from_secs(secs) / *k
+}
+
+fn over_budget(line: &str) -> bool {
+    cfg!(feature = "over-budget") && std::env::var("BEACON_OVER_BUDGET").is_ok_and(|v| v == line)
 }

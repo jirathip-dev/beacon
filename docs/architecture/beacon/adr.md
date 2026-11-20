@@ -108,6 +108,25 @@ Options considered:
 - Serve re-reads its config every 300 s (a conditional GET for a URL, the mtime for a path).
   An invalid new config is logged and the old one kept. A changed check list restarts only
   the threads whose `{id, command, every_s, timeout_s}` changed.
+- **Resource budget (q2448, q2462, #38).** This is the standing limit for every later PR. `cli/tests/budget.rs`
+  is part of `cargo test`, so CI's `rust` job fails when serve goes over it. Serve runs as a child process
+  against a config with 5 remote hosts, a git checkout and two checks. `BEACON_SPEEDUP=60` divides every
+  serve interval (the reload tick, the sampler, the git pull, the checks), so the 10 s run stands for
+  600 s, and the readings are scaled back to real time:
+  - CPU: at most 0.2% of one core. This is serve plus the processes it waits for, read with `wait4`. It
+    includes the test's own `true` checks, so it is an upper bound.
+  - Memory: serve's peak resident set is at most 10 MB (Linux `VmHWM`; on macOS the peak footprint).
+  - Network: an unchanged poll of `/status`, `/metrics` or `/config` is a 304 of at most 1 KB both ways.
+    The fake hosts count the bytes of any poll serve makes.
+  - Wake-ups: at most 70 in an idle minute (Linux voluntary context switches; on macOS the kernel's
+    wake-up counters).
+  - Logs: at most 512 KB a day. State: what serve writes under its config folder, `HOME` and `TMPDIR`
+    grows at most 20 MB a day.
+  - Latency: the p99 of unchanged polls on a kept-alive connection is at most 2 ms. The best of 5 rounds
+    of 300 counts, so one scheduling spike on a busy host does not fail the gate.
+  - `cargo test --features over-budget` with `BEACON_OVER_BUDGET=cpu|mem|wake|log|state|poll|slow`
+    breaks one line on purpose: a busy loop, 20 MB, a 1 ms sleep loop, a log line a tick, a 21 MB file,
+    no 304s or 3 ms a request. The test for that line must then fail.
 
 ### D5 Status semantics
 
