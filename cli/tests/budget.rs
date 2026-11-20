@@ -230,16 +230,22 @@ fn poll(conn: &mut BufReader<TcpStream>, path: &str, etag: &str) -> (u16, usize)
     (head[9..12].parse().unwrap(), req.len() + head.len())
 }
 
-fn idle() -> &'static (Usage, Vec<usize>) {
-    static IDLE: OnceLock<(Usage, Vec<usize>)> = OnceLock::new();
+fn idle() -> &'static (Usage, Vec<usize>, f64) {
+    static IDLE: OnceLock<(Usage, Vec<usize>, f64)> = OnceLock::new();
     IDLE.get_or_init(|| {
         let (urls, polls) = fake_hosts();
         let serve = Serve::start("idle", &urls, &["a", "b"], SPEEDUP);
+        let quiet = Serve::start("quiet", &[], &[], SPEEDUP);
+        thread::sleep(Duration::from_secs(1));
+        let pid = quiet.child.id() as i32;
+        let before = peek(pid).1;
         thread::sleep(WINDOW);
+        let wakeups_a_minute = (peek(pid).1 - before) as f64 * 60.0 / REAL_S;
+        quiet.stop();
         let usage = serve.stop();
         eprintln!("idle over {REAL_S} real s: {usage:?}");
         let polls = polls.lock().unwrap().clone();
-        (usage, polls)
+        (usage, polls, wakeups_a_minute)
     })
 }
 
@@ -252,13 +258,7 @@ fn serve_cpu_is_at_most_0_2_percent_of_a_core() {
 
 #[test]
 fn serve_wakes_at_most_70_times_an_idle_minute() {
-    let serve = Serve::start("quiet", &[], &[], SPEEDUP);
-    thread::sleep(Duration::from_secs(1));
-    let pid = serve.child.id() as i32;
-    let before = peek(pid).1;
-    thread::sleep(WINDOW);
-    let per_min = (peek(pid).1 - before) as f64 * 60.0 / REAL_S;
-    serve.stop();
+    let per_min = idle().2;
     eprintln!("{per_min:.1} wake-ups a minute");
     assert!(per_min <= 70.0, "{per_min:.1} wake-ups a minute > 70");
 }
