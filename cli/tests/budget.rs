@@ -173,31 +173,6 @@ fn size(path: &Path) -> u64 {
     })
 }
 
-fn fake_hosts() -> (Vec<String>, Arc<Mutex<Vec<usize>>>) {
-    let polls = Arc::new(Mutex::new(Vec::new()));
-    let urls = (0..5)
-        .map(|_| {
-            let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-            let url = format!("https://{}/status", listener.local_addr().unwrap());
-            let polls = polls.clone();
-            thread::spawn(move || {
-                for mut s in listener.incoming().flatten() {
-                    let mut head = Vec::new();
-                    let mut b = [0u8];
-                    while !head.ends_with(b"\r\n\r\n") && s.read(&mut b).unwrap_or(0) == 1 {
-                        head.push(b[0]);
-                    }
-                    let reply = b"HTTP/1.1 304 Not Modified\r\nETag: \"same\"\r\n\r\n";
-                    s.write_all(reply).ok();
-                    polls.lock().unwrap().push(head.len() + reply.len());
-                }
-            });
-            url
-        })
-        .collect();
-    (urls, polls)
-}
-
 fn etag(addr: &str, path: &str) -> String {
     let mut s = TcpStream::connect(addr).unwrap();
     s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
@@ -230,10 +205,10 @@ fn poll(conn: &mut BufReader<TcpStream>, path: &str, etag: &str) -> Option<(u16,
     Some((head.get(9..12)?.parse().ok()?, req.len() + head.len()))
 }
 
-fn idle() -> &'static (Reading, Vec<usize>, f64) {
-    static IDLE: OnceLock<(Reading, Vec<usize>, f64)> = OnceLock::new();
+fn idle() -> &'static (Reading, f64) {
+    static IDLE: OnceLock<(Reading, f64)> = OnceLock::new();
     IDLE.get_or_init(|| {
-        let (urls, polls) = fake_hosts();
+        let urls: Vec<_> = (0..5).map(|i| format!("https://r{i}/status")).collect();
         let serve = Serve::start("idle", &urls, &[check("a"), check("b")], SPEEDUP, false);
         let quiet = Serve::start("quiet", &[], &[], SPEEDUP, false);
         thread::sleep(Duration::from_secs(1));
@@ -244,8 +219,7 @@ fn idle() -> &'static (Reading, Vec<usize>, f64) {
         quiet.stop();
         let usage = serve.stop();
         eprintln!("idle over {REAL_S} real s: {usage:?}");
-        let polls = polls.lock().unwrap().clone();
-        (usage, polls, wakeups_a_minute)
+        (usage, wakeups_a_minute)
     })
 }
 
@@ -258,7 +232,7 @@ fn serve_cpu_is_at_most_0_2_percent_of_a_core() {
 
 #[test]
 fn serve_wakes_at_most_70_times_an_idle_minute() {
-    let per_min = idle().2;
+    let per_min = idle().1;
     eprintln!("{per_min:.1} wake-ups a minute");
     assert!(per_min <= 70.0, "{per_min:.1} wake-ups a minute > 70");
 }
@@ -270,10 +244,22 @@ fn serve_resident_peak_is_at_most_10_mb() {
     assert!(rss <= 10 << 20, "peak resident {rss} bytes > 10 MB");
 }
 
+// TODO(#37): count the poller's requests at five fake remote hosts once it exists.
 #[test]
-fn fake_hosts_see_polls_of_at_most_1_kb() {
-    let polls = &idle().1;
-    assert!(polls.iter().all(|&n| n <= 1024), "polls of {polls:?} bytes");
+fn an_unchanged_poll_is_a_304_of_at_most_1_kb_both_ways() {
+    let _alone = ALONE.lock().unwrap();
+    let serve = Serve::start("polls", &[], &[], SPEEDUP, false);
+    for path in ["/status", "/metrics", "/config"] {
+        let etag = etag(&serve.addr, path);
+        let conn = TcpStream::connect(&serve.addr).unwrap();
+        conn.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+        let reply = poll(&mut BufReader::new(conn), path, &etag);
+        eprintln!("{path}: unchanged poll {reply:?}");
+        let (code, bytes) = reply.unwrap_or((0, 0));
+        assert_eq!(code, 304, "{path}: unchanged poll");
+        assert!(bytes <= 1024, "{path}: {bytes} bytes both ways > 1 KB");
+    }
+    serve.stop();
 }
 
 #[test]
