@@ -1,93 +1,91 @@
-use serde_json::json;
+use serde_json::{Value, json};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::{Arc, Mutex, OnceLock};
-use std::thread::{self, JoinHandle};
+use std::sync::{Arc, Barrier, Mutex, OnceLock};
+use std::thread;
 use std::time::{Duration, Instant};
 
 const SPEEDUP: u64 = 60;
 const WINDOW: Duration = Duration::from_secs(10);
 const REAL_S: f64 = 600.0;
-const DAY_S: f64 = 86400.0;
-
-#[derive(Debug)]
-struct Usage {
-    cpu_s: f64,
-    rss_bytes: u64,
-    log_bytes: usize,
-    state_bytes: u64,
-}
+const DAY_SPEEDUP: u64 = 8640;
+const CLIENTS: usize = 50;
+const POLLS: usize = 60;
+static ALONE: Mutex<()> = Mutex::new(());
 
 struct Serve {
     child: Child,
     addr: String,
-    root: String,
-    state_before: u64,
-    logs: Vec<JoinHandle<usize>>,
+    config: String,
+    origin: String,
+    state: PathBuf,
 }
 
 impl Serve {
-    fn start(name: &str, host_urls: &[String], checks: &[&str], speedup: u64) -> Serve {
+    fn start(
+        name: &str,
+        host_urls: &[String],
+        checks: &[Value],
+        speedup: u64,
+        prefill: bool,
+    ) -> Serve {
         let root = format!("{}/budget-{name}", env!("CARGO_TARGET_TMPDIR"));
         std::fs::remove_dir_all(&root).ok();
-        for d in ["home", "tmp"] {
-            std::fs::create_dir_all(format!("{root}/{d}")).unwrap();
+        let state = Path::new(&root).join("home/.local/state/beacon");
+        std::fs::create_dir_all(&state).unwrap();
+        std::fs::create_dir_all(format!("{root}/tmp")).unwrap();
+        if prefill {
+            std::fs::write(state.join("serve.log"), "old line\n".repeat(70_000)).unwrap();
+            std::fs::write(state.join("stale.bin"), vec![0u8; 21 << 20]).unwrap();
         }
         let (origin, clone) = (format!("{root}/origin.git"), format!("{root}/clone"));
         git(&root, &["init", "-q", "--bare", &origin]);
         git(&root, &["clone", "-q", &origin, &clone]);
-        std::fs::write(format!("{clone}/monitors.json"), config(host_urls, checks)).unwrap();
+        let config = format!("{clone}/monitors.json");
+        std::fs::write(&config, config_json(host_urls, checks)).unwrap();
         git(&clone, &["add", "."]);
         git(&clone, &["commit", "-qm", "one"]);
         git(&clone, &["push", "-q", "origin", "HEAD"]);
-        let state_before = state(&root);
+        let log = std::fs::File::options()
+            .append(true)
+            .create(true)
+            .open(state.join("serve.log"))
+            .unwrap();
         let mut child = Command::new(env!("CARGO_BIN_EXE_beacon"))
-            .args(["serve", "--config", &format!("{clone}/monitors.json")])
+            .args(["serve", "--config", &config])
             .args(["--host", "box", "--listen", "127.0.0.1:0"])
             .env("BEACON_SPEEDUP", speedup.to_string())
             .env("HOME", format!("{root}/home"))
             .env("TMPDIR", format!("{root}/tmp"))
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stderr(log)
             .spawn()
             .unwrap();
         let mut stdout = BufReader::new(child.stdout.take().unwrap());
         let mut line = String::new();
         stdout.read_line(&mut line).unwrap();
         let addr = line.split(' ').nth(3).unwrap().trim_end_matches(':').into();
-        let count = |mut r: Box<dyn Read + Send>, first: usize| {
-            thread::spawn(move || {
-                let n = std::io::copy(&mut r, &mut std::io::sink()).unwrap();
-                first + usize::try_from(n).unwrap()
-            })
-        };
-        let logs = vec![
-            count(Box::new(stdout), line.len()),
-            count(Box::new(child.stderr.take().unwrap()), 0),
-        ];
+        thread::spawn(move || std::io::copy(&mut stdout, &mut std::io::sink()));
         Serve {
             child,
             addr,
-            root,
-            state_before,
-            logs,
+            config,
+            origin,
+            state,
         }
     }
 
-    fn stop(mut self) -> Usage {
+    fn stop(mut self) -> Reading {
         let now = peek(self.child.id());
         self.child.kill().unwrap();
         self.child.wait().unwrap();
-        Usage {
-            cpu_s: now.cpu_s,
-            rss_bytes: now.peak_bytes,
-            log_bytes: self.logs.into_iter().map(|h| h.join().unwrap()).sum(),
-            state_bytes: state(&self.root).saturating_sub(self.state_before),
-        }
+        now
     }
 }
 
+#[derive(Debug)]
 struct Reading {
     cpu_s: f64,
     peak_bytes: u64,
@@ -150,9 +148,11 @@ fn git(dir: &str, args: &[&str]) {
     assert!(ok, "git {args:?}");
 }
 
-fn config(host_urls: &[String], checks: &[&str]) -> String {
-    let check = |id: &str| json!({ "id": id, "command": "true", "every_s": 60, "timeout_s": 5 });
-    let checks: Vec<_> = checks.iter().map(|id| check(id)).collect();
+fn check(id: &str) -> Value {
+    json!({ "id": id, "command": "true", "every_s": 60, "timeout_s": 5 })
+}
+
+fn config_json(host_urls: &[String], checks: &[Value]) -> String {
     let mut hosts = json!({ "box": { "url": "https://box/status", "checks": checks } });
     for (i, url) in host_urls.iter().enumerate() {
         hosts[format!("r{i}")] = json!({ "url": url, "checks": [check("c")] });
@@ -160,16 +160,14 @@ fn config(host_urls: &[String], checks: &[&str]) -> String {
     json!({ "version": 1, "monitors": [], "hosts": hosts }).to_string()
 }
 
-fn state(dir: &str) -> u64 {
-    std::fs::read_dir(dir).map_or(0, |entries| {
+fn size(path: &Path) -> u64 {
+    std::fs::read_dir(path).map_or(0, |entries| {
         entries
             .flatten()
-            .map(|e| {
-                if e.file_type().unwrap().is_dir() {
-                    state(&e.path().to_string_lossy())
-                } else {
-                    e.metadata().map_or(0, |m| m.len())
-                }
+            .map(|e| match e.metadata() {
+                Ok(m) if m.is_dir() => size(&e.path()),
+                Ok(m) => m.len(),
+                Err(_) => 0,
             })
             .sum()
     })
@@ -202,37 +200,42 @@ fn fake_hosts() -> (Vec<String>, Arc<Mutex<Vec<usize>>>) {
 
 fn etag(addr: &str, path: &str) -> String {
     let mut s = TcpStream::connect(addr).unwrap();
+    s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
     write!(
         s,
         "GET {path} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n"
     )
     .unwrap();
     let mut raw = String::new();
-    s.read_to_string(&mut raw).unwrap();
+    if let Err(e) = s.read_to_string(&mut raw) {
+        panic!("{path}: no answer within 5 s: {e}");
+    }
     raw.lines()
         .find_map(|l| l.strip_prefix("ETag: "))
         .unwrap()
         .into()
 }
 
-fn poll(conn: &mut BufReader<TcpStream>, path: &str, etag: &str) -> (u16, usize) {
+fn poll(conn: &mut BufReader<TcpStream>, path: &str, etag: &str) -> Option<(u16, usize)> {
     let req = format!("GET {path} HTTP/1.1\r\nHost: x\r\nIf-None-Match: {etag}\r\n\r\n");
-    conn.get_mut().write_all(req.as_bytes()).unwrap();
+    conn.get_mut().write_all(req.as_bytes()).ok()?;
     let (mut head, mut line) = (String::new(), String::new());
     while line != "\r\n" {
         line.clear();
-        conn.read_line(&mut line).unwrap();
+        if conn.read_line(&mut line).ok()? == 0 {
+            return None;
+        }
         head.push_str(&line);
     }
-    (head[9..12].parse().unwrap(), req.len() + head.len())
+    Some((head.get(9..12)?.parse().ok()?, req.len() + head.len()))
 }
 
-fn idle() -> &'static (Usage, Vec<usize>, f64) {
-    static IDLE: OnceLock<(Usage, Vec<usize>, f64)> = OnceLock::new();
+fn idle() -> &'static (Reading, Vec<usize>, f64) {
+    static IDLE: OnceLock<(Reading, Vec<usize>, f64)> = OnceLock::new();
     IDLE.get_or_init(|| {
         let (urls, polls) = fake_hosts();
-        let serve = Serve::start("idle", &urls, &["a", "b"], SPEEDUP);
-        let quiet = Serve::start("quiet", &[], &[], SPEEDUP);
+        let serve = Serve::start("idle", &urls, &[check("a"), check("b")], SPEEDUP, false);
+        let quiet = Serve::start("quiet", &[], &[], SPEEDUP, false);
         thread::sleep(Duration::from_secs(1));
         let pid = quiet.child.id();
         let before = peek(pid).wakeups;
@@ -261,28 +264,8 @@ fn serve_wakes_at_most_70_times_an_idle_minute() {
 }
 
 #[test]
-fn serve_logs_at_most_512_kb_a_day() {
-    let per_day = f(u64::try_from(idle().0.log_bytes).unwrap()) * DAY_S / REAL_S;
-    eprintln!("logs {per_day:.0} bytes a day");
-    assert!(
-        per_day <= 512.0 * 1024.0,
-        "logs {per_day:.0} bytes a day > 512 KB"
-    );
-}
-
-#[test]
-fn serve_state_grows_at_most_20_mb_a_day() {
-    let per_day = f(idle().0.state_bytes) * DAY_S / REAL_S;
-    eprintln!("state {per_day:.0} bytes a day");
-    assert!(
-        per_day <= 20.0 * 1024.0 * 1024.0,
-        "state {per_day:.0} bytes a day > 20 MB"
-    );
-}
-
-#[test]
 fn serve_resident_peak_is_at_most_10_mb() {
-    let rss = idle().0.rss_bytes;
+    let rss = idle().0.peak_bytes;
     eprintln!("peak resident {rss} bytes");
     assert!(rss <= 10 << 20, "peak resident {rss} bytes > 10 MB");
 }
@@ -294,34 +277,115 @@ fn fake_hosts_see_polls_of_at_most_1_kb() {
 }
 
 #[test]
-fn unchanged_polls_are_304s_under_1_kb_with_p99_at_most_2_ms() {
+fn a_flapping_day_keeps_logs_at_512_kb_state_at_20_mb_and_logs_each_outage_once() {
+    let _alone = ALONE.lock().unwrap();
+    let flap = json!({
+        "id": "flap",
+        "command": "[ $(( $(date +%s) % 2 )) = 0 ]",
+        "every_s": 3600,
+        "timeout_s": 5,
+    });
+    let serve = Serve::start("soak", &[], &[flap], DAY_SPEEDUP, true);
+    let logs = |state: &Path| {
+        ["serve.log", "serve.log.1"]
+            .map(|f| std::fs::read_to_string(state.join(f)).unwrap_or_default())
+            .concat()
+    };
+    let (off, started) = (format!("{}.off", serve.origin), Instant::now());
+    let (mut outages, mut log_peak, mut state_peak) = (0, 0, 0);
+    thread::sleep(Duration::from_millis(500));
+    while started.elapsed() < WINDOW {
+        let (from, to) = if Path::new(&serve.origin).exists() {
+            outages += 1;
+            (&serve.origin, &off)
+        } else {
+            (&off, &serve.origin)
+        };
+        std::fs::rename(from, to).unwrap();
+        thread::sleep(Duration::from_millis(250));
+        log_peak = log_peak.max(logs(&serve.state).len());
+        state_peak = state_peak.max(size(&serve.state));
+    }
+    let state = serve.state.clone();
+    serve.stop();
+    let pull_errors = logs(&state).matches("git pull").count();
+    eprintln!(
+        "a simulated day: {outages} outages, {pull_errors} pull errors logged, logs peak {log_peak} bytes, state peak {state_peak} bytes"
+    );
+    assert!(log_peak <= 512 << 10, "logs {log_peak} bytes > 512 KB");
+    assert!(state_peak <= 20 << 20, "state {state_peak} bytes > 20 MB");
+    assert!(
+        pull_errors <= outages,
+        "{pull_errors} pull errors logged for {outages} outages"
+    );
+}
+
+#[test]
+fn status_and_metrics_p99_is_at_most_2_ms_for_50_clients_with_a_hung_host_and_a_slow_disk() {
     idle();
-    let serve = Serve::start("polled", &[], &["a", "b"], 1);
-    thread::sleep(Duration::from_secs(1));
+    let _alone = ALONE.lock().unwrap();
+    let hung = TcpListener::bind("127.0.0.1:0").unwrap();
+    let hung_addr = hung.local_addr().unwrap();
+    thread::spawn(move || hung.incoming().flatten().collect::<Vec<_>>());
+    let probe = json!({
+        "id": "hung",
+        "command": format!("curl -s -m 25 http://{hung_addr}/"),
+        "every_s": 60,
+        "timeout_s": 25,
+    });
+    let serve = Serve::start("loaded", &[], &[probe], 1, false);
+    std::fs::remove_file(&serve.config).unwrap();
+    assert!(
+        Command::new("mkfifo")
+            .arg(&serve.config)
+            .status()
+            .unwrap()
+            .success()
+    );
+    thread::sleep(Duration::from_millis(1500));
     let paths = ["/status", "/metrics", "/config"];
     let etags: Vec<_> = paths.iter().map(|p| etag(&serve.addr, p)).collect();
-    let mut conn = BufReader::new(TcpStream::connect(&serve.addr).unwrap());
-    let mut round = || {
-        let mut took = Vec::new();
-        for _ in 0..100 {
-            for (path, etag) in paths.iter().zip(&etags) {
-                let t = Instant::now();
-                let (code, bytes) = poll(&mut conn, path, etag);
-                took.push(t.elapsed());
-                assert_eq!(code, 304, "{path}: unchanged poll");
-                assert!(bytes <= 1024, "{path}: {bytes} bytes both ways > 1 KB");
-            }
-        }
-        took.sort();
-        took[took.len() * 99 / 100]
-    };
-    let p99 = (0..5).map(|_| round()).min().unwrap();
+    let start = Arc::new(Barrier::new(CLIENTS));
+    let clients: Vec<_> = (0..CLIENTS)
+        .map(|_| {
+            let (addr, etags, start) = (serve.addr.clone(), etags.clone(), start.clone());
+            thread::spawn(move || {
+                let conn = TcpStream::connect(addr).unwrap();
+                conn.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+                let mut conn = BufReader::new(conn);
+                poll(&mut conn, paths[0], &etags[0]);
+                start.wait();
+                let mut took = Vec::new();
+                for i in 0..POLLS {
+                    let (path, etag) = (paths[i % paths.len()], &etags[i % paths.len()]);
+                    let t = Instant::now();
+                    let reply = poll(&mut conn, path, etag);
+                    took.push(t.elapsed());
+                    let (code, bytes) = reply.unwrap_or((0, 0));
+                    assert_eq!(code, 304, "{path}: unchanged poll");
+                    assert!(bytes <= 1024, "{path}: {bytes} bytes both ways > 1 KB");
+                }
+                took
+            })
+        })
+        .collect();
+    let mut took: Vec<_> = clients
+        .into_iter()
+        .flat_map(|c| c.join().unwrap())
+        .collect();
     let usage = serve.stop();
-    eprintln!("p99 {p99:?}, peak resident {} bytes", usage.rss_bytes);
+    took.sort();
+    let p99 = took[took.len() * 99 / 100];
+    eprintln!(
+        "{} polls from {CLIENTS} clients: p99 {p99:?}, max {:?}, peak resident {} bytes",
+        took.len(),
+        took[took.len() - 1],
+        usage.peak_bytes
+    );
     assert!(p99 <= Duration::from_millis(2), "p99 {p99:?} > 2 ms");
     assert!(
-        usage.rss_bytes <= 10 << 20,
+        usage.peak_bytes <= 10 << 20,
         "peak resident {} bytes > 10 MB",
-        usage.rss_bytes
+        usage.peak_bytes
     );
 }

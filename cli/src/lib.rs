@@ -6,4 +6,5 @@ pub mod probe;
 pub mod run;
 pub mod sampler;
 pub mod serve;
+pub mod state;
 pub mod status;

@@ -4,6 +4,7 @@ use crate::metrics::{EVERY_S, Ring};
 use crate::out;
 use crate::probe;
 use crate::sampler::Sampler;
+use crate::state;
 use crate::status::{Rendered, StatusBody};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard, OnceLock, PoisonError};
@@ -12,6 +13,7 @@ use std::time::{Duration, Instant, SystemTime};
 use tiny_http::{Header, Response, Server};
 
 const PULL_EVERY_S: u64 = 300;
+const TIDY_EVERY_S: u64 = 60;
 
 struct Cell(Mutex<Rendered>);
 
@@ -73,15 +75,6 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
     if over_budget("mem") {
         std::mem::forget(std::hint::black_box(vec![1u8; 20 << 20]));
     }
-    if over_budget("state")
-        && let Ok(mut f) = std::fs::File::create(Path::new(path).with_file_name("over"))
-    {
-        std::io::copy(
-            &mut std::io::Read::take(std::io::repeat(1), 21 << 20),
-            &mut f,
-        )
-        .ok();
-    }
     thread::scope(|s| {
         if over_budget("cpu") {
             s.spawn(|| {
@@ -102,14 +95,24 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
         s.spawn(move || {
             let dir = Path::new(path).parent().unwrap_or(Path::new(""));
             let git = dir.join(".git").exists();
-            let (mut seen, mut pulled) = (Ok(raw), None::<Instant>);
+            let state = std::env::var_os("HOME").map(|h| state::dir(Path::new(&h)));
+            let (mut seen, mut pulled, mut tidied) = (Ok(raw), None::<Instant>, None::<Instant>);
+            let mut pull_down = false;
             loop {
+                if let Some(state) = &state
+                    && tidied.is_none_or(|t| t.elapsed() >= every(TIDY_EVERY_S))
+                {
+                    tidied = Some(Instant::now());
+                    state::tidy(state);
+                }
                 if git && pulled.is_none_or(|p| p.elapsed() >= every(PULL_EVERY_S)) {
                     pulled = Some(Instant::now());
                     let args = ["-C", &dir.to_string_lossy(), "pull", "--ff-only", "-q"];
-                    if probe::output("git", &args, Duration::from_secs(60)).is_none() {
+                    let failed = probe::output("git", &args, Duration::from_secs(60)).is_none();
+                    if failed && (!pull_down || over_budget("repeat")) {
                         out::err(&format!("git pull --ff-only in {}: failed", dir.display()));
                     }
+                    pull_down = failed;
                 }
                 let read = std::fs::read(path).map_err(|e| e.to_string());
                 if read != seen {
@@ -122,14 +125,12 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
                             let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
                             l.body.keep(&ids);
                             status.set(l.body.render());
-                            out::err(&format!("reload {path}: {} checks", ids.len()));
                             run_checks(s, l.generation, host.checks.clone(), live, status);
+                            drop(l);
+                            out::err(&format!("reload {path}: {} checks", ids.len()));
                         }
                         Err(e) => out::err(&format!("{path}: {e}; serving the last valid config")),
                     }
-                }
-                if over_budget("log") {
-                    out::err("over budget");
                 }
                 thread::sleep(every(1));
             }
@@ -207,7 +208,9 @@ fn run_checks<'s>(
     for c in checks {
         s.spawn(move || {
             loop {
+                let held = over_budget("lock").then(|| lock(&status.0));
                 let (st, message) = probe::run(&c.command, Duration::from_secs(c.timeout_s.into()));
+                drop(held);
                 let mut l = lock(live);
                 if l.generation != generation {
                     return;
@@ -239,6 +242,6 @@ fn every(secs: u64) -> Duration {
     Duration::from_secs(secs) / *k
 }
 
-fn over_budget(line: &str) -> bool {
+pub(crate) fn over_budget(line: &str) -> bool {
     cfg!(feature = "over-budget") && std::env::var("BEACON_OVER_BUDGET").is_ok_and(|v| v == line)
 }
