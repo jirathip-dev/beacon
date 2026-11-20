@@ -154,3 +154,33 @@ func heartbeatHostUnreachable(reply: Result<MockTransport.Reply, URLError>, deta
     let new = [r("a", .down), r("b", .up), r("c", .up), r("d", .down), r("e", .down), r("f", .down)]
     #expect(alerts(from: old, to: new).map { [$0.title, $0.body] } == [["a down", "HTTP 503"], ["b recovered", "g"]])
 }
+
+let jobsBody = #"{"version":1,"host":"mini","checks":{"#
+    + #""disk":{"status":"up","message":"9% used","since":"2026-11-12T03:00:04Z"},"#
+    + #""job-z":{"status":"down","message":"last exit 1","since":"2026-11-12T03:00:04Z","name":"com.z"},"#
+    + #""job-a":{"status":"up","message":"running","since":"2026-11-12T03:00:04Z","name":"com.a"},"#
+    + #""job-tick":{"status":"up","message":"last exit 0","since":"2026-11-12T03:00:04Z","name":"tick","group":"Mini"}}}"#
+
+@Test func jobRowsComeFromNameAndGroupWithUnreviewedLastAndTheirHost() async throws {
+    let t = MockTransport(replies: [hostURL: .success((200, jobsBody, [:]))])
+    let rows = await run(try config(#"{"type":"http","name":"web","group":"g","url":"https://a/"}"#, hosts: hosts), t)
+    #expect(rows.map(\.name) == ["web", "tick", "com.a", "com.z"], "a host no heartbeat names is fetched too")
+    #expect(rows.map(\.group) == ["g", "Mini", MonitorResult.unreviewed, MonitorResult.unreviewed])
+    #expect(rows[3] == MonitorResult(name: "com.z", group: "Unreviewed", state: .down, detail: "last exit 1",
+                                     since: Date(timeIntervalSince1970: 1_794_452_404), host: "mini"))
+    #expect(rows.dropFirst().allSatisfy { $0.host == "mini" } && rows[0].host == nil)
+}
+
+@Test func anUnreachableHostKeepsItsLastJobRowsAsDown() async throws {
+    let c = try config("", hosts: hosts)
+    let earlier = Date(timeIntervalSince1970: 5)
+    let previous = [
+        MonitorResult(name: "tick", group: "Mini", state: .up, detail: "last exit 0", since: earlier, host: "mini"),
+        MonitorResult(name: "com.z", group: "Unreviewed", state: .down, detail: "last exit 1", since: earlier, host: "mini"),
+        MonitorResult(name: "web", group: "g", state: .up, detail: "", since: earlier),
+    ]
+    let rows = await run(c, MockTransport(replies: [hostURL: .failure(URLError(.timedOut))]), previous: previous)
+    #expect(rows.map(\.name) == ["tick", "com.z"])
+    #expect(rows.allSatisfy { $0.state == .down && $0.detail == "host unreachable: timeout after 4s" })
+    #expect(rows.map(\.since) == [Date(timeIntervalSince1970: 100), earlier])
+}

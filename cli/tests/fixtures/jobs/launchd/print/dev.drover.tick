@@ -1,0 +1,31 @@
+gui/501/dev.drover.tick = {
+	active count = 1
+	path = /Users/owner/Library/LaunchAgents/dev.drover.tick.plist
+	type = LaunchAgent
+	state = running
+
+	program = /bin/sh
+	arguments = {
+		/bin/sh
+		-c
+		exec run-dev.drover.tick
+	}
+
+	inherited environment = {
+		SSH_AUTH_SOCK => /private/tmp/com.apple.launchd.x/Listeners
+	}
+
+	domain = gui/501 [100005]
+	asid = 100005
+	minimum runtime = 10
+	exit timeout = 5
+	runs = 170
+	last exit code = 0
+	run interval = 300 seconds
+	spawn type = daemon (3)
+	jetsam priority = 40
+	jetsam memory limit (active) = (unlimited)
+	jetsamproperties category = daemon
+	submitted job. ignore execute allowed
+	properties = runatload | abandon process group | inferred program
+}

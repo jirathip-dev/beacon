@@ -1,5 +1,8 @@
 use crate::history::KEEP_S;
+use crate::out;
 use crate::serve::over_budget;
+use serde::Deserialize;
+use std::collections::BTreeSet;
 use std::fs;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
@@ -83,7 +86,9 @@ fn trim(dir: &Path) {
         if total <= STATE_CAP_BYTES {
             break;
         }
-        if !path.ends_with("serve.log") && fs::remove_file(&path).is_ok() {
+        let kept =
+            path.ends_with("serve.log") || path.parent().is_some_and(|p| p.ends_with("jobs"));
+        if !kept && fs::remove_file(&path).is_ok() {
             total = total.saturating_sub(len);
         }
     }
@@ -97,6 +102,67 @@ fn walk(dir: &Path, files: &mut Vec<(SystemTime, u64, PathBuf)>) {
         } else {
             let at = meta.modified().unwrap_or(UNIX_EPOCH);
             files.push((at, meta.len(), entry.path()));
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct AnnouncedFile {
+    version: u8,
+    announced: BTreeSet<String>,
+}
+
+/// The job labels a host already announced, in `jobs/<host>.json` (ADR D12 §6).
+pub struct Announced {
+    path: PathBuf,
+    labels: BTreeSet<String>,
+    baseline: bool,
+}
+
+impl Announced {
+    pub fn load(dir: &Path, host: &str) -> Announced {
+        let path = dir.join("jobs").join(format!("{host}.json"));
+        let read = fs::read(&path).ok();
+        let file = read.and_then(|b| serde_json::from_slice::<AnnouncedFile>(&b).ok());
+        let file = file.filter(|f| f.version == 1);
+        if file.is_none() && path.exists() {
+            out::err(&format!(
+                "{}: unreadable; the next report is a baseline",
+                path.display()
+            ));
+        }
+        Announced {
+            path,
+            baseline: file.is_none(),
+            labels: file.map_or_default(|f| f.announced),
+        }
+    }
+
+    /// Records `unreviewed` and returns the labels to announce: the new ones, none at the baseline.
+    pub fn admit(&mut self, unreviewed: impl Iterator<Item = String>) -> Vec<String> {
+        let fresh: Vec<_> = unreviewed.filter(|l| !self.labels.contains(l)).collect();
+        if fresh.is_empty() && !self.baseline {
+            return fresh;
+        }
+        self.labels.extend(fresh.iter().cloned());
+        let body = serde_json::json!({ "version": 1, "announced": &self.labels }).to_string();
+        let tmp = self.path.with_extension("json.tmp");
+        let written = self
+            .path
+            .parent()
+            .map(fs::create_dir_all)
+            .transpose()
+            .and_then(|_| {
+                fs::write(&tmp, body)?;
+                fs::rename(&tmp, &self.path)
+            });
+        if let Err(e) = written {
+            out::err(&format!("{}: {e}", self.path.display()));
+        }
+        if std::mem::take(&mut self.baseline) {
+            Vec::new()
+        } else {
+            fresh
         }
     }
 }

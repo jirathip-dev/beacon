@@ -115,6 +115,7 @@ fn serve(dir: &Path, host: &str, ca: &str, notify: bool) -> Serve {
         .env("HOME", dir)
         .env("BEACON_SPEEDUP", "60")
         .env("SSL_CERT_FILE", ca)
+        .env("BEACON_LAUNCHCTL", "true")
         .stdout(Stdio::piped())
         .stderr(std::fs::File::create(dir.join(format!("{host}.stderr"))).unwrap());
     if notify {

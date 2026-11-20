@@ -42,6 +42,7 @@ fn start_at(path: &str) -> (Serve, String, String) {
             "127.0.0.1:0",
         ])
         .env("HOME", env!("CARGO_TARGET_TMPDIR"))
+        .env("BEACON_LAUNCHCTL", "true")
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();

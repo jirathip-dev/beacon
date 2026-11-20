@@ -1,0 +1,31 @@
+gui/501/actions.runner.jirathip-dev-shed.shed-mini = {
+	active count = 1
+	path = /Users/owner/Library/LaunchAgents/actions.runner.jirathip-dev-shed.shed-mini.plist
+	type = LaunchAgent
+	state = running
+
+	program = /bin/sh
+	arguments = {
+		/bin/sh
+		-c
+		exec run-actions.runner.jirathip-dev-shed.shed-mini
+	}
+
+	inherited environment = {
+		SSH_AUTH_SOCK => /private/tmp/com.apple.launchd.x/Listeners
+	}
+
+	domain = gui/501 [100005]
+	asid = 100005
+	minimum runtime = 10
+	exit timeout = 5
+	runs = 1
+	last exit code = 0
+
+	spawn type = daemon (3)
+	jetsam priority = 40
+	jetsam memory limit (active) = (unlimited)
+	jetsamproperties category = daemon
+	submitted job. ignore execute allowed
+	properties = runatload | inferred program
+}

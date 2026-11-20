@@ -56,8 +56,9 @@ func scheduleRefresh() {
         config?.monitors.first { $0.name == row.name && $0.group == row.group }
     }
 
-    /// The serve host a list row reads: a heartbeat whose host is in `hosts`.
+    /// The serve host a list row reads: a job row's, else a heartbeat whose host is in `hosts`.
     func host(of row: MonitorResult) -> String? {
+        if let host = row.host { return host }
         guard case .heartbeat(let m) = monitor(of: row), config?.hosts?[m.host] != nil else { return nil }
         return m.host
     }

@@ -169,7 +169,28 @@ fn install_writes_and_enables_the_unit_then_is_idempotent_and_restarts_on_change
 
 #[test]
 fn mini_config_is_valid_and_every_check_is_valid_sh() {
-    host_config_is_valid("mini.json", "jirathips-mac-mini", "Mini", 12);
+    host_config_is_valid("mini.json", "jirathips-mac-mini", "Mini", 3);
+    let text = std::fs::read_to_string(format!("{HOSTS}/mini.json")).unwrap();
+    let config = beacon::config::parse(&text).unwrap();
+    let host = config.hosts.values().next().unwrap();
+    let kept: Vec<_> = host
+        .jobs
+        .iter()
+        .filter_map(|(label, review)| match review {
+            beacon::config::Review::Keep(k) => Some((label.as_str(), k.group.as_str(), k.running)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(kept.len(), 9, "{kept:?}");
+    assert!(kept.iter().all(|(_, group, _)| *group == "Mini"));
+    let running: Vec<_> = kept.iter().filter(|k| k.2).map(|k| k.0).collect();
+    assert_eq!(
+        running,
+        [
+            "actions.runner.jirathip-dev-cooee.mini-cooee",
+            "actions.runner.jirathip-dev-shed.shed-mini"
+        ]
+    );
 }
 
 #[test]

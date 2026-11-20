@@ -1,0 +1,4 @@
+TimersMonotonic={ OnUnitActiveUSec=5min ; next_elapse=1d 4min 12.345678s }
+TimersCalendar=
+LastTriggerUSec=@1763630100
+NextElapseUSecRealtime=

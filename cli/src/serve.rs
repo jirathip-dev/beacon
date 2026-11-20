@@ -1,6 +1,7 @@
 use crate::config::MountPath;
 use crate::config::{self, Host, HostCheck, Id};
 use crate::history::{History, Key};
+use crate::jobs::{self, Manager};
 use crate::metrics::{EVERY_S, Ring};
 use crate::monitor::{self, Probed, Seen};
 use crate::notify::{self, Event, Notify, Tracker};
@@ -8,7 +9,7 @@ use crate::out;
 use crate::probe;
 use crate::prober;
 use crate::sampler::Sampler;
-use crate::state;
+use crate::state::{self, Announced};
 use crate::status::{Rendered, Status, StatusBody};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -111,6 +112,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
     let (tx, rx) = mpsc::channel();
     let tx = notify.is_some().then_some(tx);
     let watched = Watched::default();
+    let reviews = Mutex::new(host.jobs.clone());
     let metrics = Cell(Mutex::new(Ring::new().render(name, &host.disks)));
     let config = Cell(Mutex::new(Rendered::of(raw.clone())));
     if over_budget("mem") {
@@ -161,6 +163,44 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
         watch(s, 0, others, watched, tx);
         prober::run(s, 0, monitors, times_dir.as_deref(), probed);
         let times_dir = times_dir.as_deref();
+        let reviews = &reviews;
+        s.spawn(move || {
+            let state = std::env::var_os("HOME").map(|h| state::dir(Path::new(&h)));
+            let mut announced = tx.and(state.as_deref()).map(|d| Announced::load(d, name));
+            jobs::watch(
+                &Manager::here(),
+                || lock(reviews).clone(),
+                |rows| {
+                    if let (Some(a), Some(tx)) = (&mut announced, tx) {
+                        let fresh = a.admit(
+                            rows.iter()
+                                .filter(|r| r.group.is_none())
+                                .map(|r| r.label.clone()),
+                        );
+                        for r in rows.iter().filter(|r| fresh.contains(&r.label)) {
+                            tx.send(Event::job(name, &r.id, r.status, &r.label)).ok();
+                        }
+                    }
+                    let mut l = lock(live);
+                    for r in &rows {
+                        if let (Some(tx), Some(e)) = (tx, l.own.check(&r.id, r.status, &r.message))
+                        {
+                            tx.send(e).ok();
+                        }
+                        let id = Id::try_from(r.id.clone());
+                        if let Ok(id) = id
+                            && l.history
+                                .record(Key::Check(&id), r.status, &r.message, unix_now())
+                        {
+                            cells.history.set(l.history.render());
+                        }
+                    }
+                    if l.body.set_jobs(&rows, unix_now()) {
+                        cells.status.set(l.body.render());
+                    }
+                },
+            );
+        });
         s.spawn(move || {
             let dir = Path::new(path).parent().unwrap_or(Path::new(""));
             let git = dir.join(".git").exists();
@@ -203,6 +243,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                     match read.and_then(|raw| host_of(&raw, name).map(|h| (raw, h))) {
                         Ok((raw, (host, others, monitors))) => {
                             config.set(Rendered::of(raw));
+                            *lock(reviews) = host.jobs.clone();
                             let mut l = lock(live);
                             l.generation += 1;
                             let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();

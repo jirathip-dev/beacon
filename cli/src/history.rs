@@ -148,8 +148,8 @@ impl History {
 
     /// Drops the checks not in `checks`; the monitors become `monitors`, in order, keeping their tracks.
     pub fn keep(&mut self, checks: &[&Id], monitors: &[(&MonitorId, &str, &str)], now: u64) {
-        self.checks
-            .retain(|k, _| checks.iter().any(|id| id.as_str() == k));
+        let ours = |k: &String| k.starts_with("job-") || checks.iter().any(|id| id.as_str() == k);
+        self.checks.retain(|k, _| ours(k));
         let mut old = std::mem::take(&mut self.monitors);
         for &(id, group, name) in monitors {
             let at = old.iter().position(|m| m.id == *id);

@@ -1,6 +1,7 @@
 pub mod config;
 pub mod history;
 pub mod install;
+pub mod jobs;
 pub mod metrics;
 pub mod monitor;
 pub mod net;

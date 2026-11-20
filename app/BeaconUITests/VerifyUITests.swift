@@ -35,6 +35,10 @@ import XCTest
         launchOnFixtures()
         XCTAssert(app.staticTexts.matching(NSPredicate(format: "label MATCHES 'checked [0-9]{2}:[0-9]{2}'")).firstMatch.waitForExistence(timeout: 5))
         try shot("list")
+        let unreviewed = app.staticTexts["com.example.sync"]
+        for _ in 0..<5 where !unreviewed.isHittable { app.swipeUp() }
+        XCTAssert(unreviewed.isHittable)
+        try shot("unreviewed")
         app.buttons["[cfg]"].tap()
         XCTAssert(app.staticTexts["fetched"].waitForExistence(timeout: 5))
         try shot("settings")
