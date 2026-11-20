@@ -108,6 +108,43 @@ Options considered:
 - Serve re-reads its config every 300 s (a conditional GET for a URL, the mtime for a path).
   An invalid new config is logged and the old one kept. A changed check list restarts only
   the threads whose `{id, command, every_s, timeout_s}` changed.
+- **Resource budget (q2448, q2462, #38).** This is the standing limit for every later PR. `cli/tests/budget.rs`
+  is part of `cargo test`, so CI's `rust` job fails when serve goes over it. Serve runs as a child process
+  against a config with 5 remote hosts, a git checkout and two checks. `BEACON_SPEEDUP=60` divides every
+  serve interval (the reload tick, the sampler, the git pull, the checks), so the 10 s run stands for
+  600 s, and the readings are scaled back to real time:
+  - CPU: at most 0.2% of one core. This is serve plus the processes it waits for, read from `/proc/<pid>/stat`
+    on Linux or `beacon_sys::proc_usage` on macOS. It includes the test's own `true` checks, so it is an
+    upper bound.
+  - Memory: serve's peak resident set is at most 10 MB (Linux `VmHWM`; on macOS the peak footprint).
+  - Network: an unchanged poll of `/status`, `/metrics` or `/config` is a 304 of at most 1 KB both ways.
+    The fake hosts count the bytes of any poll serve makes.
+  - Wake-ups: serve's own threads wake at most 70 times in an idle minute, a minute with no check due:
+    the reload tick, the sampler and the git pull. On Linux these are the voluntary context switches of its
+    live threads; on macOS, the kernel's wake-up counters. The processes it starts are not counted, and
+    the count starts 1 s after the start. Each check adds about 5 a minute on Linux (spawn, wait, `kill`).
+  - Logs: serve logs only start-up, config reloads and errors, and a repeating error (a failing `git pull`)
+    once per outage. Serve keeps `serve.log` plus its one rotation `serve.log.1` at about 512 KB: past
+    256 KB the last 256 KB go to `serve.log.1` (write to a temporary file, then rename) and `serve.log` is
+    truncated. The service manager appends to it, so its next line lands at the start.
+  - Disk: everything under `~/.local/state/beacon` stays at most 20 MB. Serve trims it every 60 s, oldest
+    files first, and never the live `serve.log`. Later stores (#42's history) live in that folder and are
+    trimmed with it.
+  - Locks: no lock is held across network, disk or a subprocess. Checks, the git pull, the config read and
+    log writes run with no lock held, and the request path reads only the pre-rendered cells. Serve's only
+    disk writes are the rotation and the trim, both on the reload thread.
+  - Latency: `/status` and `/metrics` answer with a p99 of at most 2 ms (all 3000 polls of one run) from 50
+    concurrent kept-alive clients. Meanwhile a check hangs on a host that accepts and never answers, and the
+    config file is a FIFO with no writer, so the reload thread is stuck in a disk read. A slow webhook joins
+    this test when #37 adds the webhook.
+  - Soak: `BEACON_SPEEDUP=8640` runs a simulated 24 h in 10 s. Serve starts with a 630 KB `serve.log`
+    and a 21 MB stale file. The git remote goes away and comes back every 250 ms, and a check flaps. Logs
+    and the folder are sampled throughout and must stay within their caps, with at most one `git pull`
+    error per outage.
+  - `cargo test --features over-budget` with `BEACON_OVER_BUDGET=<line>` breaks one line on purpose, and
+    that line's test must then fail: `cpu` a busy loop, `mem` 20 MB, `wake` a 1 ms sleep loop, `poll`
+    no 304s, `slow` 3 ms a request, `lock` the status lock held across a check, `rotate` no rotation,
+    `trim` no trim, `repeat` a log line for every failed pull.
 
 ### D5 Status semantics
 

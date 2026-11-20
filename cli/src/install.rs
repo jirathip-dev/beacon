@@ -7,7 +7,8 @@ pub fn install(config: &str, host: &str, listen: &str) -> Result<String, String>
     let exe = std::env::current_exe().map_err(|e| format!("install: {e}"))?;
     let config = std::fs::canonicalize(config).map_err(|e| format!("{config}: {e}"))?;
     let (exe, config) = (exe.display(), config.display());
-    let logs = format!("{home}/.local/state/beacon");
+    let logs = crate::state::dir(std::path::Path::new(&home));
+    let logs = logs.to_string_lossy();
     let path = format!(
         "/usr/local/bin:/opt/homebrew/bin:{home}/.local/bin:{home}/.cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin"
     );
