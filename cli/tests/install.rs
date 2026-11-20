@@ -122,7 +122,7 @@ fn install_writes_and_enables_the_unit_then_is_idempotent_and_restarts_on_change
         let o = install(&home, listen, ("BEACON_SYSTEMCTL", "systemctl"));
         assert!(o.status.success(), "{o:?}");
         let calls = std::fs::read_to_string(home.join("calls")).unwrap_or_default();
-        let _ = std::fs::remove_file(home.join("calls"));
+        std::fs::remove_file(home.join("calls")).ok();
         (String::from_utf8_lossy(&o.stdout).into_owned(), calls)
     };
     let unit_path = home.join(".config/systemd/user/beacon-serve.service");
