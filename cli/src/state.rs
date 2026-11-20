@@ -22,13 +22,12 @@ pub fn tidy(dir: &Path) {
         trim(dir);
     }
     let old = SystemTime::now() - Duration::from_secs(KEEP_S);
-    for entry in fs::read_dir(times(dir)).into_iter().flatten().flatten() {
-        if entry
-            .metadata()
+    for e in fs::read_dir(times(dir)).into_iter().flatten().flatten() {
+        if e.metadata()
             .and_then(|m| m.modified())
             .is_ok_and(|t| t < old)
         {
-            fs::remove_file(entry.path()).ok();
+            fs::remove_file(e.path()).ok();
         }
     }
 }

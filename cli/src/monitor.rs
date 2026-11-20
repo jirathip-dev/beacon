@@ -25,15 +25,11 @@ pub struct Seen {
     pub ms: Option<u16>,
 }
 
-pub enum Expiry {
-    Fine,
-    At(u64),
-}
-
-/// The http and tcp monitors of `config`, in config order.
-pub fn probed(config: MonitorsConfig) -> Vec<Probed> {
+/// The http and tcp monitors of `config`, in config order, when `host` is its prober.
+pub fn probed(config: MonitorsConfig, host: &str) -> Vec<Probed> {
+    let ours = config.prober.as_ref().is_some_and(|p| p.as_str() == host);
     let monitors = config.monitors.into_iter();
-    let probed = monitors.filter(|m| !matches!(m, Monitor::Heartbeat(_)));
+    let probed = monitors.filter(|m| ours && !matches!(m, Monitor::Heartbeat(_)));
     let id = |m: &Monitor| MonitorId::of(m.names().0, m.names().1);
     probed
         .map(|monitor| Probed {
@@ -125,13 +121,13 @@ impl TimeProvider for Ahead {
     }
 }
 
-/// One TLS handshake with the clock `cert_warn_days` ahead; `None` when it could not tell.
-pub fn cert_expiry(m: &Monitor) -> Option<Expiry> {
+/// One TLS handshake with the clock `cert_warn_days` ahead: the notAfter it fails on; `None` when it could not tell.
+pub fn cert_expiry(m: &Monitor) -> Option<Option<u64>> {
     let Monitor::Http(h) = m else {
-        return Some(Expiry::Fine);
+        return Some(None);
     };
     if h.cert_warn_days == 0 {
-        return Some(Expiry::Fine);
+        return Some(None);
     }
     let uri: ureq::http::Uri = h.url.0.parse().ok()?;
     let host = uri.host()?.trim_start_matches('[').trim_end_matches(']');
@@ -156,10 +152,10 @@ pub fn cert_expiry(m: &Monitor) -> Option<Expiry> {
                 Some(Error::InvalidCertificate(CertificateError::ExpiredContext {
                     not_after,
                     ..
-                })) => Some(Expiry::At(not_after.as_secs())),
+                })) => Some(Some(not_after.as_secs())),
                 _ => None,
             };
         }
     }
-    Some(Expiry::Fine)
+    Some(None)
 }

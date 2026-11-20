@@ -51,7 +51,7 @@ struct MonitorTrack {
 
 /// 16 hex digits: the FNV-1a 64 hash of `<group>/<name>`.
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
-pub struct MonitorId(String);
+pub struct MonitorId(pub String);
 
 impl MonitorId {
     pub fn of(group: &str, name: &str) -> MonitorId {
@@ -60,10 +60,6 @@ impl MonitorId {
             .bytes()
             .fold(0xcbf2_9ce4_8422_2325, fnv);
         MonitorId(format!("{h:016x}"))
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
     }
 }
 
@@ -332,7 +328,7 @@ mod tests {
         t.put(29_915_000, Some(198));
         let example = std::fs::read("../docs/times.example.json").unwrap();
         assert_eq!(&t.render(&blog).body[..], &example[..]);
-        assert_eq!(blog.as_str(), "db178b9377caae1a");
+        assert_eq!(blog.0, "db178b9377caae1a");
     }
 
     #[test]

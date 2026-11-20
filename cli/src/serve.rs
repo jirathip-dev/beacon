@@ -76,29 +76,24 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
         .map(|c| format!("{} every {}s", c.id.as_str(), c.every_s))
         .collect();
     let disks: Vec<_> = host.disks.iter().map(MountPath::as_str).collect();
-    let probing = match monitors.len() {
-        0 => String::new(),
-        n => format!(", probing {n} monitors every {}s", prober::EVERY_S),
-    };
     out::out(&format!(
-        "serve {name} on {addr}: {} checks ({}), metrics every {EVERY_S}s ({}){probing}",
+        "serve {name} on {addr}: {} checks ({}), metrics every {EVERY_S}s ({}), {} monitors probed",
         checks.len(),
         checks.join(", "),
-        disks.join(", ")
+        disks.join(", "),
+        monitors.len()
     ));
     let state = std::env::var_os("HOME").map(|h| state::dir(Path::new(&h)));
     let times_dir = state.as_deref().map(state::times);
     times_dir.as_ref().map(std::fs::create_dir_all);
     let loaded = state.as_deref().and_then(state::events);
-    let mut history = loaded
-        .as_ref()
-        .map_or(Some(History::new(name, 0)), |(b, at)| {
-            History::load(name, b, *at)
-        });
-    if history.is_none() {
-        out::err("history/events.json: unreadable; starting an empty history");
-    }
-    let history = history.get_or_insert_with(|| History::new(name, 0));
+    let mut history = match &loaded {
+        Some((b, at)) => History::load(name, b, *at).unwrap_or_else(|| {
+            out::err("history/events.json: unreadable; starting an empty history");
+            History::new(name, 0)
+        }),
+        None => History::new(name, 0),
+    };
     let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
     history.keep(&ids, &tracks(&monitors), unix_now());
     let mut written = loaded.map_or(String::new(), |(b, _)| Rendered::of(b).etag);
@@ -111,7 +106,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
         generation: 0,
         body: StatusBody::new(name),
         own: Tracker::new(name),
-        history: std::mem::replace(history, History::new(name, 0)),
+        history,
     });
     let (tx, rx) = mpsc::channel();
     let tx = notify.is_some().then_some(tx);
@@ -139,7 +134,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
             cells.history.set(l.history.render());
         }
         drop(l);
-        lock(&cells.times).insert(m.id.as_str().into(), times);
+        lock(&cells.times).insert(m.id.0.clone(), times);
         true
     };
     thread::scope(|s| {
@@ -183,15 +178,14 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                         }
                         cells.history.get()
                     };
-                    match state::keep_events(state, &r.body, r.etag != written) {
-                        Ok(()) => (written, write_down) = (r.etag, false),
-                        Err(e) => {
-                            if !write_down {
-                                out::err(&format!("history/events.json: {e}"));
-                            }
-                            (written, write_down) = (String::new(), true);
-                        }
+                    let kept = state::keep_events(state, &r.body, r.etag != written);
+                    if let Err(e) = &kept
+                        && !write_down
+                    {
+                        out::err(&format!("history/events.json: {e}"));
                     }
+                    write_down = kept.is_err();
+                    written = if write_down { String::new() } else { r.etag };
                     state::tidy(state);
                 }
                 if git && pulled.is_none_or(|p| p.elapsed() >= every(PULL_EVERY_S)) {
@@ -216,7 +210,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                             cells.status.set(l.body.render());
                             l.history.keep(&ids, &tracks(&monitors), unix_now());
                             cells.history.set(l.history.render());
-                            let ours = |id: &String| monitors.iter().any(|m| m.id.as_str() == id);
+                            let ours = |id: &String| monitors.iter().any(|m| &m.id.0 == id);
                             lock(&cells.times).retain(|id, _| ours(id));
                             run_checks(s, l.generation, host.checks.clone(), live, cells, tx);
                             watch(s, l.generation, others, watched, tx);
@@ -305,13 +299,7 @@ fn host_of(raw: &[u8], name: &str) -> Result<Ours, String> {
         .and_then(|id| config.hosts.remove(&id))
         .ok_or(format!("no host {name:?} in hosts"))?;
     let others = std::mem::take(&mut config.hosts);
-    let probes = config.prober.as_ref().is_some_and(|p| p.as_str() == name);
-    let monitors = if probes {
-        monitor::probed(config)
-    } else {
-        Vec::new()
-    };
-    Ok((host, others, monitors))
+    Ok((host, others, monitor::probed(config, name)))
 }
 
 fn tracks(monitors: &[Probed]) -> Vec<(&crate::history::MonitorId, &str, &str)> {

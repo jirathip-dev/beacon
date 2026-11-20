@@ -1,5 +1,5 @@
 use crate::history::Times;
-use crate::monitor::{self, Expiry, Probed, Seen};
+use crate::monitor::{self, Probed, Seen};
 use crate::net;
 use crate::serve::{every, over_budget, unix_now};
 use crate::status::Rendered;
@@ -23,7 +23,7 @@ pub fn run<'s>(
 ) {
     let mut threads: Vec<Vec<_>> = (0..PROBERS).map(|_| Vec::new()).collect();
     for (i, m) in monitors.into_iter().enumerate() {
-        let path = dir.map(|d| d.join(format!("{}.bin", m.id.as_str())));
+        let path = dir.map(|d| d.join(format!("{}.bin", m.id.0)));
         let ring = Times::load(path.as_ref().and_then(|p| fs::read(p).ok()).as_deref());
         let file = path.filter(|p| fs::write(p, ring.image()).is_ok());
         let file = file.and_then(|p| File::options().write(true).open(p).ok());
@@ -38,10 +38,8 @@ pub fn run<'s>(
                 for (m, file, ring, checked, cert) in &mut mine {
                     if checked.is_none_or(|t: Instant| t.elapsed() >= every(3600)) {
                         *checked = Some(Instant::now());
-                        match monitor::cert_expiry(&m.monitor) {
-                            Some(Expiry::Fine) => *cert = None,
-                            Some(Expiry::At(t)) => *cert = Some(t),
-                            None => {}
+                        if let Some(c) = monitor::cert_expiry(&m.monitor) {
+                            *cert = c;
                         }
                     }
                     let seen = monitor::probe(&agent, &m.monitor, *cert);
