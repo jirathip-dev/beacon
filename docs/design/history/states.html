@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>history states</title>
+<link rel="stylesheet" href="../host-detail/beacon.css"><link rel="stylesheet" href="history.css">
+<body><script type="module">
+import { HISTORY, END, md, statusBar, mount, top, uptimeCard, incidents } from './view.js';
+const [, api, smtp] = HISTORY.monitors;
+const r = (dot, name, word, since, err) => `<div class="mrow" style="${err ? 'box-shadow:inset 3px 0 0 var(--red);flex-wrap:wrap' : ''}">
+  <span class="line1"><span class="dot ${dot}"></span>${name}</span><span><span class="${dot}">${word}</span> <span class="mute">since ${since}</span> <span class="chev">&nbsp;›</span></span>
+  ${err ? `<span class="meta mute" style="width:100%;padding-left:13px">${err}</span>` : ''}</div>`;
+const word = (a, extra = '') => `<div class="card word">${extra}<div>${a}</div></div>`;
+const lamp = `<img src="../../../app/design/app-icon/icons/beacon-teal.svg" width="72" height="72" style="border-radius:16px;margin-bottom:6px" alt="">`;
+const bar = (t, s) => `${statusBar()}${top('monitors', t, s)}`;
+mount(() => [
+  `${statusBar()}<div class="top"><span class="title" style="padding-left:12px">beacon</span><span class="key">[cfg]</span></div><div class="body">
+    <div class="card" style="border-top:3px solid var(--red)"><div class="hd"><span>~ web</span><span class="red">1 down</span></div>
+      ${r('green', 'Blog', 'up', '08:01')}${r('red', 'API', 'down', '06:00', 'cert expires in 13d')}</div></div>
+   <div class="top" style="border-top:6px solid var(--edge)"><span class="key">[‹ monitors]</span><span class="title">macmini</span><span style="width:96px"></span></div>
+   <div class="body"><div class="card"><div class="hd"><span>~ checks on macmini</span><span class="red">1 down</span></div>
+      ${r('red', 'backup', 'down', '03:12')}${r('green', 'disk', 'up', 'Oct 21')}</div></div>`,
+  `${bar('API', 'web · http')}<div class="body">
+    <div class="target meta"><span class="mute">https://api.example.com/health</span>
+      <span class="line1 red"><span class="dot"></span>cert ends ${md(END + 13 * 86400)} · 13d left</span></div>
+    ${incidents(api)}</div>`,
+  `${bar('smtp', 'mail · tcp')}<div class="body">${uptimeCard(smtp)}</div>`,
+  `${bar('Blog', 'web · http')}<div class="body">${word('↻ reading the log')}</div>`,
+  `${bar('Blog', 'web · http')}<div class="body">${word('no history')}</div>`,
+  `${bar('Blog', 'web · http')}<div class="body">${word('dark lamp · no history', lamp)}</div>`,
+  `${bar('Blog', 'web · http')}<div class="body"><p class="amber line1" style="padding:0 4px"><span class="dot"></span>history from 09:12 · timeout after 5s</p>
+    <div class="dim">${uptimeCard(HISTORY.monitors[0])}</div></div>`,
+], 'History states (states.html)', [
+  'entry: with a prober, http/tcp rows get ›; on host detail, check rows get ›',
+  'down now: an open incident on top; the cert line from the phone\'s own probe',
+  'young: a monitor seen for 3d shows its real span, not 30d',
+  'loading: first fetch of /history',
+  'no prober: monitors.json names no "prober" host',
+  'not served: 404, a serve from before #42',
+  'unreachable: the last history stays, dimmed, under an amber line',
+]);
+</script>

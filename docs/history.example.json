@@ -1,0 +1,1 @@
+{"version":1,"host":"macmini","gaps":[[1794700000,1794703600]],"checks":{"backup":{"since":1794000000,"down":[{"down_at":1794787200,"up_at":1794790800,"message":"exit 1"}]},"disk":{"since":1794000000,"down":[]}},"monitors":[{"id":"db178b9377caae1a","group":"Web","name":"Blog","since":1794000000,"down":[{"down_at":1794900000,"up_at":null,"message":"cert expires in 13d"}]}]}

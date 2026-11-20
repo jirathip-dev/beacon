@@ -52,7 +52,7 @@ public struct Refresher: Sendable {
                 switch monitor {
                 case .http(let m):
                     group.addTask {
-                        let (up, detail) = await http(m, timeout: cap(m.timeout_s ?? 10))
+                        let (up, detail) = await http(m, timeout: cap(m.timeout_s ?? 10), now: now)
                         return .probe(i, up: up, detail: detail)
                     }
                 case .tcp(let m):
@@ -126,7 +126,7 @@ public struct Refresher: Sendable {
         let cached = await hosts.get(host.url)
         if let cached { request.setValue(cached.etag, forHTTPHeaderField: "If-None-Match") }
         do {
-            let (data, response) = try await transport.get(request, timeout: timeout)
+            let (data, response, _) = try await transport.get(request, timeout: timeout)
             if response.statusCode == 304, let cached { return .body(cached.body) }
             guard (200..<300).contains(response.statusCode) else {
                 return .unreachable("HTTP \(response.statusCode)")
@@ -141,15 +141,18 @@ public struct Refresher: Sendable {
         }
     }
 
-    func http(_ m: HTTPMonitor, timeout: Int) async -> (Bool, String) {
+    func http(_ m: HTTPMonitor, timeout: Int, now: Date) async -> (Bool, String) {
         do {
-            let (data, response) = try await transport.get(URLRequest(url: m.url), timeout: timeout)
+            let (data, response, notAfter) = try await transport.get(URLRequest(url: m.url), timeout: timeout)
             let code = response.statusCode
             guard m.expect_status.map({ $0 == code }) ?? (200..<300).contains(code) else {
                 return (false, "HTTP \(code)")
             }
             if let keyword = m.keyword, !String(decoding: data, as: UTF8.self).contains(keyword) {
                 return (false, "keyword missing: \(keyword)")
+            }
+            if let days = notAfter.map({ Int($0.timeIntervalSince(now) / 86_400) }), days < m.cert_warn_days ?? 14 {
+                return (false, "cert expires in \(days)d")
             }
             return (true, "")
         } catch {

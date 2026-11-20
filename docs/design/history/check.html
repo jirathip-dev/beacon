@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>check history</title>
+<link rel="stylesheet" href="../host-detail/beacon.css"><link rel="stylesheet" href="history.css">
+<body><script type="module">
+import { HISTORY, statusBar, mount, top, uptimeCard, incidents } from './view.js';
+mount(() => `${statusBar()}${top('macmini', 'backup', 'check on macmini')}
+  <div class="body">
+    ${uptimeCard(HISTORY.checks.backup)}
+    ${incidents(HISTORY.checks.backup)}
+  </div>`, 'Check history: backup on macmini (check.html)');
+</script>

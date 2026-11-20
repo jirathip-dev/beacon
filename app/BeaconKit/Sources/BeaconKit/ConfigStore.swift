@@ -45,7 +45,7 @@ public struct ConfigStore: Sendable {
         var request = URLRequest(url: url)
         if let etag = cached?.etag { request.setValue(etag, forHTTPHeaderField: "If-None-Match") }
         do {
-            let (data, response) = try await transport.get(request, timeout: 10)
+            let (data, response, _) = try await transport.get(request, timeout: 10)
             if response.statusCode == 304, cached != nil {
                 let config = try JSONDecoder().decode(MonitorsConfig.self, from: Data(contentsOf: file))
                 try save(nil, Meta(url: url, etag: cached?.etag, at: now))

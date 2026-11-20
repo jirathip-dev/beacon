@@ -1,0 +1,16 @@
+/* What the history screens add to ../host-detail/beacon.css: no new colour, only layout. */
+.ttl { display:flex; flex-direction:column; align-items:center; line-height:1.15; }
+.ups { display:grid; grid-template-columns:1fr 1fr; padding:10px 12px 4px; }
+.ups b { display:block; }
+.pad { padding:6px 12px 0; } .pad2 { padding:6px 12px 10px; }
+.strip { display:grid; grid-template-columns:repeat(30,1fr); gap:2px; height:22px; }
+.strip i { border-radius:2px; background:var(--green); }
+.strip i.bad { background:var(--red); } .strip i.gap { background:var(--edge); } .strip i.none { background:none; box-shadow:inset 0 0 0 1px var(--line); }
+.ends { display:flex; justify-content:space-between; padding-top:3px; }
+.inc { display:grid; grid-template-columns:1fr auto; gap:2px 8px; padding:9px 12px; border-top:1px solid var(--line); }
+.hd + .inc { border-top:0; }
+.inc.open { box-shadow:inset 3px 0 0 var(--red); }
+.inc .msg { grid-column:1 / -1; padding-left:13px; }
+.miss { stroke:var(--red); stroke-width:1.5; }
+.legend { display:flex; gap:14px; padding:0 12px 6px; }
+.target { padding:0 4px; display:flex; flex-direction:column; gap:2px; }
