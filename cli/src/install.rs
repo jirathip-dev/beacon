@@ -1,7 +1,7 @@
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
-/// Installs `beacon serve` as LaunchAgent dev.beacon.serve (macOS) or systemd user unit beacon-serve.service; idempotent.
+/// Installs `beacon serve` as `LaunchAgent` `dev.beacon.serve` (macOS) or systemd user unit `beacon-serve.service`; idempotent.
 pub fn install(config: &str, host: &str, listen: &str) -> Result<String, String> {
     let home = std::env::var("HOME").map_err(|_| "install: HOME is not set")?;
     let exe = std::env::current_exe().map_err(|e| format!("install: {e}"))?;

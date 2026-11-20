@@ -45,12 +45,12 @@ fn sample(t: u64, cpu: Option<f32>, disks: &[(&str, u64, u64)]) -> Sample {
         load: Some([1.523, 1.8, 2.0149]),
         cpu_pct: cpu,
         mem: Some(Gauge {
-            total: 34359738368,
-            used: 16622419968 + t % 7,
+            total: 34_359_738_368,
+            used: 16_622_419_968 + t % 7,
         }),
         swap: Some(Gauge {
-            total: 2147483648,
-            used: 718404485,
+            total: 2_147_483_648,
+            used: 718_404_485,
         }),
         disks: disks
             .iter()
@@ -62,10 +62,10 @@ fn sample(t: u64, cpu: Option<f32>, disks: &[(&str, u64, u64)]) -> Sample {
 fn three() -> Ring {
     let mut ring = Ring::new();
     ring.push(sample(
-        1794787200,
+        1_794_787_200,
         None,
         &[
-            ("/", 358843744256, 135488622592),
+            ("/", 358_843_744_256, 135_488_622_592),
             ("/Volumes/backup", 1000, 2000),
         ],
     ));
@@ -73,16 +73,16 @@ fn three() -> Ring {
         load: None,
         mem: None,
         ..sample(
-            1794787260,
+            1_794_787_260,
             Some(12.54),
-            &[("/", 358843801600, 135488565248)],
+            &[("/", 358_843_801_600, 135_488_565_248)],
         )
     });
     ring.push(sample(
-        1794787320,
+        1_794_787_320,
         Some(9.8),
         &[
-            ("/", 358843867136, 135488499712),
+            ("/", 358_843_867_136, 135_488_499_712),
             ("/Volumes/backup", 1500, 1500),
         ],
     ));
@@ -112,7 +112,7 @@ fn render_gives_the_golden_bytes_in_the_schemas_shape() {
     assert_eq!(body.cpu_pct, [None, Some(12.5), Some(9.8)]);
     assert_eq!(body.load1, [Some(1.52), None, Some(1.52)]);
     assert_eq!(body.load15[0], Some(2.01));
-    assert_eq!(body.mem.total_bytes, Some(34359738368));
+    assert_eq!(body.mem.total_bytes, Some(34_359_738_368));
     assert_eq!(
         body.disks["/Volumes/backup"].free_bytes,
         [Some(2000), None, Some(1500)]
@@ -150,6 +150,6 @@ fn etag_holds_for_the_same_samples_and_changes_with_a_new_one() {
     let mut ring = three();
     let (a, b) = (ring.render("m", &disks), ring.render("m", &disks));
     assert_eq!(a.etag, b.etag);
-    ring.push(sample(1794787380, None, &[]));
+    ring.push(sample(1_794_787_380, None, &[]));
     assert_ne!(ring.render("m", &disks).etag, a.etag);
 }

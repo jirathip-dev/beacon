@@ -8,7 +8,7 @@ private let exampleURL = URL(filePath: #filePath)
     .appending(path: "docs/monitors.example.json")
 
 private func example() throws -> [String: Any] {
-    try JSONSerialization.jsonObject(with: Data(contentsOf: exampleURL)) as! [String: Any]
+    try #require(JSONSerialization.jsonObject(with: Data(contentsOf: exampleURL)) as? [String: Any])
 }
 
 private func decode(_ object: Any) throws -> MonitorsConfig {
@@ -31,7 +31,7 @@ private func decode(_ object: Any) throws -> MonitorsConfig {
 @Test func ignoresUnknownFields() throws {
     var json = try example()
     json["future"] = true
-    var monitors = json["monitors"] as! [[String: Any]]
+    var monitors = try #require(json["monitors"] as? [[String: Any]])
     monitors[0]["future"] = 1
     json["monitors"] = monitors
     #expect(try decode(json).monitors.count == 5)
@@ -43,7 +43,7 @@ private func decode(_ object: Any) throws -> MonitorsConfig {
     #expect(throws: DecodingError.self) { try decode(json) }
 
     json = try example()
-    var monitors = json["monitors"] as! [[String: Any]]
+    var monitors = try #require(json["monitors"] as? [[String: Any]])
     monitors[0]["type"] = "ping"
     json["monitors"] = monitors
     #expect(throws: DecodingError.self) { try decode(json) }

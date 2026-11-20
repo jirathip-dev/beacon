@@ -20,7 +20,7 @@ fn install(home: &Path, listen: &str, (var, ctl): (&str, &str)) -> Output {
 
 fn scratch(name: &str) -> PathBuf {
     let home = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&home);
+    std::fs::remove_dir_all(&home).ok();
     std::fs::create_dir_all(&home).unwrap();
     home
 }

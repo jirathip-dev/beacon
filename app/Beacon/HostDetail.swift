@@ -161,8 +161,9 @@ func trace(_ ctx: GraphicsContext, _ w: Window, top: Double, in rect: CGRect, do
     }
     for p in w.points {
         guard let y = p.y else { flush(); continue }
-        newest = CGPoint(x: x(p.t), y: rect.maxY - CGFloat(y / top) * rect.height)
-        run.append(newest!)
+        let point = CGPoint(x: x(p.t), y: rect.maxY - CGFloat(y / top) * rect.height)
+        newest = point
+        run.append(point)
     }
     flush()
     ctx.fill(area, with: .color(T.accent.opacity(0.12)))
@@ -274,7 +275,11 @@ struct ChartSheet: View {
                     let text = String(format: "%g", (v * 10).rounded() / 10) + (series.percent && f == 1 ? "%" : "")
                     ctx.draw(label(text), at: CGPoint(x: rect.minX - 6, y: y(v)), anchor: .trailing)
                 }
-                let step = [ChartRange.hour: 900, .six: 3600, .day: 21600][range]!
+                let step = switch range {
+                case .hour: 900
+                case .six: 3600
+                case .day: 21600
+                }
                 for tick in stride(from: (t0 + step - 1) / step * step, through: t1, by: step)
                 where x(tick) > rect.minX + 14 && x(tick) < rect.maxX - 44 {
                     ctx.draw(label(hhmm(tick)), at: CGPoint(x: x(tick), y: size.height - 6), anchor: .bottom)
