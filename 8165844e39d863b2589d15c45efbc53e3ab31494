@@ -1,0 +1,13 @@
+Decided: move the macOS host_statistics FFI into a cli/sys crate so beacon itself can forbid unsafe_code
+Because: "Fix every existing violation in `cli/src` with real error handling, not a blanket"
+Rejected: unsafe_code = "deny" with a reasoned allow in sampler.rs — the issue asks for forbid; drover keeps unsafe in drover-sys the same way
+Decided: all CLI stdout/stderr goes through cli/src/out.rs, the only print allow
+Because: "CLI output that must reach stdout/stderr goes through one small writer module"
+Decided: SwiftLint runs only_rules (force_unwrapping, force_try, force_cast, custom fatalError/print)
+Because: "`force_unwrapping`, `force_try`, `force_cast` as errors"
+Rejected: SwiftLint's default rule set — about 190 style findings (145 identifier_name) would mean renaming across the app
+Decided: CI app build is build-for-testing so the UI-test target is compiled under warnings-as-errors
+Because: "for the app, widget, BeaconKit and the UI-test target"
+Check: scripts/line-cap.sh now counts cli/sys/src, and scripts/line-cap.test.sh covers that
+Check: cli/rust-toolchain.toml pins 1.100; cpu_pct and Rendered::json carry the two reasoned expects besides out.rs; cpu_pct's exact-value test is unchanged
+Owner: Beacon's code now must pass drover's strict lints, dependency checks and SwiftLint; nothing it does changes
