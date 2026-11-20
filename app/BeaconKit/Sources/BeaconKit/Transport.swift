@@ -1,10 +1,11 @@
 import Foundation
 import Network
+import Synchronization
 
 /// The only network the probes and the config store use; tests pass a mock.
 public protocol Transport: Sendable {
-    /// One GET with a total timeout. A timeout throws `URLError(.timedOut)`.
-    func get(_ request: URLRequest, timeout: Int) async throws -> (Data, HTTPURLResponse)
+    /// One GET with a total timeout and the leaf certificate's notAfter. A timeout throws `URLError(.timedOut)`.
+    func get(_ request: URLRequest, timeout: Int) async throws -> (Data, HTTPURLResponse, Date?)
     /// Completes once a TCP connection is ready. A timeout throws `URLError(.timedOut)`.
     func connect(host: String, port: Int, timeout: Int) async throws
 }
@@ -12,7 +13,7 @@ public protocol Transport: Sendable {
 public struct LiveTransport: Transport {
     public init() {}
 
-    public func get(_ request: URLRequest, timeout: Int) async throws -> (Data, HTTPURLResponse) {
+    public func get(_ request: URLRequest, timeout: Int) async throws -> (Data, HTTPURLResponse, Date?) {
         let config = URLSessionConfiguration.ephemeral
         config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
@@ -20,9 +21,10 @@ public struct LiveTransport: Transport {
         config.timeoutIntervalForResource = TimeInterval(timeout)
         let session = URLSession(configuration: config)
         defer { session.finishTasksAndInvalidate() }
-        let (data, response) = try await session.data(for: request)
+        let leaf = Leaf()
+        let (data, response) = try await session.data(for: request, delegate: leaf)
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
-        return (data, http)
+        return (data, http, leaf.notAfter.withLock { $0 })
     }
 
     public func connect(host: String, port: Int, timeout: Int) async throws {
@@ -47,6 +49,19 @@ public struct LiveTransport: Transport {
                 finish(URLError(.timedOut))
             }
         }
+    }
+}
+
+private final class Leaf: NSObject, URLSessionTaskDelegate, Sendable {
+    let notAfter = Mutex<Date?>(nil)
+    func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge)
+        async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
+        if let trust = challenge.protectionSpace.serverTrust,
+           let leaf = (SecTrustCopyCertificateChain(trust) as? [SecCertificate])?.first,
+           let date = SecCertificateCopyNotValidAfterDate(leaf) as Date? {
+            notAfter.withLock { $0 = date }
+        }
+        return (.performDefaultHandling, nil)
     }
 }
 

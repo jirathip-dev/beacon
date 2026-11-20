@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "times.schema.json",
+  "title": "beacon serve: GET /history/<id>, one http or tcp monitor's response times",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "id", "every_s", "recent", "hourly"],
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+    "every_s": { "const": 60 },
+    "recent": {
+      "description": "One entry per probe of the last 24 h, oldest first. A minute that was not probed is absent.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["t", "ms"],
+      "properties": {
+        "t": { "$ref": "#/$defs/times", "maxItems": 1440 },
+        "ms": { "description": "null: the probe got no response.", "$ref": "#/$defs/column", "maxItems": 1440 }
+      }
+    },
+    "hourly": {
+      "description": "One entry per hour of the last 30 days that had a response, oldest first; the last is the running hour.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["t", "avg_ms", "max_ms"],
+      "properties": {
+        "t": { "description": "The start of each hour.", "$ref": "#/$defs/times", "maxItems": 720 },
+        "avg_ms": { "$ref": "#/$defs/column", "maxItems": 720 },
+        "max_ms": { "$ref": "#/$defs/column", "maxItems": 720 }
+      }
+    }
+  },
+  "$defs": {
+    "times": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+    "column": { "type": "array", "items": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 65533 }, { "type": "null" }] } }
+  }
+}

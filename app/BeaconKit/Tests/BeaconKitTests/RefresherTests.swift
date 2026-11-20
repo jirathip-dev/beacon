@@ -10,6 +10,7 @@ final class MockTransport: Transport, @unchecked Sendable {
     var replies: [String: Result<Reply, URLError>]
     /// A host:port that is absent connects.
     var refused: [String: URLError]
+    var notAfter: [String: Date] = [:]
 
     init(replies: [String: Result<Reply, URLError>] = [:], refused: [String: URLError] = [:]) {
         (self.replies, self.refused) = (replies, refused)
@@ -17,14 +18,15 @@ final class MockTransport: Transport, @unchecked Sendable {
 
     var requests: [(URLRequest, Int)] { lock.withLock { _requests } }
 
-    func get(_ request: URLRequest, timeout: Int) async throws -> (Data, HTTPURLResponse) {
+    func get(_ request: URLRequest, timeout: Int) async throws -> (Data, HTTPURLResponse, Date?) {
         let url = request.url!.absoluteString
         let reply = lock.withLock {
             _requests.append((request, timeout))
             return replies[url] ?? .failure(URLError(.cannotFindHost))
         }
         let r = try reply.get()
-        return (Data(r.body.utf8), HTTPURLResponse(url: request.url!, statusCode: r.status, httpVersion: nil, headerFields: r.headers)!)
+        return (Data(r.body.utf8), HTTPURLResponse(url: request.url!, statusCode: r.status, httpVersion: nil, headerFields: r.headers)!,
+                notAfter[url])
     }
 
     func connect(host: String, port: Int, timeout: Int) async throws {

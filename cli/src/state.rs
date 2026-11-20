@@ -1,3 +1,4 @@
+use crate::history::KEEP_S;
 use crate::out;
 use crate::serve::over_budget;
 use serde::Deserialize;
@@ -5,7 +6,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const LOG_ROTATE_BYTES: u64 = 256 << 10;
 const STATE_CAP_BYTES: u64 = 20 << 20;
@@ -23,6 +24,41 @@ pub fn tidy(dir: &Path) {
     if !over_budget("trim") {
         trim(dir);
     }
+    let old = SystemTime::now() - Duration::from_secs(KEEP_S);
+    for e in fs::read_dir(times(dir)).into_iter().flatten().flatten() {
+        if e.metadata()
+            .and_then(|m| m.modified())
+            .is_ok_and(|t| t < old)
+        {
+            fs::remove_file(e.path()).ok();
+        }
+    }
+}
+
+/// The folder of the prober's ring files.
+pub fn times(dir: &Path) -> PathBuf {
+    dir.join("history/times")
+}
+
+/// `events.json`'s bytes and its modification time in Unix seconds.
+pub fn events(dir: &Path) -> Option<(Vec<u8>, u64)> {
+    let path = dir.join("history/events.json");
+    let at = fs::metadata(&path).and_then(|m| m.modified()).ok()?;
+    let at = at.duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs());
+    Some((fs::read(&path).ok()?, at))
+}
+
+/// Writes `bytes` to `events.json` (a temporary file, then rename) when `changed`, else sets its modification time to now.
+pub fn keep_events(dir: &Path, bytes: &[u8], changed: bool) -> std::io::Result<()> {
+    let path = dir.join("history/events.json");
+    if !changed {
+        let file = fs::File::options().write(true).open(&path)?;
+        return file.set_modified(SystemTime::now());
+    }
+    fs::create_dir_all(times(dir))?;
+    let tmp = path.with_extension("tmp");
+    fs::write(&tmp, bytes)?;
+    fs::rename(&tmp, &path)
 }
 
 fn rotate(dir: &Path) -> std::io::Result<()> {

@@ -1,4 +1,5 @@
 use crate::config::{HttpsUrl, NotifyPolicy};
+use crate::net::agent;
 use crate::out;
 use crate::serve::{every, unix_now};
 use crate::state::{self, Announced};
@@ -12,8 +13,7 @@ use std::path::Path;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
 use std::thread;
 use std::time::{Duration, Instant};
-use ureq::tls::{PemItem, RootCerts, TlsConfig, parse_pem};
-use ureq::{Agent, Body, http::Response};
+use ureq::{Body, http::Response};
 
 pub const POLL_S: u64 = 60;
 pub const CHECK_POLLS: u32 = 2;
@@ -396,17 +396,4 @@ fn ok(sent: Result<Response<Body>, ureq::Error>) -> Result<Response<Body>, Strin
         200..300 | 304 => Ok(r),
         _ => Err(format!("HTTP {code}")),
     }
-}
-
-fn agent() -> Agent {
-    let pem = std::env::var_os("SSL_CERT_FILE").and_then(|p| std::fs::read(p).ok());
-    let certs = parse_pem(pem.as_deref().unwrap_or_default()).filter_map(|item| match item {
-        Ok(PemItem::Certificate(c)) => Some(c),
-        _ => None,
-    });
-    let certs: Vec<_> = certs.collect();
-    let roots = (!certs.is_empty()).then(|| RootCerts::new_with_certs(&certs));
-    let tls = TlsConfig::builder().root_certs(roots.unwrap_or(RootCerts::WebPki));
-    let config = Agent::config_builder().http_status_as_error(false);
-    config.tls_config(tls.build()).build().into()
 }

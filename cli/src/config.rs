@@ -16,6 +16,7 @@ pub struct MonitorsConfig {
     pub monitors: Vec<Monitor>,
     #[serde(default)]
     pub hosts: BTreeMap<Id, Host>,
+    pub prober: Option<Id>,
     #[serde(default)]
     pub notify: NotifyPolicy,
 }
@@ -57,6 +58,8 @@ pub struct HttpMonitor {
     pub keyword: Option<String>,
     #[serde(default = "ten")]
     pub timeout_s: u8,
+    #[serde(default = "fourteen")]
+    pub cert_warn_days: u16,
 }
 
 #[derive(Debug, Deserialize)]
@@ -276,6 +279,16 @@ impl TryFrom<u64> for Version1 {
     }
 }
 
+impl Monitor {
+    pub fn names(&self) -> (&str, &str) {
+        match self {
+            Monitor::Http(h) => (&h.group, &h.name),
+            Monitor::Tcp(t) => (&t.group, &t.name),
+            Monitor::Heartbeat(b) => (&b.group, &b.name),
+        }
+    }
+}
+
 impl MonitorsConfig {
     fn validate(&self) -> Result<(), String> {
         let n = self.notify;
@@ -334,15 +347,21 @@ impl MonitorsConfig {
                 }
             }
         }
+        if let Some(p) = &self.prober
+            && !self.hosts.contains_key(p)
+        {
+            return Err(format!("prober {:?} is not a key of hosts", p.0));
+        }
+        let mut probed = BTreeSet::new();
         for m in &self.monitors {
-            let (name, group) = match m {
-                Monitor::Http(h) => (&h.name, &h.group),
-                Monitor::Tcp(t) => (&t.name, &t.group),
-                Monitor::Heartbeat(b) => (&b.name, &b.group),
-            };
+            let (group, name) = m.names();
             let ctx = |e: String| format!("monitor {name:?}: {e}");
             text("name", name, 60).map_err(ctx)?;
             text("group", group, 40).map_err(ctx)?;
+            let unique = matches!(m, Monitor::Heartbeat(_)) || probed.insert((group, name));
+            if self.prober.is_some() && !unique {
+                return Err(ctx(format!("group/name {group}/{name} is not unique")));
+            }
             match m {
                 Monitor::Http(h) => {
                     if let Some(s) = h.expect_status {
@@ -352,6 +371,7 @@ impl MonitorsConfig {
                         text("keyword", k, usize::MAX).map_err(ctx)?;
                     }
                     range("timeout_s", h.timeout_s.into(), 1, 30).map_err(ctx)?;
+                    range("cert_warn_days", h.cert_warn_days.into(), 0, 365).map_err(ctx)?;
                 }
                 Monitor::Tcp(t) => {
                     text("host", &t.host, usize::MAX).map_err(ctx)?;
@@ -418,6 +438,9 @@ fn five() -> u8 {
 }
 fn ten() -> u8 {
     10
+}
+fn fourteen() -> u16 {
+    14
 }
 fn sixty() -> u32 {
     60
