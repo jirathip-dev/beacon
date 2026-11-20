@@ -22,32 +22,32 @@ fn linux_load_cpu_mem_swap_and_df_parse_from_proc_and_df_text() {
         first,
         CpuTicks {
             busy: 5668,
-            total: 3704867
+            total: 3_704_867
         }
     );
     assert_eq!(
         second,
         CpuTicks {
             busy: 5828,
-            total: 3705787
+            total: 3_705_787
         }
     );
-    assert_eq!(sampler::cpu_pct(first, second), Some(17.391304));
+    assert_eq!(sampler::cpu_pct(first, second), Some(17.391_304));
     let mem = Gauge {
-        total: 8040096 * 1024,
-        used: 2986639360,
+        total: 8_040_096 * 1024,
+        used: 2_986_639_360,
     };
     let swap = Gauge {
-        total: 2147479552,
-        used: 1073741824,
+        total: 2_147_479_552,
+        used: 1_073_741_824,
     };
     assert_eq!(
         sampler::linux_mem(&fixture("linux-meminfo.txt")),
         Some((mem, swap))
     );
     let disk = DiskUsage {
-        used: 24220598272,
-        free: 38505025536,
+        used: 24_220_598_272,
+        free: 38_505_025_536,
     };
     assert_eq!(
         sampler::df(&fixture("linux-df.txt")),
@@ -62,21 +62,21 @@ fn macos_load_mem_swap_and_df_parse_from_the_minis_tool_output() {
     assert_eq!(sampler::macos_load(&sysctl), Some([32.78, 31.37, 30.75]));
     let memsize = sysctl.lines().nth(1).unwrap();
     let mem = Gauge {
-        total: 34359738368,
-        used: 20307083264,
+        total: 34_359_738_368,
+        used: 20_307_083_264,
     };
     assert_eq!(
         sampler::macos_mem(&fixture("macos-vm_stat.txt"), memsize),
         Some(mem)
     );
     let swap = Gauge {
-        total: 2147483648,
-        used: 718400389,
+        total: 2_147_483_648,
+        used: 718_400_389,
     };
     assert_eq!(sampler::macos_swap(&sysctl), Some(swap));
     let disk = DiskUsage {
-        used: 423378432000,
-        free: 70953934848,
+        used: 423_378_432_000,
+        free: 70_953_934_848,
     };
     assert_eq!(
         sampler::df(&fixture("macos-df.txt")),

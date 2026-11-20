@@ -45,8 +45,8 @@ public struct MetricsBody: Decodable, Sendable {
             Series(id: "load", values: load1, percent: false),
             Series(id: "cpu", values: cpu_pct, percent: true),
             Series(id: "mem", values: mem.used_bytes.map { pct($0, mem.total_bytes) }, percent: true),
-        ] + mounts(order: order).map { m in
-            let d = disks[m]!
+        ] + mounts(order: order).compactMap { m in
+            guard let d = disks[m] else { return nil }
             return Series(id: "disk \(m)", values: zip(d.used_bytes, d.free_bytes).map { u, f in
                 pct(u, u.flatMap { u in f.map { u + $0 } })
             }, percent: true)
@@ -74,7 +74,13 @@ public struct Series: Sendable, Identifiable {
 public enum ChartRange: String, CaseIterable, Sendable {
     case hour = "1h", six = "6h", day = "24h"
 
-    public var seconds: Int { ["1h": 3600, "6h": 6 * 3600, "24h": 24 * 3600][rawValue]! }
+    public var seconds: Int {
+        switch self {
+        case .hour: 3600
+        case .six: 6 * 3600
+        case .day: 24 * 3600
+        }
+    }
     public var bucket: Int { self == .day ? 4 : 1 }
 }
 
@@ -85,12 +91,16 @@ public struct Window: Sendable {
     public let points: [(t: Int, y: Double?)]
 
     public init(_ t: [Int], _ values: [Double?], range: ChartRange) {
-        let from = (t.last ?? 0) - range.seconds
+        self.init(t, values, seconds: range.seconds, bucket: range.bucket)
+    }
+
+    public init(_ t: [Int], _ values: [Double?], seconds: Int, bucket: Int) {
+        let from = (t.last ?? 0) - seconds
         let start = t.firstIndex { $0 > from } ?? t.count
         let (t, values) = (Array(t[start...]), Array(values[start...]))
         (self.t, self.values) = (t, values)
-        points = stride(from: 0, to: t.count, by: range.bucket).map { i in
-            let end = Swift.min(i + range.bucket, t.count)
+        points = stride(from: 0, to: t.count, by: bucket).map { i in
+            let end = Swift.min(i + bucket, t.count)
             let ys = values[i..<end].compactMap { $0 }
             return (t[end - 1], ys.isEmpty ? nil : ys.reduce(0, +) / Double(ys.count))
         }
@@ -103,30 +113,36 @@ public struct Window: Sendable {
     public var avg: Double? { present.isEmpty ? nil : present.reduce(0, +) / Double(present.count) }
 }
 
-public enum MetricsReply: Sendable {
-    case fresh(MetricsBody, etag: String?)
+public enum Reply<Body: Sendable>: Sendable {
+    case fresh(Body, etag: String?)
     case unchanged
-    /// 404: the host's serve is from before `/metrics`.
+    /// 404: the host's serve is from before this endpoint.
     case notServed
     case unreachable(String)
 }
 
-/// One `GET /metrics`, only while the host detail screen is open (ADR D10).
+public typealias MetricsReply = Reply<MetricsBody>
+
+/// One GET of a serve endpoint with its ETag, only while a detail screen is open (ADR D10, H4).
 public struct HostMetrics: Sendable {
     let transport: any Transport
 
     public init(_ transport: any Transport = LiveTransport()) { self.transport = transport }
 
     public func fetch(_ url: URL, etag: String?, timeout: Int) async -> MetricsReply {
+        await fetch(url, etag: etag, timeout: timeout, decode: MetricsBody.decode)
+    }
+
+    public func fetch<B>(_ url: URL, etag: String?, timeout: Int, decode: (Data) throws -> B) async -> Reply<B> {
         var request = URLRequest(url: url)
         if let etag { request.setValue(etag, forHTTPHeaderField: "If-None-Match") }
         do {
-            let (data, response) = try await transport.get(request, timeout: timeout)
+            let (data, response, _) = try await transport.get(request, timeout: timeout)
             switch response.statusCode {
             case 304 where etag != nil: return .unchanged
             case 404: return .notServed
             case 200..<300:
-                return .fresh(try MetricsBody.decode(data), etag: response.value(forHTTPHeaderField: "ETag"))
+                return .fresh(try decode(data), etag: response.value(forHTTPHeaderField: "ETag"))
             case let code: return .unreachable("HTTP \(code)")
             }
         } catch {
@@ -137,5 +153,9 @@ public struct HostMetrics: Sendable {
 
 extension Host {
     /// The status URL with `metrics` as its last segment.
-    public var metricsURL: URL { URL(string: "metrics", relativeTo: url)!.absoluteURL }
+    public var metricsURL: URL { URL(string: "metrics", relativeTo: url)?.absoluteURL ?? url }
+    public var historyURL: URL { historyURL(id: nil) }
+    public func historyURL(id: String?) -> URL {
+        URL(string: id.map { "history/\($0)" } ?? "history", relativeTo: url)?.absoluteURL ?? url
+    }
 }

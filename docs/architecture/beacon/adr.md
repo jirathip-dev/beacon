@@ -108,6 +108,43 @@ Options considered:
 - Serve re-reads its config every 300 s (a conditional GET for a URL, the mtime for a path).
   An invalid new config is logged and the old one kept. A changed check list restarts only
   the threads whose `{id, command, every_s, timeout_s}` changed.
+- **Resource budget (q2448, q2462, #38).** This is the standing limit for every later PR. `cli/tests/budget.rs`
+  is part of `cargo test`, so CI's `rust` job fails when serve goes over it. Serve runs as a child process
+  against a config with 5 remote hosts, a git checkout and two checks. `BEACON_SPEEDUP=60` divides every
+  serve interval (the reload tick, the sampler, the git pull, the checks), so the 10 s run stands for
+  600 s, and the readings are scaled back to real time:
+  - CPU: at most 0.2% of one core. This is serve plus the processes it waits for, read from `/proc/<pid>/stat`
+    on Linux or `beacon_sys::proc_usage` on macOS. It includes the test's own `true` checks, so it is an
+    upper bound.
+  - Memory: serve's peak resident set is at most 10 MB (Linux `VmHWM`; on macOS the peak footprint).
+  - Network: an unchanged poll of `/status`, `/metrics` or `/config` is a 304 of at most 1 KB both ways.
+    The fake hosts count the bytes of any poll serve makes.
+  - Wake-ups: serve's own threads wake at most 70 times in an idle minute, a minute with no check due:
+    the reload tick, the sampler and the git pull. On Linux these are the voluntary context switches of its
+    live threads; on macOS, the kernel's wake-up counters. The processes it starts are not counted, and
+    the count starts 1 s after the start. Each check adds about 5 a minute on Linux (spawn, wait, `kill`).
+  - Logs: serve logs only start-up, config reloads and errors, and a repeating error (a failing `git pull`)
+    once per outage. Serve keeps `serve.log` plus its one rotation `serve.log.1` at about 512 KB: past
+    256 KB the last 256 KB go to `serve.log.1` (write to a temporary file, then rename) and `serve.log` is
+    truncated. The service manager appends to it, so its next line lands at the start.
+  - Disk: everything under `~/.local/state/beacon` stays at most 20 MB. Serve trims it every 60 s, oldest
+    files first, and never the live `serve.log`. Later stores (#42's history) live in that folder and are
+    trimmed with it.
+  - Locks: no lock is held across network, disk or a subprocess. Checks, the git pull, the config read and
+    log writes run with no lock held, and the request path reads only the pre-rendered cells. Serve's only
+    disk writes are the rotation and the trim, both on the reload thread.
+  - Latency: `/status` and `/metrics` answer with a p99 of at most 2 ms (all 3000 polls of one run) from 50
+    concurrent kept-alive clients. Meanwhile a check hangs on a host that accepts and never answers, and the
+    config file is a FIFO with no writer, so the reload thread is stuck in a disk read. A slow webhook joins
+    this test when #37 adds the webhook.
+  - Soak: `BEACON_SPEEDUP=8640` runs a simulated 24 h in 10 s. Serve starts with a 630 KB `serve.log`
+    and a 21 MB stale file. The git remote goes away and comes back every 250 ms, and a check flaps. Logs
+    and the folder are sampled throughout and must stay within their caps, with at most one `git pull`
+    error per outage.
+  - `cargo test --features over-budget` with `BEACON_OVER_BUDGET=<line>` breaks one line on purpose, and
+    that line's test must then fail: `cpu` a busy loop, `mem` 20 MB, `wake` a 1 ms sleep loop, `poll`
+    no 304s, `slow` 3 ms a request, `lock` the status lock held across a check, `rotate` no rotation,
+    `trim` no trim, `repeat` a log line for every failed pull.
 
 ### D5 Status semantics
 
@@ -125,6 +162,12 @@ Options considered:
 The only secret is the optional config header: in the app's Keychain
 (`kSecAttrAccessibleAfterFirstUnlock`, so background refresh can read it), and on the host
 in `$BEACON_CONFIG_HEADER`. The widget never reads the Keychain (D8).
+
+The notify file (D11, q2445) holds the cooee webhook URL and its HMAC secret:
+`{"url": "https://…/hooks/in/<id>", "secret": "…"}`, conventionally `~/.config/beacon/notify.json`, passed as
+`serve --notify <path>`. It is never in `monitors.json`, which is served at `/config`. Serve exits 2 when the
+file is missing, does not parse, or has any group or other mode bit (mode & 0o077 ≠ 0). Neither the secret nor
+the file's contents are ever logged or printed; a parse error names only its line and column.
 
 ### D7 Module split: `cli/` is the Rust crate `beacon`; `app/` is the Xcode project
 
@@ -216,6 +259,59 @@ Consequences of D10:
   host without checks gets a row is #14's design question.
 - About 450 non-test lines in `cli/src` (serve core about 170, metrics about 280). The cap is 2000 and the
   tree is at 1902, so impl needs a raise to about 2400.
+
+### D11 Push notifications to cooee (#37)
+
+The question: the phone learns that a check went down only on its next refresh, and nothing says that a host
+stopped answering. cooee already takes a signed webhook (`POST /hooks/in/<id>`, `X-Signature-256`).
+
+- **Who sends (q2442).** Only the Mini, with `beacon serve --notify <path>` (and `beacon install --notify
+  <path>`, written into the plist or unit). Boats need no setup. Without `--notify`, serve is unchanged.
+- **What is watched.** The Mini's own checks, from their results in memory, and every other `hosts.<name>`:
+  serve GETs its `url` every 60 s with its `timeout_s` and `If-None-Match` (an unchanged host is a 304). One
+  thread per host, so a hung host delays no other host's alert. The host list follows config reloads: a new
+  host gets a thread, a removed one's thread ends at its next poll.
+- **Debounce.** A check is sent when its new status (`up` or `down`) holds for 2 polls in a row (for an own
+  check, 2 runs). A host is `down` after 3 failed polls in a row (no answer, timeout, non-2xx or an
+  undecodable body), and `up` on its first good poll after that. A down host's checks are not sent; when it
+  is back, they are compared with their last sent status. The first poll of a host and the first result of a
+  check set the baseline only, so nothing is sent at start or on a reload. A host that never answered becomes
+  a silent `down` baseline after 3 failed polls.
+- **Change object.** `{"kind":"check"|"host"|"reminder","host":…,"check":…|null,"status":"up"|"down","message":…,"at":…}`. `at` is UTC to the second, the format of `/status` `since`, and
+  `message` is cut to 200 chars. cooee puts it after the routine's prompt as untrusted data.
+- **Signing (q2446).** `X-Signature-256: sha256=<lowercase hex HMAC-SHA256(secret, body bytes)>` with the
+  RustCrypto `hmac` and `sha2` crates.
+- **HTTP client.** `ureq` with rustls (D4) for the host GETs and the POST. Roots are webpki's, or the
+  certificates in `$SSL_CERT_FILE` when it is set (the tests use this for a local CA). cargo-deny allows
+  `ISC` and `CDLA-Permissive-2.0`, the licenses of rustls's `ring`, `rustls-webpki`, `untrusted` and
+  `webpki-roots`.
+- **Grouping (#41, q2458).** The first change opens a 30 s window; when it closes, one POST lists every change
+  in it: `{"kind":"batch","summary":"boat-dev-2 down, 3 checks down","changes":[<change objects>],"at":…}`,
+  `Content-Type: application/json`. A window with one change is a one-item batch whose summary names it
+  (`box/disk down`). A host that is down swallows its own checks: their changes and reminders are not listed
+  while it is down.
+- **Reminders (#41, q2457).** While a check, host or rule stays down, a `reminder` change with the message
+  `still down: <host>/<check> for <n>h` (`<host>` alone for a host) falls due every `notify.remind_every_h`
+  hours, at most `notify.remind_max` times, then nothing until it recovers. Reminders due together share a
+  window and a batch. Defaults 4 and 3 when `notify` is absent; `remind_max: 0` sends none. The policy follows
+  config reloads; an outage's clock starts at the change that opened it.
+- **Metric rules (#41, q2459).** `hosts.<name>.rules` (`{"id","metric":"disk"|"memory"|"load","above","for_min"}`)
+  are judged by that host's serve on each 60 s sample (D10): disk and memory as % used, load as load1 per core
+  (`available_parallelism`). A rule goes down once its metric has read above `above` for `for_min` minutes
+  (`for_min + 1` samples in a row), and up once it has read at or below it as long; a missing reading changes
+  nothing. A disk rule keeps one status per mount in `disks` (`<id>` for `/`, `<id>-<mount slug>` else). Each
+  status is a check in `/status` (message like `disk / 93.0% used (down above 90 for 10 min)`), so it is
+  debounced, grouped, reminded, watched by the Mini and shown by a heartbeat monitor like any check. Absent
+  `rules`: `disk-full` (> 90 for 10 min), `memory-full` (> 90 for 10 min) and `load-high` (> 2 per core for
+  15 min); `"rules": []` turns them off. Rule status ids may not repeat a check id. The app ignores `rules`
+  and `notify` (D1).
+- **Delivery.** One thread groups and sends, off the poll and request threads, so a slow cooee never stalls
+  `/status`. Each batch gets 3 tries (now, +5 s, +30 s) on a network error or a non-2xx reply, and then serve
+  logs `notify failed: <summary>: <reason>` and drops it.
+- **Tests.** `cli/tests/notify.rs` runs serve against local TLS fake hosts and a fake receiver, with
+  `BEACON_SPEEDUP=60` shortening the 60 s poll, the window and the retry waits. `cli/tests/alerts.rs` drives
+  the grouping, reminder and rule logic on a fake clock. `POLL_S`, `CHECK_POLLS` and `HOST_FAILS`
+  are constants in `notify.rs`.
 
 ## Consequences (D1–D9)
 

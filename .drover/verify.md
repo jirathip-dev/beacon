@@ -11,9 +11,9 @@ sh .drover/verify/up.sh
 ```
 
 - What it does:
-  - Builds the CLI (`cargo build`) and starts a live `beacon serve --config .drover/verify/live.json --host mini --listen 127.0.0.1:0` of this Mini: one check `alive` (`true`) and real load/cpu/mem/disk `/` metrics. Its pid goes to `shots/live.pid`, its log to `shots/live.log`, and its port is read from the log's first line.
+  - Builds the CLI (`cargo build`) and starts a live `beacon serve --config .drover/verify/live.json --host mini --listen 127.0.0.1:0` of this Mini: one check `alive` (`true`) and real load/cpu/mem/disk `/` metrics. It runs with `BEACON_LAUNCHCTL=true`, so it discovers no jobs and the shots are the same on any host. Its pid goes to `shots/live.pid`, its log to `shots/live.log`, and its port is read from the log's first line.
   - Copies `.drover/verify/{monitors.json,status,ok.html}` into `shots/serve/`, with `PORT` replaced by `$DROVER_PORT` and `LIVE` by the live serve's port.
-  - Serves them with `python3 -m http.server $DROVER_PORT --bind 127.0.0.1`. Its pid goes to `shots/server.pid` and its log to `shots/server.log`.
+  - Serves them with `.drover/verify/serve.py $DROVER_PORT shots/serve` (a `http.server` that also answers `/history` and `/history/<id>` with bodies built around the current time). Its pid goes to `shots/server.pid` and its log to `shots/server.log`.
   - Builds the `Beacon` scheme (the app, the widget and `BeaconUITests`) with `build-for-testing` into `.build/verify`, with ad-hoc signing so the App Group the widget reads works. The log goes to `shots/build.log`.
   - Creates and boots a throwaway simulator named `beacon-verify-$DROVER_PORT` (its udid goes to `shots/sim.udid`) and installs `Beacon.app`.
 - The host has no `sim-task`/`hermes-sim-task`, so the script drives `xcrun simctl` directly. It touches only the simulator it created.
@@ -60,7 +60,7 @@ To drive one screen, use `-only-testing:BeaconUITests/VerifyUITests/<test>` (see
 - Manual look: `xcrun simctl io "$(cat shots/sim.udid)" screenshot shots/<name>.png` after a `simctl launch` (see Launch).
 - Appearance: `xcrun simctl ui "$(cat shots/sim.udid)" appearance dark|light`.
 
-The fixture config (`.drover/verify/monitors.json`, 9 monitors in 4 groups) gives `5 down  4 up`:
+The fixture config (`.drover/verify/monitors.json`, 9 monitors in 4 groups) plus the three job rows of the fixture `/status` give `6 down  6 up`:
 
 | group | monitor | fixture | expected row |
 |---|---|---|---|
@@ -73,13 +73,18 @@ The fixture config (`.drover/verify/monitors.json`, 9 monitors in 4 groups) give
 | macmini | Nightly backup | stale heartbeat: `backup` down `backup.ok is 31h old` since 2026-11-12 | down `since 12 Nov` |
 | macmini | Photos sync | id `photos` missing from `/status` | down `no result yet` |
 | mini | Live serve | heartbeat `alive` from the live `beacon serve` | up, since the serve started |
+| macmini | dev.example.tick | kept job row (`name` and `group`) in `/status` | up `last exit 0`, after the macmini heartbeats |
+| Unreviewed | com.example.sync | job row with a `name` and no `group` | down `last exit 1` |
+| Unreviewed | com.example.ttyd | job row with a `name` and no `group` | up `running` |
+
+The Unreviewed group is the last card. Its rows and the kept job row open `macmini`'s host detail, like its heartbeat rows.
 
 Heartbeat rows (macmini, mini) end in a mute `›` and open their host's detail. `macmini` serves no `/metrics` (404), so its detail is the "dark lamp · no metrics" state; `mini` shows live charts.
 
 ## Evidence
 
 - Screenshots: native shots are 1170 px wide (390 pt at 3×). Make the 390 px copies with
-  `for f in first-run list settings widgets host-detail chart-1h chart-24h host-not-served; do sips --resampleWidth 390 "shots/$f.png" --out "shots/$f-390.png" >/dev/null; done`.
+  `for f in first-run list unreviewed settings widgets host-detail chart-1h chart-24h host-not-served monitor-history monitor-1h monitor-30d host-checks check-history; do sips --resampleWidth 390 "shots/$f.png" --out "shots/$f-390.png" >/dev/null; done`.
   `shots/widget-small.png` and `shots/widget-medium.png` are the widgets cropped from the home screen at native scale.
 - Transcript: `shots/drive.log` (xcodebuild, with every `Test Case … passed|failed` line), `shots/build.log`, `shots/server.log` (each GET the app and widget made, with its status) and `shots/live.log` (the live serve).
 - Exit codes to record: `up.sh` (0 and `READY`), Doctor (0 and `DOCTOR OK`), the Drive xcodebuild (`drive exit=0`, `** TEST SUCCEEDED **`), and `down.sh` (0 and `DOWN`).
@@ -91,9 +96,14 @@ Heartbeat rows (macmini, mini) end in a mute `›` and open their host's detail.
 |---|---|---|---|
 | First run (config form) | launch with no `-source` | `testFirstRun` | `first-run.png` |
 | Monitor list (grouped cards, summary, down rows) | launch with `-source` (see Launch) | `testListAndSettings` | `list.png` |
+| Job rows: the kept job and the Unreviewed group | list → swipe up to `com.example.sync` | `testListAndSettings` | `unreviewed.png` |
 | Host detail (load/cpu/mem/disk sparklines, checks on the host), live | list → tap `Live serve` | `testHostDetailAndChart` | `host-detail.png` |
 | Chart sheet (1h, then 24h) | host detail → tap `cpu` → `[24h]` | `testHostDetailAndChart` | `chart-1h.png`, `chart-24h.png` |
 | Host with no `/metrics` (404) | list → tap `Disk space` | `testHostDetailAndChart` | `host-not-served.png` |
+| Monitor history (uptime, 30-day strip, response time 24h, incidents), `prober: macmini` | list → tap `Status page` | `testHistory` | `monitor-history.png` |
+| Response time 1h and 30d | monitor history → `[1h]`, then `[30d]` | `testHistory` | `monitor-1h.png`, `monitor-30d.png` |
+| Check rows with `›` on the host detail | list → tap `Nightly backup` | `testHistory` | `host-checks.png` |
+| Check history (open incident on top, no chart) | host detail → tap `Nightly backup` | `testHistory` | `check-history.png` |
 | Chart scrub (hold and drag), unreachable and warming-up states | hold and drag on the chart; stop the live serve | (manual) | none |
 | Settings sheet (`config`, source card) | list → tap `[cfg]` | `testListAndSettings` | `settings.png` |
 | Pull to refresh | list → swipe down on the scroll view | (manual) | none |

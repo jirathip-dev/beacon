@@ -5,6 +5,7 @@ struct Root: View {
     let model: Model
     @State private var settings = false
     @State private var host: String?
+    @State private var history: (HistoryTarget, Monitor?)?
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
@@ -12,10 +13,15 @@ struct Root: View {
             start
         } else {
             Group {
-                if let host, let h = model.config?.hosts?[host] {
-                    HostDetail(model: model, name: host, host: h) { self.host = nil }
+                if let history {
+                    HistoryScreen(model: model, target: history.0, monitor: history.1) { self.history = nil }
+                } else if let host, let h = model.config?.hosts?[host] {
+                    HostDetail(model: model, name: host, host: h) { self.host = nil } open: { history = ($0, nil) }
                 } else {
-                    MonitorList(model: model, openSettings: { settings = true }, openHost: { host = $0 })
+                    MonitorList(model: model, openSettings: { settings = true }) { row in
+                        if let h = model.host(of: row) { return { host = h } }
+                        return model.history(of: row).map { t in { history = (t, model.monitor(of: row)) } }
+                    }
                 }
             }
                 .task(id: phase) {
@@ -198,7 +204,7 @@ struct StateCard: View {
 struct MonitorList: View {
     let model: Model
     let openSettings: () -> Void
-    let openHost: (String) -> Void
+    let open: (MonitorResult) -> (() -> Void)?
     var body: some View {
         VStack(spacing: 0) {
             TopBar(title: "beacon", key: "cfg", action: openSettings)
@@ -210,7 +216,7 @@ struct MonitorList: View {
                         } else {
                             Summary(snapshot: snapshot)
                             ForEach(groups(snapshot.rows), id: \.0) {
-                                GroupCard(name: $0.0, rows: $0.1) { row in model.host(of: row).map { h in { openHost(h) } } }
+                                GroupCard(name: $0.0, rows: $0.1, open: open)
                             }
                         }
                     } else {

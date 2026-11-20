@@ -20,7 +20,7 @@ fn install(home: &Path, listen: &str, (var, ctl): (&str, &str)) -> Output {
 
 fn scratch(name: &str) -> PathBuf {
     let home = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&home);
+    std::fs::remove_dir_all(&home).ok();
     std::fs::create_dir_all(&home).unwrap();
     home
 }
@@ -122,7 +122,7 @@ fn install_writes_and_enables_the_unit_then_is_idempotent_and_restarts_on_change
         let o = install(&home, listen, ("BEACON_SYSTEMCTL", "systemctl"));
         assert!(o.status.success(), "{o:?}");
         let calls = std::fs::read_to_string(home.join("calls")).unwrap_or_default();
-        let _ = std::fs::remove_file(home.join("calls"));
+        std::fs::remove_file(home.join("calls")).ok();
         (String::from_utf8_lossy(&o.stdout).into_owned(), calls)
     };
     let unit_path = home.join(".config/systemd/user/beacon-serve.service");
@@ -169,7 +169,28 @@ fn install_writes_and_enables_the_unit_then_is_idempotent_and_restarts_on_change
 
 #[test]
 fn mini_config_is_valid_and_every_check_is_valid_sh() {
-    host_config_is_valid("mini.json", "jirathips-mac-mini", "Mini", 12);
+    host_config_is_valid("mini.json", "jirathips-mac-mini", "Mini", 3);
+    let text = std::fs::read_to_string(format!("{HOSTS}/mini.json")).unwrap();
+    let config = beacon::config::parse(&text).unwrap();
+    let host = config.hosts.values().next().unwrap();
+    let kept: Vec<_> = host
+        .jobs
+        .iter()
+        .filter_map(|(label, review)| match review {
+            beacon::config::Review::Keep(k) => Some((label.as_str(), k.group.as_str(), k.running)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(kept.len(), 9, "{kept:?}");
+    assert!(kept.iter().all(|(_, group, _)| *group == "Mini"));
+    let running: Vec<_> = kept.iter().filter(|k| k.2).map(|k| k.0).collect();
+    assert_eq!(
+        running,
+        [
+            "actions.runner.jirathip-dev-cooee.mini-cooee",
+            "actions.runner.jirathip-dev-shed.shed-mini"
+        ]
+    );
 }
 
 #[test]
@@ -204,4 +225,43 @@ fn host_config_is_valid(file: &str, host: &str, group: &str, n: usize) {
         .map(|m| m["id"].as_str().unwrap())
         .collect();
     assert_eq!(monitored, ids);
+}
+
+#[test]
+fn install_writes_the_notify_flag_into_the_service() {
+    use std::os::unix::fs::PermissionsExt;
+    let home = scratch("install-notify");
+    let ctl = home.join("ctl");
+    std::fs::write(&ctl, "#!/bin/sh\nexit 0\n").unwrap();
+    std::fs::set_permissions(&ctl, PermissionsExt::from_mode(0o755)).unwrap();
+    std::fs::write(home.join("notify.json"), "{}").unwrap();
+    let config = r#"{ "version": 1, "monitors": [], "hosts": { "box": { "url": "https://box/status", "checks": [] } } }"#;
+    std::fs::write(home.join("beacon.json"), config).unwrap();
+    let o = Command::new(env!("CARGO_BIN_EXE_beacon"))
+        .args(["install", "--config", "beacon.json", "--host", "box"])
+        .args(["--notify", "notify.json"])
+        .current_dir(&home)
+        .env("HOME", &home)
+        .env("BEACON_LAUNCHCTL", &ctl)
+        .env("BEACON_SYSTEMCTL", &ctl)
+        .output()
+        .unwrap();
+    assert!(o.status.success(), "{o:?}");
+    let notify = std::fs::canonicalize(home.join("notify.json")).unwrap();
+    let n = notify.display();
+    let (file, want) = if cfg!(target_os = "macos") {
+        (
+            "Library/LaunchAgents/dev.beacon.serve.plist",
+            format!(
+                "<string>127.0.0.1:7878</string><string>--notify</string><string>{n}</string></array>"
+            ),
+        )
+    } else {
+        (
+            ".config/systemd/user/beacon-serve.service",
+            format!("--listen 127.0.0.1:7878 --notify \"{n}\"\n"),
+        )
+    };
+    let written = std::fs::read_to_string(home.join(file)).unwrap();
+    assert!(written.contains(&want), "missing {want}\nin {written}");
 }

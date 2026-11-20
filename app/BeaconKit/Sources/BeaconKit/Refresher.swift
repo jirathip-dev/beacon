@@ -40,7 +40,7 @@ public struct Refresher: Sendable {
         let cap = { @Sendable (t: Int) in min(t, timeoutCap ?? t) }
         let hostNames = Set(config.monitors.compactMap { m -> String? in
             if case .heartbeat(let h) = m { h.host } else { nil }
-        })
+        }).union((config.hosts ?? [:]).keys)
         var probes: [Int: (up: Bool, detail: String)] = [:]
         var replies: [String: HostReply] = [:]
         await withTaskGroup(of: Outcome.self) { group in
@@ -52,7 +52,7 @@ public struct Refresher: Sendable {
                 switch monitor {
                 case .http(let m):
                     group.addTask {
-                        let (up, detail) = await http(m, timeout: cap(m.timeout_s ?? 10))
+                        let (up, detail) = await http(m, timeout: cap(m.timeout_s ?? 10), now: now)
                         return .probe(i, up: up, detail: detail)
                     }
                 case .tcp(let m):
@@ -71,7 +71,7 @@ public struct Refresher: Sendable {
             }
         }
         let before = Dictionary(previous.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
-        return config.monitors.enumerated().map { i, monitor in
+        let monitorRows = config.monitors.enumerated().map { i, monitor in
             let row = { (state: ResultState, detail: String, since: Date?) in
                 MonitorResult(name: monitor.name, group: monitor.group, state: state, detail: detail, since: since)
             }
@@ -94,6 +94,29 @@ public struct Refresher: Sendable {
             let old = before[row(state, detail, nil).key]
             return row(state, detail, old?.state == state ? old?.since ?? now : now)
         }
+        return monitorRows + jobRows(replies, previous: previous, now: now)
+    }
+
+    /// Every `/status` row with a `name`: kept rows, then unreviewed, by host and name; an unreachable host's are down.
+    func jobRows(_ replies: [String: HostReply], previous: [MonitorResult], now: Date) -> [MonitorResult] {
+        let rows = replies.flatMap { host, reply in
+            switch reply {
+            case .body(let body):
+                body.checks.values.compactMap { c in
+                    c.name.map {
+                        MonitorResult(name: $0, group: c.group ?? MonitorResult.unreviewed, state: c.status == .up ? .up : .down,
+                                      detail: c.message, since: c.since, host: host)
+                    }
+                }
+            case .unreachable(let reason):
+                previous.filter { $0.host == host }.map {
+                    MonitorResult(name: $0.name, group: $0.group, state: .down, detail: "host unreachable: \(reason)",
+                                  since: $0.state == .down ? $0.since : now, host: host)
+                }
+            }
+        }
+        let order = { (r: MonitorResult) in (r.group == MonitorResult.unreviewed ? 1 : 0, r.host ?? "", r.name) }
+        return rows.sorted { order($0) < order($1) }
     }
 
     func fetch(_ host: Host?, cap: (Int) -> Int) async -> HostReply {
@@ -103,7 +126,7 @@ public struct Refresher: Sendable {
         let cached = await hosts.get(host.url)
         if let cached { request.setValue(cached.etag, forHTTPHeaderField: "If-None-Match") }
         do {
-            let (data, response) = try await transport.get(request, timeout: timeout)
+            let (data, response, _) = try await transport.get(request, timeout: timeout)
             if response.statusCode == 304, let cached { return .body(cached.body) }
             guard (200..<300).contains(response.statusCode) else {
                 return .unreachable("HTTP \(response.statusCode)")
@@ -118,15 +141,18 @@ public struct Refresher: Sendable {
         }
     }
 
-    func http(_ m: HTTPMonitor, timeout: Int) async -> (Bool, String) {
+    func http(_ m: HTTPMonitor, timeout: Int, now: Date) async -> (Bool, String) {
         do {
-            let (data, response) = try await transport.get(URLRequest(url: m.url), timeout: timeout)
+            let (data, response, notAfter) = try await transport.get(URLRequest(url: m.url), timeout: timeout)
             let code = response.statusCode
             guard m.expect_status.map({ $0 == code }) ?? (200..<300).contains(code) else {
                 return (false, "HTTP \(code)")
             }
             if let keyword = m.keyword, !String(decoding: data, as: UTF8.self).contains(keyword) {
                 return (false, "keyword missing: \(keyword)")
+            }
+            if let days = notAfter.map({ Int($0.timeIntervalSince(now) / 86_400) }), days < m.cert_warn_days ?? 14 {
+                return (false, "cert expires in \(days)d")
             }
             return (true, "")
         } catch {

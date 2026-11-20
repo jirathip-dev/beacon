@@ -1,11 +1,12 @@
 use crate::config::Id;
-use serde::Serialize;
+use crate::jobs::Row;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
     Up,
@@ -21,7 +22,7 @@ impl fmt::Display for Status {
     }
 }
 
-/// A response body as a request reads it: the bytes and their ETag.
+/// A response body as a request reads it: the bytes and their `ETag`.
 #[derive(Clone)]
 pub struct Rendered {
     pub body: Arc<[u8]>,
@@ -37,6 +38,14 @@ impl Rendered {
             etag: format!("\"{:016x}\"", h.finish()),
         }
     }
+
+    #[expect(
+        clippy::unwrap_used,
+        reason = "serde_json fails only on non-string map keys or a failing Serialize impl; beacon's bodies have neither"
+    )]
+    pub fn json(body: &impl Serialize) -> Rendered {
+        Rendered::of(serde_json::to_vec(body).unwrap())
+    }
 }
 
 #[derive(Serialize)]
@@ -51,6 +60,10 @@ struct CheckResult {
     status: Status,
     message: String,
     since: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    group: Option<String>,
 }
 
 impl StatusBody {
@@ -64,7 +77,31 @@ impl StatusBody {
 
     /// Records one run at Unix time `now`; true when status or message changed.
     pub fn record(&mut self, id: &Id, status: Status, message: String, now: u64) -> bool {
-        let old = self.checks.get(id.as_str());
+        self.put(id.as_str(), status, message, (None, None), now)
+    }
+
+    /// Records every job row and drops job rows not in `rows`; true when anything changed.
+    pub fn set_jobs(&mut self, rows: &[Row], now: u64) -> bool {
+        let before = self.checks.len();
+        self.checks
+            .retain(|k, _| !k.starts_with("job-") || rows.iter().any(|r| r.id == *k));
+        let mut changed = self.checks.len() != before;
+        for r in rows {
+            let names = (Some(r.name.clone()), r.group.clone());
+            changed |= self.put(&r.id, r.status, r.message.clone(), names, now);
+        }
+        changed
+    }
+
+    fn put(
+        &mut self,
+        id: &str,
+        status: Status,
+        message: String,
+        (name, group): (Option<String>, Option<String>),
+        now: u64,
+    ) -> bool {
+        let old = self.checks.get(id);
         let since = match old {
             Some(o) if o.status == status => o.since.clone(),
             _ => rfc3339(now),
@@ -73,27 +110,30 @@ impl StatusBody {
             status,
             message,
             since,
+            name,
+            group,
         };
         let changed = old != Some(&new);
-        self.checks.insert(id.as_str().into(), new);
+        self.checks.insert(id.into(), new);
         changed
     }
 
-    /// Drops the results of checks not in `ids`.
+    /// Drops the results of checks not in `ids`; job rows stay.
     pub fn keep(&mut self, ids: &[&Id]) {
         self.checks
-            .retain(|k, _| ids.iter().any(|id| id.as_str() == k));
+            .retain(|k, _| k.starts_with("job-") || ids.iter().any(|id| id.as_str() == k));
     }
 
     pub fn render(&self) -> Rendered {
-        Rendered::of(serde_json::to_vec(self).unwrap())
+        Rendered::json(self)
     }
 }
 
-fn rfc3339(unix: u64) -> String {
-    let (days, secs) = ((unix / 86400) as i64 + 719468, unix % 86400);
-    let (era, doe) = (days.div_euclid(146097), days.rem_euclid(146097));
-    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+pub(crate) fn rfc3339(unix: u64) -> String {
+    let days = i64::try_from(unix / 86_400).unwrap_or_default() + 719_468;
+    let secs = unix % 86_400;
+    let (era, doe) = (days.div_euclid(146_097), days.rem_euclid(146_097));
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
     let mp = (5 * doy + 2) / 153;
     let (d, m) = (doy - (153 * mp + 2) / 5 + 1, (mp + 2) % 12 + 1);

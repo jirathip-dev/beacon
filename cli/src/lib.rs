@@ -1,8 +1,17 @@
 pub mod config;
+pub mod history;
 pub mod install;
+pub mod jobs;
 pub mod metrics;
+pub mod monitor;
+pub mod net;
+pub mod notify;
+pub mod out;
 pub mod probe;
+pub mod prober;
+pub mod rules;
 pub mod run;
 pub mod sampler;
 pub mod serve;
+pub mod state;
 pub mod status;

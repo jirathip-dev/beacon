@@ -21,7 +21,7 @@ fn probe_is_down_on_non_zero_exit_and_cuts_message_to_200_chars() {
 #[test]
 fn probe_timeout_kills_the_whole_process_group() {
     let marker = format!("{}/probe-survivor", env!("CARGO_TARGET_TMPDIR"));
-    let _ = std::fs::remove_file(&marker);
+    std::fs::remove_file(&marker).ok();
     let start = Instant::now();
     let got = probe::run(&format!("(sleep 2; touch {marker}) & sleep 30"), SECOND);
     assert!(start.elapsed() < SECOND * 2, "took {:?}", start.elapsed());
@@ -33,7 +33,7 @@ fn probe_timeout_kills_the_whole_process_group() {
     );
 }
 
-fn beacon_run(name: &str, checks: serde_json::Value, args: &[&str]) -> Output {
+fn beacon_run(name: &str, checks: &serde_json::Value, args: &[&str]) -> Output {
     let config = json!({
         "version": 1,
         "monitors": [],
@@ -55,7 +55,7 @@ fn run_prints_each_check_and_exits_0_when_all_up() {
         { "id": "disk", "command": "echo 71% used" },
         { "id": "backup-ok", "command": "true" }
     ]);
-    let out = beacon_run("all-up", checks, &["--host", "box"]);
+    let out = beacon_run("all-up", &checks, &["--host", "box"]);
     assert_eq!(out.status.code(), Some(0));
     assert_eq!(
         String::from_utf8_lossy(&out.stdout),
@@ -69,7 +69,7 @@ fn run_exits_1_when_a_check_is_down_or_times_out() {
         { "id": "disk", "command": "echo full; exit 1" },
         { "id": "slow", "command": "sleep 30", "timeout_s": 1, "every_s": 10 }
     ]);
-    let out = beacon_run("down", checks, &["--host", "box"]);
+    let out = beacon_run("down", &checks, &["--host", "box"]);
     assert_eq!(out.status.code(), Some(1));
     assert_eq!(
         String::from_utf8_lossy(&out.stdout),
@@ -80,10 +80,10 @@ fn run_exits_1_when_a_check_is_down_or_times_out() {
 #[test]
 fn run_exits_2_on_unknown_host_or_bad_usage() {
     let checks = json!([{ "id": "disk", "command": "true" }]);
-    let out = beacon_run("unknown-host", checks.clone(), &["--host", "elsewhere"]);
+    let out = beacon_run("unknown-host", &checks, &["--host", "elsewhere"]);
     assert_eq!(out.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&out.stderr).contains("no host \"elsewhere\" in hosts"));
-    let out = beacon_run("bad-usage", checks, &["--host"]);
+    let out = beacon_run("bad-usage", &checks, &["--host"]);
     assert_eq!(out.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&out.stderr).contains("usage: beacon"));
 }

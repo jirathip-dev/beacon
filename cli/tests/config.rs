@@ -31,7 +31,8 @@ fn defaults_fill_omitted_fields() {
     let Monitor::Http(api) = &config.monitors[1] else {
         panic!()
     };
-    assert_eq!(api.timeout_s, 10);
+    assert_eq!((api.timeout_s, api.cert_warn_days), (10, 14));
+    assert!(config.prober.is_none());
     assert_eq!(api.expect_status, None);
     let disk = &config.hosts.values().next().unwrap().checks[1];
     assert_eq!((disk.every_s, disk.timeout_s), (60, 5));
@@ -105,6 +106,26 @@ fn rejects_cross_field_violations() {
         |v| v["hosts"]["macmini"]["checks"][0]["timeout_s"] = json!(300),
         "timeout_s must be less than every_s",
     );
+    rejects(
+        |v| v["prober"] = json!("nope"),
+        "prober \"nope\" is not a key of hosts",
+    );
+    rejects(
+        |v| v["monitors"][1]["cert_warn_days"] = json!(366),
+        "cert_warn_days 366 out of 0..=365",
+    );
+    rejects(
+        |v| {
+            v["prober"] = json!("macmini");
+            v["monitors"][1]["name"] = json!("Blog");
+        },
+        "group/name Web/Blog is not unique",
+    );
+    let mut v = example();
+    v["prober"] = json!("macmini");
+    v["monitors"][4]["name"] = json!("Nightly backup");
+    v["monitors"][1]["cert_warn_days"] = json!(0);
+    assert!(parse(&v.to_string()).is_ok());
 }
 
 #[test]
@@ -140,7 +161,7 @@ fn disks_default_to_root_and_reject_relative_duplicate_or_too_many() {
         .unwrap()
         .disks
         .iter()
-        .map(|d| d.as_str())
+        .map(beacon::config::MountPath::as_str)
         .collect();
     assert_eq!(disks, ["/"]);
     let set = |d: Value| move |v: &mut Value| v["hosts"]["macmini"]["disks"] = d;
@@ -166,4 +187,94 @@ fn disks_default_to_root_and_reject_relative_duplicate_or_too_many() {
             .len(),
         2
     );
+}
+
+#[test]
+fn notify_and_rules_parse_with_defaults_and_reject_bad_values() {
+    let config = parse(EXAMPLE).unwrap();
+    assert_eq!(
+        (config.notify.remind_every_h, config.notify.remind_max),
+        (4, 3)
+    );
+    let mut v = example();
+    v.as_object_mut().unwrap().remove("notify");
+    v["notify"] = json!({ "remind_max": 0 });
+    let quiet = parse(&v.to_string()).unwrap().notify;
+    assert_eq!((quiet.remind_every_h, quiet.remind_max), (4, 0));
+    v["hosts"]["macmini"]["rules"] = json!([]);
+    let host = parse(&v.to_string()).unwrap();
+    assert_eq!(host.hosts.values().next().unwrap().rules.len(), 0);
+    let heartbeat = json!({ "type": "heartbeat", "name": "Disk full", "group": "macmini", "host": "macmini", "id": "disk-full" });
+    let mut v = example();
+    v["monitors"].as_array_mut().unwrap().push(heartbeat);
+    parse(&v.to_string()).unwrap();
+    let rule = |r: Value| move |v: &mut Value| v["hosts"]["macmini"]["rules"] = json!([r]);
+    rejects(
+        rule(json!({ "id": "x", "metric": "swap", "above": 1, "for_min": 1 })),
+        "unknown variant `swap`",
+    );
+    rejects(
+        rule(json!({ "id": "x", "metric": "disk", "above": 101, "for_min": 1 })),
+        "rule \"x\": above 101 out of 0..=100",
+    );
+    rejects(
+        rule(json!({ "id": "x", "metric": "load", "above": 2, "for_min": 0 })),
+        "for_min 0 out of 1..=1440",
+    );
+    rejects(
+        rule(json!({ "id": "backup", "metric": "memory", "above": 2, "for_min": 1 })),
+        "rule check \"backup\" reuses an id",
+    );
+    rejects(
+        |v| v["notify"] = json!({ "remind_every_h": 0 }),
+        "notify.remind_every_h 0 out of 1..=168",
+    );
+    rejects(
+        |v| v["notify"] = json!({ "every": 1 }),
+        "unknown field `every`",
+    );
+}
+
+#[test]
+fn jobs_block_parses_and_rejects_bad_labels_reviews_and_reserved_ids() {
+    use beacon::config::{Kept, Review};
+    let config = parse(EXAMPLE).unwrap();
+    let jobs = &config.hosts.values().next().unwrap().jobs;
+    assert_eq!(jobs.get("com.example.caffeinate"), Some(&Review::Ignore));
+    assert_eq!(jobs.get("dev.example.old"), Some(&Review::Removed));
+    let kept = Kept {
+        name: "tick".into(),
+        group: "macmini".into(),
+        running: false,
+    };
+    assert_eq!(jobs.get("dev.example.tick"), Some(&Review::Keep(kept)));
+    let job = |label: &'static str, review: Value| {
+        move |v: &mut Value| v["hosts"]["macmini"]["jobs"][label] = review
+    };
+    rejects(job("a b", json!("ignore")), "invalid job label \"a b\"");
+    rejects(job("x", json!("forget")), "unknown variant `forget`");
+    let long = "n".repeat(61);
+    rejects(
+        job("x", json!({ "keep": { "name": long, "group": "g" } })),
+        "job \"x\": name must be 1..=60 chars",
+    );
+    rejects(
+        job(
+            "x",
+            json!({ "keep": { "name": "n", "group": "g", "when": 1 } }),
+        ),
+        "unknown field `when`",
+    );
+    rejects(
+        |v| v["hosts"]["macmini"]["checks"][0]["id"] = json!("job-backup"),
+        "reserved for jobs",
+    );
+    let mut v = example();
+    job(
+        "x",
+        json!({ "keep": { "name": "n", "group": "g", "running": true } }),
+    )(&mut v);
+    let config = parse(&v.to_string()).unwrap();
+    let running = &config.hosts.values().next().unwrap().jobs;
+    assert!(matches!(running.get("x"), Some(Review::Keep(k)) if k.running));
 }

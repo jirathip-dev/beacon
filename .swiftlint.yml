@@ -1,0 +1,28 @@
+included:
+  - app
+excluded:
+  - app/design
+only_rules:
+  - force_unwrapping
+  - force_try
+  - force_cast
+  - custom_rules
+force_unwrapping:
+  severity: error
+force_try:
+  severity: error
+force_cast:
+  severity: error
+custom_rules:
+  no_fatal_error:
+    name: fatalError
+    regex: '\bfatalError\('
+    excluded: '.*Tests/.*'
+    message: "Don't fatalError in app sources: return or show the error"
+    severity: error
+  no_print:
+    name: print
+    regex: '(?<![\w.])print\('
+    excluded: '.*Tests/.*'
+    message: "Don't print in app sources"
+    severity: error

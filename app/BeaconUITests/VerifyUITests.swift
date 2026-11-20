@@ -35,6 +35,10 @@ import XCTest
         launchOnFixtures()
         XCTAssert(app.staticTexts.matching(NSPredicate(format: "label MATCHES 'checked [0-9]{2}:[0-9]{2}'")).firstMatch.waitForExistence(timeout: 5))
         try shot("list")
+        let unreviewed = app.staticTexts["com.example.sync"]
+        for _ in 0..<5 where !unreviewed.isHittable { app.swipeUp() }
+        XCTAssert(unreviewed.isHittable)
+        try shot("unreviewed")
         app.buttons["[cfg]"].tap()
         XCTAssert(app.staticTexts["fetched"].waitForExistence(timeout: 5))
         try shot("settings")
@@ -56,6 +60,27 @@ import XCTest
         app.staticTexts["Disk space"].tap()
         XCTAssert(app.staticTexts["dark lamp · no metrics"].waitForExistence(timeout: 10))
         try shot("host-not-served")
+    }
+
+    /// An http monitor's history on the `prober` (24h, 1h, 30d), then a check's history from its host detail.
+    func testHistory() throws {
+        launchOnFixtures()
+        app.staticTexts["Status page"].tap()
+        XCTAssert(app.staticTexts["~ response time"].waitForExistence(timeout: 10))
+        try shot("monitor-history")
+        app.buttons["[1h]"].tap()
+        try shot("monitor-1h")
+        XCTAssertEqual(app.staticTexts.matching(identifier: "max").count, 1)
+        app.buttons["[30d]"].tap()
+        XCTAssertEqual(app.staticTexts.matching(identifier: "max").count, 2)
+        try shot("monitor-30d")
+        app.buttons["[‹ monitors]"].tap()
+        app.staticTexts["Nightly backup"].tap()
+        XCTAssert(app.staticTexts["~ checks on macmini"].waitForExistence(timeout: 10))
+        try shot("host-checks")
+        app.staticTexts["Nightly backup"].tap()
+        XCTAssert(app.staticTexts["~ incidents"].waitForExistence(timeout: 10))
+        try shot("check-history")
     }
 
     /// Waits for `element`, answering the notification alert iOS may show over SpringBoard at any point.
