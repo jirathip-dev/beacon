@@ -168,9 +168,18 @@ struct HistoryScreen: View {
                 }
             }
             .id(range)
+            if month {
+                HStack(spacing: 14) {
+                    HStack(spacing: 4) { T.accent.frame(width: 18, height: 1.5); Text("avg") }
+                    HStack(spacing: 4) { T.accent.opacity(0.18).frame(width: 18, height: 8); Text("max") }
+                }
+                .font(T.font(11)).foregroundStyle(T.mute).frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12).padding(.bottom, 6)
+            }
             T.line.frame(height: 1)
-            Stats(items: [("now", ms(t.recent.ms.last { $0 != nil } ?? nil)), ("min", ms(w.min)), ("avg", ms(w.avg)),
-                          ("max", ms((peak ?? w).max))])
+            let num = { (v: Double?) in v.map { "\(Int($0.rounded()))" } ?? "--" }
+            Stats(items: [("now", num(t.recent.ms.last { $0 != nil } ?? nil)), ("min", num(w.min)), ("avg", num(w.avg)),
+                          ("max", num((peak ?? w).max))], unit: "ms")
             if !misses.isEmpty {
                 T.line.frame(height: 1)
                 Text("\(Text("▮").foregroundStyle(T.red)) \(misses.count) no response").font(T.font(11))

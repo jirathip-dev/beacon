@@ -246,12 +246,14 @@ struct ChartSheet: View {
 
 struct Stats: View {
     let items: [(String, String)]
+    var unit = ""
     var body: some View {
         HStack(spacing: 0) {
             ForEach(items, id: \.0) { k, v in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(k).font(T.font(11)).foregroundStyle(T.mute)
-                    Text(v).bold().foregroundStyle(T.fg)
+                    Text("\(v)\(Text(v == "--" ? "" : unit).font(T.font(11)).foregroundStyle(T.mute))").bold()
+                        .foregroundStyle(T.fg)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
