@@ -28,9 +28,7 @@ type Usec = i64;
 struct Rusage {
     utime: Timeval,
     stime: Timeval,
-    _unused: [i64; 12],
-    nvcsw: i64,
-    nivcsw: i64,
+    _unused: [i64; 14],
 }
 
 unsafe extern "C" {
@@ -112,7 +110,7 @@ impl Serve {
         Usage {
             cpu_s: secs(&ru.utime) + secs(&ru.stime),
             rss_bytes,
-            wakeups: wakeups.unwrap_or(ru.nvcsw as u64),
+            wakeups,
             log_bytes: self.logs.into_iter().map(|h| h.join().unwrap()).sum(),
             state_bytes: state(&self.root).saturating_sub(self.state_before),
         }
@@ -120,25 +118,33 @@ impl Serve {
 }
 
 #[cfg(target_os = "linux")]
-fn peek(pid: i32) -> (u64, Option<u64>) {
+fn peek(pid: i32) -> (u64, u64) {
     let status = std::fs::read_to_string(format!("/proc/{pid}/status")).unwrap();
     let hwm = status
         .lines()
         .find_map(|l| l.strip_prefix("VmHWM:"))
         .unwrap();
     let kb: u64 = hwm.trim().trim_end_matches("kB").trim().parse().unwrap();
-    (kb * 1024, None)
+    let switches = |t: std::fs::DirEntry| {
+        let status = std::fs::read_to_string(t.path().join("status")).unwrap_or_default();
+        let n = status
+            .lines()
+            .find_map(|l| l.strip_prefix("voluntary_ctxt_switches:"));
+        n.map_or(0, |n| n.trim().parse::<u64>().unwrap())
+    };
+    let tasks = std::fs::read_dir(format!("/proc/{pid}/task")).unwrap();
+    (kb * 1024, tasks.flatten().map(switches).sum())
 }
 
 #[cfg(target_os = "macos")]
-fn peek(pid: i32) -> (u64, Option<u64>) {
+fn peek(pid: i32) -> (u64, u64) {
     unsafe extern "C" {
         fn proc_pid_rusage(pid: i32, flavor: i32, buffer: *mut u64) -> i32;
     }
     let mut info = [0u64; 64];
     // SAFETY: flavor 4 writes one rusage_info_v4, smaller than the 512 bytes of `info`.
     assert_eq!(unsafe { proc_pid_rusage(pid, 4, info.as_mut_ptr()) }, 0);
-    (info[30], Some(info[4] + info[5] + info[14] + info[15]))
+    (info[30], info[4] + info[5])
 }
 
 fn git(dir: &str, args: &[&str]) {
