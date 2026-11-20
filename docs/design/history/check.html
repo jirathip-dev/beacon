@@ -6,6 +6,5 @@ mount(() => `${statusBar()}${top('macmini', 'backup', 'check on macmini')}
   <div class="body">
     ${uptimeCard(HISTORY.checks.backup)}
     ${incidents(HISTORY.checks.backup)}
-    <p class="meta mute" style="padding:0 4px">a check has no response time · its history is kept by macmini's own serve</p>
   </div>`, 'Check history: backup on macmini (check.html)');
 </script>

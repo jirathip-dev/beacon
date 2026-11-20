@@ -6,7 +6,7 @@ const [, api, smtp] = HISTORY.monitors;
 const r = (dot, name, word, since, err) => `<div class="mrow" style="${err ? 'box-shadow:inset 3px 0 0 var(--red);flex-wrap:wrap' : ''}">
   <span class="line1"><span class="dot ${dot}"></span>${name}</span><span><span class="${dot}">${word}</span> <span class="mute">since ${since}</span> <span class="chev">&nbsp;›</span></span>
   ${err ? `<span class="meta mute" style="width:100%;padding-left:13px">${err}</span>` : ''}</div>`;
-const word = (a, b, extra = '') => `<div class="card word">${extra}<div>${a}</div><div class="mute">${b}</div></div>`;
+const word = (a, extra = '') => `<div class="card word">${extra}<div>${a}</div></div>`;
 const lamp = `<img src="../../../app/design/app-icon/icons/beacon-teal.svg" width="72" height="72" style="border-radius:16px;margin-bottom:6px" alt="">`;
 const bar = (t, s) => `${statusBar()}${top('monitors', t, s)}`;
 mount(() => [
@@ -18,12 +18,12 @@ mount(() => [
       ${r('red', 'backup', 'down', '03:12')}${r('green', 'disk', 'up', 'Oct 21')}</div></div>`,
   `${bar('API', 'web · http')}<div class="body">
     <div class="target meta"><span class="mute">https://api.example.com/health</span>
-      <span class="line1 red"><span class="dot"></span>cert ends ${md(END + 13 * 86400)} · 13d left <span class="mute">· from this phone</span></span></div>
+      <span class="line1 red"><span class="dot"></span>cert ends ${md(END + 13 * 86400)} · 13d left</span></div>
     ${incidents(api)}</div>`,
   `${bar('smtp', 'mail · tcp')}<div class="body">${uptimeCard(smtp)}</div>`,
-  `${bar('Blog', 'web · http')}<div class="body">${word('↻ reading the log', 'fetching history from macmini')}</div>`,
-  `${bar('Blog', 'web · http')}<div class="body">${word('no history', 'no host keeps it. name one as "prober" in monitors.json and it probes your http and tcp monitors every minute.')}</div>`,
-  `${bar('Blog', 'web · http')}<div class="body">${word('dark lamp · no history', "macmini's beacon serve is older than history. update beacon there to keep 30 days.", lamp)}</div>`,
+  `${bar('Blog', 'web · http')}<div class="body">${word('↻ reading the log')}</div>`,
+  `${bar('Blog', 'web · http')}<div class="body">${word('no history')}</div>`,
+  `${bar('Blog', 'web · http')}<div class="body">${word('dark lamp · no history', lamp)}</div>`,
   `${bar('Blog', 'web · http')}<div class="body"><p class="amber line1" style="padding:0 4px"><span class="dot"></span>history from 09:12 · timeout after 5s</p>
     <div class="dim">${uptimeCard(HISTORY.monitors[0])}</div></div>`,
 ], 'History states (states.html)', [

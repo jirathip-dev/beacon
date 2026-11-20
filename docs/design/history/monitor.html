@@ -4,18 +4,17 @@
 import { HISTORY, END, md, statusBar, mount, top, uptimeCard, incidents, chart, stats, missing } from './view.js';
 const q = new URLSearchParams(location.search), range = q.get('r') || '24h', scrub = q.has('scrub') ? +q.get('scrub') : null;
 const blog = HISTORY.monitors[0], n = missing(range);
-const basis = { '1h': 'every probe', '24h': 'mean of every 7 min', '30d': 'mean of every 4h, shaded up to its max' }[range];
 mount(() => `${statusBar()}${top('monitors', 'Blog', 'web · http')}
   <div class="body">
     <div class="target meta"><span class="mute">https://blog.example.com/</span>
-      <span class="line1"><span class="dot green"></span>cert good to ${md(END + 83 * 86400)} · 83d left <span class="mute">· from this phone</span></span></div>
+      <span class="line1"><span class="dot green"></span>cert good to ${md(END + 83 * 86400)} · 83d left</span></div>
     ${uptimeCard(blog)}
     <div class="card"><div class="hd" style="padding-bottom:0;border:0"><span>~ response time</span>
       <span class="seg" style="margin:-12px -8px 0 0">${['1h', '24h', '30d'].map(r => `<span class="key ${r === range ? 'on' : ''}">[${r}]</span>`).join('')}</span></div>
       <div style="padding:${scrub == null ? 4 : 34}px 0 4px">${chart(range, scrub)}</div>
       ${range === '30d' ? `<div class="legend lab"><span><svg width="18" height="6" style="display:inline"><path class="ln" d="M0,3H18"/></svg> avg</span><span><svg width="18" height="8" style="display:inline"><rect class="ar" width="18" height="8"/></svg> max</span></div>` : ''}
       <div class="stats">${stats(range)}</div>
-      <p class="meta mute pad2" style="border-top:1px solid var(--line);padding-top:8px">${basis}${n ? ` · <span class="red">▮</span> ${n} with no response` : ''} · hold and drag to read a point</p></div>
+      ${n ? `<p class="meta mute pad2" style="border-top:1px solid var(--line);padding-top:8px"><span class="red">▮</span> ${n} no response</p>` : ''}</div>
     ${incidents(blog)}
   </div>`, `Monitor history: Web / Blog, ${range} (monitor.html?r=${range})`);
 </script>
