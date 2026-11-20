@@ -1,0 +1,10 @@
+Decided: a ubuntu `changes` job runs git diff against the PR base (or push before) and swift needs it, skipped via job if
+Because: "Decide this with a first step that runs `git diff --name-only` against the base"
+Rejected: the diff as a step inside swift — the job would still queue 10 min for a macOS runner just to skip
+Decided: if git diff fails (zero before sha on a new branch, missing commit) swift runs
+Decided: DerivedData cache keyed on the pbxproj and Package.swift with a restore-key fallback
+Rejected: keying DerivedData on github.sha — a multi-hundred-MB save on every run
+Decided: cancel-in-progress only for pull_request so staging/main pushes always finish
+Because: "for `pull_request` runs, so a new push cancels the old run"
+Check: the rust job's second run on this PR logs a cache hit for key rust-Linux-<Cargo.lock hash>
+Owner: PRs that leave the app alone skip the Mac build; Rust builds come from cache
