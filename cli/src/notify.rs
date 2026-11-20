@@ -5,9 +5,10 @@ use crate::status::{Rendered, Status, rfc3339};
 use hmac::{Hmac, KeyInit, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::os::unix::fs::PermissionsExt;
 use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{Mutex, PoisonError};
 use std::thread;
 use std::time::Duration;
 use ureq::tls::{PemItem, RootCerts, TlsConfig, parse_pem};
@@ -17,13 +18,23 @@ pub const POLL_S: u64 = 60;
 pub const CHECK_POLLS: u32 = 2;
 pub const HOST_FAILS: u32 = 3;
 const TRIES_S: [u64; 3] = [0, 5, 30];
+const ALIVE_MIN_S: u64 = 60;
 
-/// The `--notify` file: the webhook URL and its HMAC secret.
+/// The names of the watched hosts that are down now.
+pub type Down = Mutex<BTreeSet<String>>;
+
+/// The `--notify` file: the webhook URL, its HMAC secret and the `alive` interval.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Notify {
     url: HttpsUrl,
     secret: String,
+    #[serde(default = "alive_default")]
+    alive_every_s: u64,
+}
+
+fn alive_default() -> u64 {
+    300
 }
 
 impl Notify {
@@ -34,13 +45,20 @@ impl Notify {
         if mode & 0o077 != 0 {
             return Err(format!("{path}: mode {mode:o}; chmod 600 it"));
         }
-        serde_json::from_reader(file).map_err(|e| {
+        let notify: Notify = serde_json::from_reader(file).map_err(|e| {
             format!(
                 "{path}: want {{\"url\": \"https://…\", \"secret\": \"…\"}} (line {} column {})",
                 e.line(),
                 e.column()
             )
-        })
+        })?;
+        if (1..ALIVE_MIN_S).contains(&notify.alive_every_s) {
+            return Err(format!(
+                "{path}: alive_every_s {}: want 0 (off) or at least {ALIVE_MIN_S}",
+                notify.alive_every_s
+            ));
+        }
+        Ok(notify)
     }
 }
 
@@ -142,7 +160,12 @@ struct Seen {
 }
 
 /// Polls `host` every `POLL_S` while `target` names its URL and timeout, sending each change on `tx`.
-pub fn watch(host: &str, target: impl Fn() -> Option<(String, u8)>, tx: &Sender<Event>) {
+pub fn watch(
+    host: &str,
+    target: impl Fn() -> Option<(String, u8)>,
+    tx: &Sender<Event>,
+    down: &Down,
+) {
     let (agent, mut tracker) = (agent(), Tracker::new(host));
     let (mut etag, mut last) = (String::new(), BTreeMap::new());
     while let Some((url, timeout_s)) = target() {
@@ -174,8 +197,58 @@ pub fn watch(host: &str, target: impl Fn() -> Option<(String, u8)>, tx: &Sender<
         for e in events.into_iter().flatten() {
             tx.send(e).ok();
         }
+        mark(down, host, tracker.down == Some(true));
         thread::sleep(every(POLL_S));
     }
+    mark(down, host, false);
+}
+
+fn mark(down: &Down, host: &str, is_down: bool) {
+    let mut d = down.lock().unwrap_or_else(PoisonError::into_inner);
+    if is_down {
+        d.insert(host.into());
+    } else {
+        d.remove(host);
+    }
+}
+
+/// POSTs a signed `alive` for `host` every `alive_every_s`, once each; `hosts` gives (hosts, down).
+pub fn alive(notify: &Notify, host: &str, hosts: impl Fn() -> (usize, usize)) {
+    if notify.alive_every_s == 0 {
+        return;
+    }
+    let (agent, mut failing) = (agent(), false);
+    loop {
+        thread::sleep(every(notify.alive_every_s));
+        let (n, m) = hosts();
+        let e = Event {
+            kind: "alive",
+            host: host.into(),
+            check: None,
+            status: Status::Up,
+            message: format!("{n} hosts, {m} down"),
+            at: rfc3339(unix_now()),
+        };
+        let why = post(&agent, notify, &Rendered::json(&e).body).err();
+        if let Some(why) = &why
+            && !failing
+        {
+            out::err(&format!("notify alive failed: {why}"));
+        }
+        failing = why.is_some();
+    }
+}
+
+fn post(agent: &Agent, notify: &Notify, body: &[u8]) -> Result<(), String> {
+    let sent = agent
+        .post(&notify.url.0)
+        .header("Content-Type", "application/json")
+        .header("X-Signature-256", &sign(notify.secret.as_bytes(), body))
+        .config()
+        .timeout_global(Some(Duration::from_secs(10)))
+        .build()
+        .send(body);
+    ok(sent).map(drop)
 }
 
 /// POSTs each event, signed, with 3 tries; logs and drops it when all fail.
@@ -183,19 +256,10 @@ pub fn deliver(notify: &Notify, events: Receiver<Event>) {
     let agent = agent();
     for e in events {
         let body = Rendered::json(&e).body;
-        let signature = sign(notify.secret.as_bytes(), &body);
         let mut why = None;
         for wait in TRIES_S {
             thread::sleep(every(wait));
-            let sent = agent
-                .post(&notify.url.0)
-                .header("Content-Type", "application/json")
-                .header("X-Signature-256", &signature)
-                .config()
-                .timeout_global(Some(Duration::from_secs(10)))
-                .build()
-                .send(&body[..]);
-            why = ok(sent).err();
+            why = post(&agent, notify, &body).err();
             if why.is_none() {
                 break;
             }

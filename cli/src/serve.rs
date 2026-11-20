@@ -1,7 +1,7 @@
 use crate::config::MountPath;
 use crate::config::{self, Host, HostCheck, Id};
 use crate::metrics::{EVERY_S, Ring};
-use crate::notify::{self, Event, Notify, Tracker};
+use crate::notify::{self, Down, Event, Notify, Tracker};
 use crate::out;
 use crate::probe;
 use crate::sampler::Sampler;
@@ -44,7 +44,7 @@ struct Live {
 type Watched = Mutex<BTreeMap<Id, (u64, String, u8)>>;
 
 /// Serves `/status`, `/metrics` and `/config` for `name` on `listen`; returns only when it cannot start.
-pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> String {
+pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> String {
     let (raw, (host, others)) = match std::fs::read(path).map_err(|e| e.to_string()) {
         Ok(raw) => match host_of(&raw, name) {
             Ok(hosts) => (raw, hosts),
@@ -79,7 +79,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
     });
     let (tx, rx) = mpsc::channel();
     let tx = notify.is_some().then_some(tx);
-    let watched = Watched::default();
+    let (watched, down) = (Watched::default(), Down::default());
     let status = Cell(Mutex::new(lock(&live).body.render()));
     let metrics = Cell(Mutex::new(Ring::new().render(name, &host.disks)));
     let config = Cell(Mutex::new(Rendered::of(raw.clone())));
@@ -101,12 +101,14 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                 }
             });
         }
-        let (tx, watched) = (tx.as_ref(), &watched);
+        let (tx, watched, down) = (tx.as_ref(), &watched, &down);
         if let Some(notify) = notify {
-            s.spawn(move || notify::deliver(&notify, rx));
+            s.spawn(move || notify::deliver(notify, rx));
+            let hosts = || (lock(watched).len() + 1, lock(down).len());
+            s.spawn(move || notify::alive(notify, name, hosts));
         }
         run_checks(s, 0, host.checks.clone(), &live, &status, tx);
-        watch(s, 0, others, watched, tx);
+        watch(s, 0, others, watched, down, tx);
         let (live, status, config) = (&live, &status, &config);
         s.spawn(move || {
             let dir = Path::new(path).parent().unwrap_or(Path::new(""));
@@ -142,7 +144,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                             l.body.keep(&ids);
                             status.set(l.body.render());
                             run_checks(s, l.generation, host.checks.clone(), live, status, tx);
-                            watch(s, l.generation, others, watched, tx);
+                            watch(s, l.generation, others, watched, down, tx);
                             drop(l);
                             out::err(&format!("reload {path}: {} checks", ids.len()));
                         }
@@ -228,6 +230,7 @@ fn watch<'s>(
     generation: u64,
     others: BTreeMap<Id, Host>,
     watched: &'s Watched,
+    down: &'s Down,
     tx: Option<&'s Sender<Event>>,
 ) {
     let Some(tx) = tx else { return };
@@ -243,7 +246,7 @@ fn watch<'s>(
                     let entry = w.get(&id).filter(|e| e.0 == born);
                     entry.map(|e| (e.1.clone(), e.2))
                 };
-                notify::watch(id.as_str(), target, tx);
+                notify::watch(id.as_str(), target, tx, down);
             });
         }
     }

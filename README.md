@@ -31,6 +31,11 @@ disk    up    "11% used"
   `~/.config/beacon/notify.json`, mode 600 (serve exits 2 on a file group or others can read, a missing file or
   an invalid one). Each POST carries `X-Signature-256: sha256=<hex HMAC-SHA256 of the body under the secret>`.
   The secret is never logged. `SSL_CERT_FILE`, when set, replaces the built-in roots for these requests.
+  As a dead-man's switch serve also POSTs `{"kind":"alive","host":…,"check":null,"status":"up","message":"<n>
+  hosts, <m> down","at":…}`, signed the same way, every `"alive_every_s"` seconds of the notify file (default
+  300, at least 60, `0` turns it off). It is tried once, never retried, and a failure is logged once per outage;
+  alerting when no `alive` arrives for 15 min is the receiver's job. The webhook is generic: any HTTPS receiver
+  that checks `X-Signature-256` (GitHub-style HMAC) works; a cooee webhook routine is the one in use.
 
 - `beacon install [--config <path>] [--host <name>] [--listen <addr>] [--notify <path>]`: on macOS writes
   `~/Library/LaunchAgents/dev.beacon.serve.plist` running `beacon serve` with those flags (absolute paths,

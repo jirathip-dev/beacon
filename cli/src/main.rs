@@ -25,7 +25,7 @@ fn main() -> ExitCode {
         }),
         ["serve", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path, notify)| {
             let notify = notify.as_deref().map(Notify::load).transpose()?;
-            Err(beacon::serve::serve(&name, &path, &listen, notify))
+            Err(beacon::serve::serve(&name, &path, &listen, notify.as_ref()))
         }),
         ["install", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path, notify)| {
             beacon::install::install(&path, &name, &listen, notify.as_deref()).map(|done| {

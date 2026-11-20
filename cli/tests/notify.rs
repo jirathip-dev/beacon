@@ -25,6 +25,7 @@ enum Reply {
 struct Got {
     head: String,
     body: Vec<u8>,
+    at: Instant,
 }
 
 struct Fake {
@@ -109,6 +110,7 @@ fn one(
         seen.push(Got {
             head: head.clone(),
             body,
+            at: Instant::now(),
         });
         seen.len() - 1
     };
@@ -157,6 +159,7 @@ fn receiver(code: u16) -> Fake {
 struct Serve {
     child: Child,
     dir: PathBuf,
+    addr: String,
 }
 
 impl Drop for Serve {
@@ -168,10 +171,14 @@ impl Drop for Serve {
 
 impl Serve {
     fn start(name: &str, config: &str, hook: &Fake) -> Serve {
+        Serve::start_alive(name, config, hook, 0)
+    }
+
+    fn start_alive(name: &str, config: &str, hook: &Fake, alive_every_s: u64) -> Serve {
         let dir = scratch(name);
         std::fs::write(dir.join("monitors.json"), config).unwrap();
         let notify = dir.join("notify.json");
-        let file = json!({ "url": hook.url("/hooks/in/abc"), "secret": SECRET });
+        let file = json!({ "url": hook.url("/hooks/in/abc"), "secret": SECRET, "alive_every_s": alive_every_s });
         std::fs::write(&notify, file.to_string()).unwrap();
         std::fs::set_permissions(&notify, PermissionsExt::from_mode(0o600)).unwrap();
         let mut child = beacon(&dir)
@@ -183,8 +190,27 @@ impl Serve {
         let mut line = String::new();
         out.read_line(&mut line).unwrap();
         assert!(line.starts_with("serve box on"), "{line}");
+        let addr = line["serve box on ".len()..]
+            .split(": ")
+            .next()
+            .unwrap()
+            .into();
         thread::spawn(move || std::io::copy(&mut out, &mut std::io::sink()));
-        Serve { child, dir }
+        Serve { child, dir, addr }
+    }
+
+    fn status_ms(&self) -> u128 {
+        let started = Instant::now();
+        let mut tcp = TcpStream::connect(&self.addr).unwrap();
+        write!(
+            tcp,
+            "GET /status HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n"
+        )
+        .unwrap();
+        let mut reply = String::new();
+        tcp.read_to_string(&mut reply).unwrap();
+        assert!(reply.starts_with("HTTP/1.1 200"), "{reply}");
+        started.elapsed().as_millis()
     }
 
     fn stderr(&self) -> String {
@@ -307,6 +333,113 @@ fn a_change_held_for_2_polls_sends_one_signed_post_and_a_blip_sends_none() {
             .any(|g| g.head.contains("if-none-match: \"uu\""))
     );
     drop(serve);
+}
+
+fn alive(hook: &Fake) -> Vec<Got> {
+    let got = hook.got().into_iter();
+    got.filter(|g| serde_json::from_slice::<Value>(&g.body).unwrap()["kind"] == "alive")
+        .collect()
+}
+
+#[test]
+fn alive_is_sent_signed_every_interval_with_the_host_count() {
+    let hook = receiver(200);
+    let r1 = Fake::start(|_, _| Reply::Drop);
+    let r2 = Fake::start(host(&[("disk", "u")]));
+    let remotes = [("r1", r1.url("/status"), 5), ("r2", r2.url("/status"), 5)];
+    let remotes: Vec<_> = remotes
+        .iter()
+        .map(|(n, u, t)| (*n, u.as_str(), *t))
+        .collect();
+    let started = Instant::now();
+    let _serve = Serve::start_alive("alive", &config(&[], &remotes), &hook, 60);
+    wait("6 alive posts", || alive(&hook).len() >= 6);
+    let got = alive(&hook);
+    let first = got[0].at.duration_since(started);
+    assert!(
+        (Duration::from_millis(700)..Duration::from_millis(1800)).contains(&first),
+        "{first:?}"
+    );
+    for pair in got.windows(2) {
+        let gap = pair[1].at.duration_since(pair[0].at);
+        assert!(
+            (Duration::from_millis(700)..Duration::from_millis(1500)).contains(&gap),
+            "{gap:?}"
+        );
+    }
+    for g in &got {
+        assert!(g.head.starts_with("post /hooks/in/abc "), "{}", g.head);
+        let want = format!(
+            "x-signature-256: {}\r\n",
+            beacon::notify::sign(SECRET.as_bytes(), &g.body)
+        );
+        assert!(g.head.contains(&want), "{}", g.head);
+        let body: Value = serde_json::from_slice(&g.body).unwrap();
+        let keys: Vec<_> = body.as_object().unwrap().keys().cloned().collect();
+        assert_eq!(keys, ["at", "check", "host", "kind", "message", "status"]);
+        assert_eq!(
+            (&body["host"], &body["check"], &body["status"]),
+            (&json!("box"), &Value::Null, &json!("up"))
+        );
+        let at = body["at"].as_str().unwrap();
+        assert!(at.len() == 20 && at.ends_with('Z'), "{at}");
+    }
+    let message = |g: &Got| serde_json::from_slice::<Value>(&g.body).unwrap()["message"].clone();
+    assert_eq!(message(&got[0]), "3 hosts, 0 down");
+    assert_eq!(message(&got[5]), "3 hosts, 1 down");
+}
+
+#[test]
+fn alive_every_s_0_sends_none() {
+    let hook = receiver(200);
+    let _serve = Serve::start_alive("alive-off", &config(&[], &[]), &hook, 0);
+    settle();
+    assert_eq!(hook.got().len(), 0);
+}
+
+#[test]
+fn a_hung_alive_receiver_does_not_slow_status_or_change_messages() {
+    let hook = Fake::start(|n, _| {
+        if n == 0 {
+            Reply::Hang
+        } else {
+            Reply::Answer(200, String::new(), String::new())
+        }
+    });
+    let serve = Serve::start_alive(
+        "alive-hung",
+        &config(&[own("alive-hung", "fall", "uuuuuuuuuuuuuuuuudd")], &[]),
+        &hook,
+        60,
+    );
+    wait("the hung alive", || alive(&hook).len() == 1);
+    let hung_at = Instant::now();
+    for _ in 0..10 {
+        assert!(serve.status_ms() < 500);
+    }
+    wait("the change", || hook.got().len() > alive(&hook).len());
+    assert!(
+        hung_at.elapsed() < Duration::from_secs(5),
+        "{:?}",
+        hung_at.elapsed()
+    );
+}
+
+#[test]
+fn a_failing_alive_receiver_is_logged_once_per_outage_and_never_retried() {
+    let hook = receiver(500);
+    let serve = Serve::start_alive("alive-fail", &config(&[], &[]), &hook, 60);
+    wait("4 alive posts", || alive(&hook).len() >= 4);
+    let got = alive(&hook);
+    let bodies: std::collections::BTreeSet<_> = got.iter().map(|g| g.body.clone()).collect();
+    assert_eq!(bodies.len(), got.len());
+    let err = serve.stderr();
+    assert_eq!(
+        err.matches("notify alive failed: HTTP 500").count(),
+        1,
+        "{err}"
+    );
+    assert!(!err.contains(SECRET), "{err}");
 }
 
 #[test]
@@ -470,6 +603,15 @@ fn serve_refuses_a_notify_file_others_can_read_a_missing_one_or_an_invalid_one()
         "{err}"
     );
     std::fs::set_permissions(&notify, PermissionsExt::from_mode(0o600)).unwrap();
+    let slow = json!({ "url": "https://x/hooks/in/a", "secret": SECRET, "alive_every_s": 30 });
+    std::fs::write(&notify, slow.to_string()).unwrap();
+    let o = run();
+    assert_eq!(o.status.code(), Some(2));
+    let err = String::from_utf8_lossy(&o.stderr);
+    assert!(
+        err.contains("alive_every_s 30: want 0 (off) or at least 60"),
+        "{err}"
+    );
     for bad in [
         format!("{{ \"secret\": \"{SECRET}\""),
         json!({ "url": 7, "secret": SECRET }).to_string(),
