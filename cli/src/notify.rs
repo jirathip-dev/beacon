@@ -6,11 +6,11 @@ use crate::status::{Rendered, Status, rfc3339};
 use hmac::{Hmac, KeyInit, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+use std::sync::Mutex;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Mutex, PoisonError};
 use std::thread;
 use std::time::Duration;
 use ureq::tls::{PemItem, RootCerts, TlsConfig, parse_pem};
@@ -20,10 +20,9 @@ pub const POLL_S: u64 = 60;
 pub const CHECK_POLLS: u32 = 2;
 pub const HOST_FAILS: u32 = 3;
 const TRIES_S: [u64; 3] = [0, 5, 30];
-const ALIVE_MIN_S: u64 = 60;
 
-/// The names of the watched hosts that are down now.
-pub type Down = Mutex<BTreeSet<String>>;
+/// Each watched host's name and whether it is down now.
+pub type Down = Mutex<BTreeMap<String, bool>>;
 
 /// The `--notify` file: the webhook URL, its HMAC secret and the `alive` interval.
 #[derive(Deserialize)]
@@ -31,12 +30,7 @@ pub type Down = Mutex<BTreeSet<String>>;
 pub struct Notify {
     url: HttpsUrl,
     secret: String,
-    #[serde(default = "alive_default")]
-    alive_every_s: u64,
-}
-
-fn alive_default() -> u64 {
-    300
+    alive_every_s: Option<u64>,
 }
 
 impl Notify {
@@ -54,11 +48,8 @@ impl Notify {
                 e.column()
             )
         })?;
-        if (1..ALIVE_MIN_S).contains(&notify.alive_every_s) {
-            return Err(format!(
-                "{path}: alive_every_s {}: want 0 (off) or at least {ALIVE_MIN_S}",
-                notify.alive_every_s
-            ));
+        if (1..60).contains(&notify.alive_every_s.unwrap_or(300)) {
+            return Err(format!("{path}: alive_every_s: want 0 or at least 60"));
         }
         Ok(notify)
     }
@@ -227,42 +218,27 @@ pub fn watch(
         for e in events.into_iter().flatten() {
             tx.send(e).ok();
         }
-        mark(down, host, tracker.down == Some(true));
+        let is_down = tracker.down == Some(true);
+        down.lock().map(|mut d| d.insert(host.into(), is_down)).ok();
         thread::sleep(every(POLL_S));
     }
-    mark(down, host, false);
-}
-
-fn mark(down: &Down, host: &str, is_down: bool) {
-    let mut d = down.lock().unwrap_or_else(PoisonError::into_inner);
-    if is_down {
-        d.insert(host.into());
-    } else {
-        d.remove(host);
-    }
+    down.lock().map(|mut d| d.remove(host)).ok();
 }
 
 /// POSTs a signed `alive` for `host` every `alive_every_s`, once each; `hosts` gives (hosts, down).
 pub fn alive(notify: &Notify, host: &str, hosts: impl Fn() -> (usize, usize)) {
-    if notify.alive_every_s == 0 {
+    let every_s = notify.alive_every_s.unwrap_or(300);
+    if every_s == 0 {
         return;
     }
     let (agent, mut failing) = (agent(), false);
     loop {
-        thread::sleep(every(notify.alive_every_s));
+        thread::sleep(every(every_s));
         let (n, m) = hosts();
-        let e = Event {
-            kind: "alive",
-            host: host.into(),
-            check: None,
-            status: Status::Up,
-            message: format!("{n} hosts, {m} down"),
-            at: rfc3339(unix_now()),
-        };
+        let mut e = Tracker::new(host).event(None, Status::Up, &format!("{n} hosts, {m} down"));
+        e.kind = "alive";
         let why = post(&agent, notify, &Rendered::json(&e).body).err();
-        if let Some(why) = &why
-            && !failing
-        {
+        if let (Some(why), false) = (&why, failing) {
             out::err(&format!("notify alive failed: {why}"));
         }
         failing = why.is_some();

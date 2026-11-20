@@ -106,7 +106,12 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> S
         let (tx, watched, down) = (tx.as_ref(), &watched, &down);
         if let Some(notify) = notify {
             s.spawn(move || notify::deliver(notify, rx));
-            let hosts = || (lock(watched).len() + 1, lock(down).len());
+            let hosts = || {
+                (
+                    lock(watched).len() + 1,
+                    lock(down).values().filter(|d| **d).count(),
+                )
+            };
             s.spawn(move || notify::alive(notify, name, hosts));
         }
         run_checks(s, 0, host.checks.clone(), &live, &status, tx);

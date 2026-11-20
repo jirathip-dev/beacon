@@ -620,7 +620,7 @@ fn serve_refuses_a_notify_file_others_can_read_a_missing_one_or_an_invalid_one()
     assert_eq!(o.status.code(), Some(2));
     let err = String::from_utf8_lossy(&o.stderr);
     assert!(
-        err.contains("alive_every_s 30: want 0 (off) or at least 60"),
+        err.contains("alive_every_s: want 0 or at least 60"),
         "{err}"
     );
     for bad in [
