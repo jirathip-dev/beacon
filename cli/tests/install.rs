@@ -205,3 +205,42 @@ fn host_config_is_valid(file: &str, host: &str, group: &str, n: usize) {
         .collect();
     assert_eq!(monitored, ids);
 }
+
+#[test]
+fn install_writes_the_notify_flag_into_the_service() {
+    use std::os::unix::fs::PermissionsExt;
+    let home = scratch("install-notify");
+    let ctl = home.join("ctl");
+    std::fs::write(&ctl, "#!/bin/sh\nexit 0\n").unwrap();
+    std::fs::set_permissions(&ctl, PermissionsExt::from_mode(0o755)).unwrap();
+    std::fs::write(home.join("notify.json"), "{}").unwrap();
+    let config = r#"{ "version": 1, "monitors": [], "hosts": { "box": { "url": "https://box/status", "checks": [] } } }"#;
+    std::fs::write(home.join("beacon.json"), config).unwrap();
+    let o = Command::new(env!("CARGO_BIN_EXE_beacon"))
+        .args(["install", "--config", "beacon.json", "--host", "box"])
+        .args(["--notify", "notify.json"])
+        .current_dir(&home)
+        .env("HOME", &home)
+        .env("BEACON_LAUNCHCTL", &ctl)
+        .env("BEACON_SYSTEMCTL", &ctl)
+        .output()
+        .unwrap();
+    assert!(o.status.success(), "{o:?}");
+    let notify = std::fs::canonicalize(home.join("notify.json")).unwrap();
+    let n = notify.display();
+    let (file, want) = if cfg!(target_os = "macos") {
+        (
+            "Library/LaunchAgents/dev.beacon.serve.plist",
+            format!(
+                "<string>127.0.0.1:7878</string><string>--notify</string><string>{n}</string></array>"
+            ),
+        )
+    } else {
+        (
+            ".config/systemd/user/beacon-serve.service",
+            format!("--listen 127.0.0.1:7878 --notify \"{n}\"\n"),
+        )
+    };
+    let written = std::fs::read_to_string(home.join(file)).unwrap();
+    assert!(written.contains(&want), "missing {want}\nin {written}");
+}

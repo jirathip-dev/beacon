@@ -1,12 +1,15 @@
 use crate::config::MountPath;
 use crate::config::{self, Host, HostCheck, Id};
 use crate::metrics::{EVERY_S, Ring};
+use crate::notify::{self, Event, Notify, Tracker};
 use crate::out;
 use crate::probe;
 use crate::sampler::Sampler;
 use crate::state;
 use crate::status::{Rendered, StatusBody};
+use std::collections::BTreeMap;
 use std::path::Path;
+use std::sync::mpsc::{self, Sender};
 use std::sync::{Mutex, MutexGuard, OnceLock, PoisonError};
 use std::thread::{self, Scope};
 use std::time::{Duration, Instant, SystemTime};
@@ -35,13 +38,16 @@ fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
 struct Live {
     generation: u64,
     body: StatusBody,
+    own: Tracker,
 }
 
+type Watched = Mutex<BTreeMap<Id, (u64, String, u8)>>;
+
 /// Serves `/status`, `/metrics` and `/config` for `name` on `listen`; returns only when it cannot start.
-pub fn serve(name: &str, path: &str, listen: &str) -> String {
-    let (raw, host) = match std::fs::read(path).map_err(|e| e.to_string()) {
+pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> String {
+    let (raw, (host, others)) = match std::fs::read(path).map_err(|e| e.to_string()) {
         Ok(raw) => match host_of(&raw, name) {
-            Ok(host) => (raw, host),
+            Ok(hosts) => (raw, hosts),
             Err(e) => return format!("{path}: {e}"),
         },
         Err(e) => return format!("{path}: {e}"),
@@ -69,7 +75,11 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
     let live = Mutex::new(Live {
         generation: 0,
         body: StatusBody::new(name),
+        own: Tracker::new(name),
     });
+    let (tx, rx) = mpsc::channel();
+    let tx = notify.is_some().then_some(tx);
+    let watched = Watched::default();
     let status = Cell(Mutex::new(lock(&live).body.render()));
     let metrics = Cell(Mutex::new(Ring::new().render(name, &host.disks)));
     let config = Cell(Mutex::new(Rendered::of(raw.clone())));
@@ -91,7 +101,12 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
                 }
             });
         }
-        run_checks(s, 0, host.checks.clone(), &live, &status);
+        let (tx, watched) = (tx.as_ref(), &watched);
+        if let Some(notify) = notify {
+            s.spawn(move || notify::deliver(&notify, rx));
+        }
+        run_checks(s, 0, host.checks.clone(), &live, &status, tx);
+        watch(s, 0, others, watched, tx);
         let (live, status, config) = (&live, &status, &config);
         s.spawn(move || {
             let dir = Path::new(path).parent().unwrap_or(Path::new(""));
@@ -119,14 +134,15 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
                 if read != seen {
                     seen.clone_from(&read);
                     match read.and_then(|raw| host_of(&raw, name).map(|h| (raw, h))) {
-                        Ok((raw, host)) => {
+                        Ok((raw, (host, others))) => {
                             config.set(Rendered::of(raw));
                             let mut l = lock(live);
                             l.generation += 1;
                             let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
                             l.body.keep(&ids);
                             status.set(l.body.render());
-                            run_checks(s, l.generation, host.checks.clone(), live, status);
+                            run_checks(s, l.generation, host.checks.clone(), live, status, tx);
+                            watch(s, l.generation, others, watched, tx);
                             drop(l);
                             out::err(&format!("reload {path}: {} checks", ids.len()));
                         }
@@ -197,13 +213,40 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
     })
 }
 
-fn host_of(raw: &[u8], name: &str) -> Result<Host, String> {
+fn host_of(raw: &[u8], name: &str) -> Result<(Host, BTreeMap<Id, Host>), String> {
     let text = std::str::from_utf8(raw).map_err(|e| e.to_string())?;
     let mut config = config::parse(text)?;
     Id::try_from(name.to_string())
         .ok()
         .and_then(|id| config.hosts.remove(&id))
+        .map(|host| (host, config.hosts))
         .ok_or(format!("no host {name:?} in hosts"))
+}
+
+fn watch<'s>(
+    s: &'s Scope<'s, '_>,
+    generation: u64,
+    others: BTreeMap<Id, Host>,
+    watched: &'s Watched,
+    tx: Option<&'s Sender<Event>>,
+) {
+    let Some(tx) = tx else { return };
+    let mut w = lock(watched);
+    let old = std::mem::take(&mut *w);
+    for (id, h) in others {
+        let born = old.get(&id).map_or(generation, |o| o.0);
+        w.insert(id.clone(), (born, h.url.0, h.timeout_s));
+        if born == generation {
+            s.spawn(move || {
+                let target = || {
+                    let w = lock(watched);
+                    let entry = w.get(&id).filter(|e| e.0 == born);
+                    entry.map(|e| (e.1.clone(), e.2))
+                };
+                notify::watch(id.as_str(), target, tx);
+            });
+        }
+    }
 }
 
 fn run_checks<'s>(
@@ -212,6 +255,7 @@ fn run_checks<'s>(
     checks: Vec<HostCheck>,
     live: &'s Mutex<Live>,
     status: &'s Cell,
+    tx: Option<&'s Sender<Event>>,
 ) {
     for c in checks {
         s.spawn(move || {
@@ -223,6 +267,11 @@ fn run_checks<'s>(
                 if l.generation != generation {
                     return;
                 }
+                if let Some(tx) = tx
+                    && let Some(e) = l.own.check(c.id.as_str(), st, &message)
+                {
+                    tx.send(e).ok();
+                }
                 if l.body.record(&c.id, st, message, unix_now()) {
                     status.set(l.body.render());
                 }
@@ -233,13 +282,13 @@ fn run_checks<'s>(
     }
 }
 
-fn unix_now() -> u64 {
+pub(crate) fn unix_now() -> u64 {
     SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .map_or(0, |d| d.as_secs())
 }
 
-fn every(secs: u64) -> Duration {
+pub(crate) fn every(secs: u64) -> Duration {
     static SPEEDUP: OnceLock<u32> = OnceLock::new();
     let k = SPEEDUP.get_or_init(|| {
         let k = std::env::var("BEACON_SPEEDUP")
