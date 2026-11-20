@@ -83,15 +83,52 @@
           "uniqueItems": true,
           "default": ["/"],
           "items": { "type": "string", "pattern": "^/", "maxLength": 255, "description": "An absolute path with no control character." }
+        },
+        "jobs": {
+          "description": "The review of this host's launchd or systemd user jobs, by label (ADR D12). A label with no entry is unreviewed. Only the CLI reads this; the app ignores it (ADR D1). `beacon jobs keep|ignore|removed` writes it.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/label" },
+          "additionalProperties": { "$ref": "#/$defs/review" }
         }
       }
+    },
+    "label": {
+      "description": "A launchd label or a systemd unit name: no whitespace and no control character.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\s\\u0000-\\u001f\\u007f]+$"
+    },
+    "review": {
+      "oneOf": [
+        { "const": "ignore", "description": "Not shown and never alerts." },
+        { "const": "removed", "description": "Its removal is intended: not shown while it is gone. If it comes back it is unreviewed." },
+        {
+          "description": "Shown under this name and group; down when it is gone.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["keep"],
+          "properties": {
+            "keep": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "group"],
+              "properties": {
+                "name": { "$ref": "#/$defs/name" },
+                "group": { "$ref": "#/$defs/group" },
+                "running": { "type": "boolean", "default": false, "description": "Down whenever it is not running, whatever its kind." }
+              }
+            }
+          }
+        }
+      ]
     },
     "hostCheck": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "command"],
       "properties": {
-        "id": { "$ref": "#/$defs/id", "description": "Unique within its host." },
+        "id": { "$ref": "#/$defs/id", "not": { "pattern": "^job-" }, "description": "Unique within its host. `job-` is reserved for discovered jobs (ADR D12)." },
         "command": { "type": "string", "minLength": 1, "description": "Run with `sh -c`; exit 0 = up." },
         "every_s": { "type": "integer", "minimum": 10, "maximum": 86400, "default": 60 },
         "timeout_s": { "type": "integer", "minimum": 1, "maximum": 300, "default": 30, "description": "Killed and down past this." }

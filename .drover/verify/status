@@ -3,6 +3,9 @@
   "host": "macmini",
   "checks": {
     "disk": { "status": "up", "message": "11% used", "since": "2026-11-12T08:00:00Z" },
-    "backup": { "status": "down", "message": "backup.ok is 31h old", "since": "2026-11-12T10:15:00Z" }
+    "backup": { "status": "down", "message": "backup.ok is 31h old", "since": "2026-11-12T10:15:00Z" },
+    "job-dev-example-tick": { "status": "up", "message": "last exit 0", "since": "2026-11-12T08:00:00Z", "name": "dev.example.tick", "group": "macmini" },
+    "job-com-example-ttyd": { "status": "up", "message": "running", "since": "2026-11-12T08:00:00Z", "name": "com.example.ttyd" },
+    "job-com-example-sync": { "status": "down", "message": "last exit 1", "since": "2026-11-12T10:15:00Z", "name": "com.example.sync" }
   }
 }

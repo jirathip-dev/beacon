@@ -9,7 +9,7 @@ sh .drover/verify/down.sh
 mkdir -p shots/serve
 rm -f shots/*.png
 cargo build -q --manifest-path cli/Cargo.toml
-"${CARGO_TARGET_DIR:-cli/target}/debug/beacon" serve --config .drover/verify/live.json --host mini --listen 127.0.0.1:0 >shots/live.log 2>&1 &
+BEACON_LAUNCHCTL=true "${CARGO_TARGET_DIR:-cli/target}/debug/beacon" serve --config .drover/verify/live.json --host mini --listen 127.0.0.1:0 >shots/live.log 2>&1 &
 echo $! >shots/live.pid
 live=
 for _ in 1 2 3 4 5 6 7 8 9 10; do

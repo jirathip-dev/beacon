@@ -1,4 +1,5 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::borrow::Borrow;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Parses monitors.json v1 and enforces the schema's bounds and the cross-field rules.
@@ -66,6 +67,53 @@ pub struct Host {
     pub checks: Vec<HostCheck>,
     #[serde(default = "root")]
     pub disks: Vec<MountPath>,
+    #[serde(default)]
+    pub jobs: BTreeMap<Label, Review>,
+}
+
+/// A launchd label or systemd unit name: 1 to 200 chars, no whitespace or control char.
+#[derive(Debug, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[serde(try_from = "String")]
+pub struct Label(String);
+
+impl Label {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Borrow<str> for Label {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for Label {
+    type Error = String;
+    fn try_from(s: String) -> Result<Self, String> {
+        let bad = |c: char| c.is_whitespace() || c.is_control();
+        let ok = (1..=200).contains(&s.chars().count()) && !s.contains(bad);
+        ok.then(|| Label(s.clone()))
+            .ok_or_else(|| format!("invalid job label {s:?}"))
+    }
+}
+
+/// The owner's review of one job (ADR D12 §1).
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
+#[serde(rename_all = "lowercase", deny_unknown_fields)]
+pub enum Review {
+    Keep(Kept),
+    Ignore,
+    Removed,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct Kept {
+    pub name: String,
+    pub group: String,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub running: bool,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
@@ -159,11 +207,21 @@ impl MonitorsConfig {
             if host.disks.len() > 8 || disks.len() < host.disks.len() {
                 return Err(ctx("disks must be at most 8 distinct paths".into()));
             }
+            for (label, review) in &host.jobs {
+                if let Review::Keep(k) = review {
+                    let ctx = |e: String| format!("host {:?}: job {:?}: {e}", host_id.0, label.0);
+                    text("name", &k.name, 60).map_err(ctx)?;
+                    text("group", &k.group, 40).map_err(ctx)?;
+                }
+            }
             let mut seen = BTreeSet::new();
             for c in &host.checks {
                 let ctx = |e: String| format!("host {:?}: check {:?}: {e}", host_id.0, c.id.0);
                 if !seen.insert(&c.id) {
                     return Err(ctx("duplicate id".into()));
+                }
+                if c.id.0.starts_with("job-") {
+                    return Err(ctx("ids starting with job- are reserved for jobs".into()));
                 }
                 text("command", &c.command, usize::MAX).map_err(ctx)?;
                 range("every_s", c.every_s.into(), 10, 86400).map_err(ctx)?;

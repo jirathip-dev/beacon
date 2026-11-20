@@ -36,6 +36,12 @@ disk    up    "11% used"
   300, at least 60, `0` turns it off). It is tried once, never retried, and a failure is logged once per outage;
   alerting when no `alive` arrives for 15 min is the receiver's job. The webhook is generic: any HTTPS receiver
   that checks `X-Signature-256` (GitHub-style HMAC) works; a cooee webhook routine is the one in use.
+  Serve also lists its user's launchd (`gui/<uid>`, not `com.apple.*`) or `systemd --user` jobs every 60 s and
+  reports each as a `job-<label>` row, judged by its kind; a job the config's `jobs` block does not name is
+  shown in the app under Unreviewed, and with `--notify` sends one `new job found: <label>` webhook.
+
+- `beacon jobs`: this host's jobs and their review; `beacon jobs keep|ignore|removed <label>` edits the
+  config's `jobs` block and prints the `git commit` to run. Reference: [docs/jobs.md](docs/jobs.md).
 
 - `beacon install [--config <path>] [--host <name>] [--listen <addr>] [--notify <path>]`: on macOS writes
   `~/Library/LaunchAgents/dev.beacon.serve.plist` running `beacon serve` with those flags (absolute paths,
@@ -44,8 +50,9 @@ disk    up    "11% used"
   `Restart=always`) and runs `systemctl --user enable --now` (a changed unit: `restart`).
   Idempotent: `+ installed`, `~ updated` (rewritten and reloaded) or `= already` (nothing touched); exit 0.
 
-Mini setup: copy the `jirathips-mac-mini` host block and its `Mini` monitors from `docs/hosts/mini.json`
-into your config, then run `beacon install --config <that config>`. For alerts, make a webhook routine in a
+Mini setup: copy the `jirathips-mac-mini` host block (its `doctor`, `clis` and `disk` checks and its `jobs`
+block of kept launchd jobs) and its `Mini` monitors from `docs/hosts/mini.json` into your config, then run
+`beacon install --config <that config>`. New jobs show up under Unreviewed; review them with `beacon jobs`. For alerts, make a webhook routine in a
 cooee chat, put its URL and secret in `~/.config/beacon/notify.json` (`chmod 600` it) and run
 `beacon install --config <that config> --notify ~/.config/beacon/notify.json` on the Mini only.
 

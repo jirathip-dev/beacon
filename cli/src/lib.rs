@@ -1,5 +1,6 @@
 pub mod config;
 pub mod install;
+pub mod jobs;
 pub mod metrics;
 pub mod notify;
 pub mod out;

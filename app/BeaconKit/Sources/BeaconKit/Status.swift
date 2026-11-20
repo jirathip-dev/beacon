@@ -19,6 +19,9 @@ public struct CheckResult: Decodable, Sendable {
     public let status: Status
     public let message: String
     public let since: Date
+    /// Only on a job's row (ADR D12); a row with a name and no group is unreviewed.
+    public let name: String?
+    public let group: String?
 }
 
 public enum Status: String, Decodable, Sendable { case up, down }
@@ -32,10 +35,14 @@ public struct MonitorResult: Codable, Sendable, Equatable {
     public let state: ResultState
     public let detail: String
     public let since: Date?
+    /// The serve host of a job row.
+    public let host: String?
 
-    public init(name: String, group: String, state: ResultState, detail: String, since: Date?) {
-        (self.name, self.group, self.state, self.detail, self.since) = (name, group, state, detail, since)
+    public init(name: String, group: String, state: ResultState, detail: String, since: Date?, host: String? = nil) {
+        (self.name, self.group, self.state, self.detail, self.since, self.host) = (name, group, state, detail, since, host)
     }
+
+    public static let unreviewed = "Unreviewed"
 }
 
 /// What the app saves after each refresh and the widget reads (ADR D8).

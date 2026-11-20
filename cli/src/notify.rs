@@ -1,12 +1,14 @@
 use crate::config::HttpsUrl;
 use crate::out;
 use crate::serve::{every, unix_now};
+use crate::state::{self, Announced};
 use crate::status::{Rendered, Status, rfc3339};
 use hmac::{Hmac, KeyInit, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::collections::{BTreeMap, BTreeSet};
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Mutex, PoisonError};
 use std::thread;
@@ -83,6 +85,23 @@ pub struct Event {
     at: String,
 }
 
+impl Event {
+    /// The `new job found` announcement of an unreviewed job (ADR D12 §6).
+    pub fn job(host: &str, id: &str, status: Status, label: &str) -> Event {
+        Event {
+            kind: "job",
+            host: host.into(),
+            check: Some(id.into()),
+            status,
+            message: format!("new job found: {label}")
+                .chars()
+                .take(200)
+                .collect(),
+            at: rfc3339(unix_now()),
+        }
+    }
+}
+
 /// One host's last sent statuses and the polls that may change them.
 #[derive(Default)]
 pub struct Tracker {
@@ -157,6 +176,8 @@ struct Remote {
 struct Seen {
     status: Status,
     message: String,
+    name: Option<String>,
+    group: Option<String>,
 }
 
 /// Polls `host` every `POLL_S` while `target` names its URL and timeout, sending each change on `tx`.
@@ -167,7 +188,9 @@ pub fn watch(
     down: &Down,
 ) {
     let (agent, mut tracker) = (agent(), Tracker::new(host));
-    let (mut etag, mut last) = (String::new(), BTreeMap::new());
+    let (mut etag, mut last) = (String::new(), BTreeMap::<String, Seen>::new());
+    let home = std::env::var_os("HOME");
+    let mut announced = home.map(|h| Announced::load(&state::dir(Path::new(&h)), host));
     while let Some((url, timeout_s)) = target() {
         let got = agent
             .get(&url)
@@ -189,6 +212,13 @@ pub fn watch(
         });
         let mut events = vec![tracker.polled(&polled)];
         if polled.is_ok() {
+            let unreviewed = || last.iter().filter(|(_, c)| c.group.is_none());
+            let unreviewed = || unreviewed().filter_map(|(id, c)| Some((id, c, c.name.as_ref()?)));
+            if let Some(a) = &mut announced {
+                let fresh = a.admit(unreviewed().map(|(_, _, n)| n.clone()));
+                let new = unreviewed().filter(|(_, _, n)| fresh.contains(n));
+                events.extend(new.map(|(id, c, n)| Some(Event::job(host, id, c.status, n))));
+            }
             events.extend(
                 last.iter()
                     .map(|(id, c)| tracker.check(id, c.status, &c.message)),

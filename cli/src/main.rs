@@ -1,11 +1,13 @@
 use beacon::config::{self, Host, Id, MonitorsConfig};
 use beacon::notify::Notify;
-use std::process::{Command, ExitCode};
+use std::process::ExitCode;
 
 const USAGE: &str = "usage: beacon check <path>
        beacon run [--config <path>] [--host <name>]
        beacon serve [--config <path>] [--host <name>] [--listen <addr>] [--notify <path>]
-       beacon install [--config <path>] [--host <name>] [--listen <addr>] [--notify <path>]";
+       beacon install [--config <path>] [--host <name>] [--listen <addr>] [--notify <path>]
+       beacon jobs [keep <label> --name <n> --group <g> [--running] | ignore <label> | removed <label>]
+                   [--config <path>] [--host <name>]";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -33,6 +35,7 @@ fn main() -> ExitCode {
                 ExitCode::SUCCESS
             })
         }),
+        ["jobs", rest @ ..] => beacon::jobs::cli::run(rest).map(|()| ExitCode::SUCCESS),
         _ => Err(USAGE.into()),
     };
     result.unwrap_or_else(|e| {
@@ -59,7 +62,7 @@ fn target(opts: &[&str], serve: bool) -> Result<Target, String> {
     let mut config = load(&path)?;
     let host = match host {
         Some(h) => h,
-        None => short_hostname()?,
+        None => beacon::probe::hostname()?,
     };
     let checks = Id::try_from(host.clone())
         .ok()
@@ -73,15 +76,4 @@ fn load(path: &str) -> Result<MonitorsConfig, String> {
         .map_err(|e| e.to_string())
         .and_then(|text| config::parse(&text))
         .map_err(|e| format!("{path}: {e}"))
-}
-
-fn short_hostname() -> Result<String, String> {
-    let out = Command::new("hostname")
-        .arg("-s")
-        .output()
-        .map_err(|e| format!("hostname: {e}"))?;
-    let name = String::from_utf8_lossy(&out.stdout).trim().to_lowercase();
-    (out.status.success() && !name.is_empty())
-        .then_some(name)
-        .ok_or("hostname -s failed; pass --host <name>".into())
 }
