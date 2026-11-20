@@ -1,4 +1,5 @@
 use crate::config::Id;
+use crate::jobs::Row;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt;
@@ -59,6 +60,10 @@ struct CheckResult {
     status: Status,
     message: String,
     since: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    group: Option<String>,
 }
 
 impl StatusBody {
@@ -72,7 +77,31 @@ impl StatusBody {
 
     /// Records one run at Unix time `now`; true when status or message changed.
     pub fn record(&mut self, id: &Id, status: Status, message: String, now: u64) -> bool {
-        let old = self.checks.get(id.as_str());
+        self.put(id.as_str(), status, message, (None, None), now)
+    }
+
+    /// Records every job row and drops job rows not in `rows`; true when anything changed.
+    pub fn set_jobs(&mut self, rows: &[Row], now: u64) -> bool {
+        let before = self.checks.len();
+        self.checks
+            .retain(|k, _| !k.starts_with("job-") || rows.iter().any(|r| r.id == *k));
+        let mut changed = self.checks.len() != before;
+        for r in rows {
+            let names = (Some(r.name.clone()), r.group.clone());
+            changed |= self.put(&r.id, r.status, r.message.clone(), names, now);
+        }
+        changed
+    }
+
+    fn put(
+        &mut self,
+        id: &str,
+        status: Status,
+        message: String,
+        (name, group): (Option<String>, Option<String>),
+        now: u64,
+    ) -> bool {
+        let old = self.checks.get(id);
         let since = match old {
             Some(o) if o.status == status => o.since.clone(),
             _ => rfc3339(now),
@@ -81,16 +110,18 @@ impl StatusBody {
             status,
             message,
             since,
+            name,
+            group,
         };
         let changed = old != Some(&new);
-        self.checks.insert(id.as_str().into(), new);
+        self.checks.insert(id.into(), new);
         changed
     }
 
-    /// Drops the results of checks not in `ids`.
+    /// Drops the results of checks not in `ids`; job rows stay.
     pub fn keep(&mut self, ids: &[&Id]) {
         self.checks
-            .retain(|k, _| ids.iter().any(|id| id.as_str() == k));
+            .retain(|k, _| k.starts_with("job-") || ids.iter().any(|id| id.as_str() == k));
     }
 
     pub fn render(&self) -> Rendered {

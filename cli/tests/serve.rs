@@ -41,6 +41,7 @@ fn start_at(path: &str) -> (Serve, String, String) {
             "--listen",
             "127.0.0.1:0",
         ])
+        .env("BEACON_LAUNCHCTL", "true")
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();

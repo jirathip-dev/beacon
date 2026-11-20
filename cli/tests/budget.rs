@@ -14,6 +14,29 @@ const DAY_SPEEDUP: u64 = 8640;
 const CLIENTS: usize = 50;
 const POLLS: usize = 60;
 static ALONE: Mutex<()> = Mutex::new(());
+const FAKE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/jobs/fake");
+const JOBS: usize = 50;
+const SCHEDULED: usize = 10;
+
+fn fake_jobs(dir: &Path) {
+    std::fs::create_dir_all(dir.join("print")).unwrap();
+    let mut list = String::from("PID\tStatus\tLabel\n");
+    for i in 0..JOBS {
+        let label = format!("dev.fake.job{i}");
+        let pid = if i % 2 == 0 { "100" } else { "-" };
+        list += &format!("{pid}\t0\t{label}\n");
+        let kind = if i < SCHEDULED {
+            format!(
+                "\trun interval = {} seconds\n\tproperties = inferred program\n",
+                300 * (i + 1)
+            )
+        } else {
+            "\tproperties = keepalive | runatload\n".into()
+        };
+        std::fs::write(dir.join("print").join(label), format!("\truns = 1\n{kind}")).unwrap();
+    }
+    std::fs::write(dir.join("list"), list).unwrap();
+}
 
 struct Serve {
     child: Child,
@@ -40,6 +63,8 @@ impl Serve {
             std::fs::write(state.join("serve.log"), "old line\n".repeat(70_000)).unwrap();
             std::fs::write(state.join("stale.bin"), vec![0u8; 21 << 20]).unwrap();
         }
+        let jobs = Path::new(&root).join("jobs");
+        fake_jobs(&jobs);
         let (origin, clone) = (format!("{root}/origin.git"), format!("{root}/clone"));
         git(&root, &["init", "-q", "--bare", &origin]);
         git(&root, &["clone", "-q", &origin, &clone]);
@@ -57,6 +82,8 @@ impl Serve {
             .args(["serve", "--config", &config])
             .args(["--host", "box", "--listen", "127.0.0.1:0"])
             .env("BEACON_SPEEDUP", speedup.to_string())
+            .env("BEACON_LAUNCHCTL", FAKE)
+            .env("FAKE_JOBS", &jobs)
             .env("HOME", format!("{root}/home"))
             .env("TMPDIR", format!("{root}/tmp"))
             .stdout(Stdio::piped())
@@ -174,6 +201,14 @@ fn size(path: &Path) -> u64 {
 }
 
 fn etag(addr: &str, path: &str) -> String {
+    raw(addr, path)
+        .lines()
+        .find_map(|l| l.strip_prefix("ETag: "))
+        .unwrap()
+        .into()
+}
+
+fn raw(addr: &str, path: &str) -> String {
     let mut s = TcpStream::connect(addr).unwrap();
     s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
     write!(
@@ -185,10 +220,7 @@ fn etag(addr: &str, path: &str) -> String {
     if let Err(e) = s.read_to_string(&mut raw) {
         panic!("{path}: no answer within 5 s: {e}");
     }
-    raw.lines()
-        .find_map(|l| l.strip_prefix("ETag: "))
-        .unwrap()
-        .into()
+    raw
 }
 
 fn poll(conn: &mut BufReader<TcpStream>, path: &str, etag: &str) -> Option<(u16, usize)> {
@@ -216,6 +248,10 @@ fn idle() -> &'static (Reading, f64) {
         let before = peek(pid).wakeups;
         thread::sleep(WINDOW);
         let wakeups_a_minute = f(peek(pid).wakeups - before) * 60.0 / REAL_S;
+        let jobs = raw(&quiet.addr, "/status")
+            .matches("\"job-dev-fake-")
+            .count();
+        assert_eq!(jobs, JOBS, "discovery reports every fake job");
         quiet.stop();
         let usage = serve.stop();
         eprintln!("idle over {REAL_S} real s: {usage:?}");
@@ -248,7 +284,8 @@ fn serve_resident_peak_is_at_most_10_mb() {
 #[test]
 fn an_unchanged_poll_is_a_304_of_at_most_1_kb_both_ways() {
     let _alone = ALONE.lock().unwrap();
-    let serve = Serve::start("polls", &[], &[], SPEEDUP, false);
+    let serve = Serve::start("polls", &[], &[], 1, false);
+    thread::sleep(Duration::from_millis(1500));
     for path in ["/status", "/metrics", "/config"] {
         let etag = etag(&serve.addr, path);
         let conn = TcpStream::connect(&serve.addr).unwrap();

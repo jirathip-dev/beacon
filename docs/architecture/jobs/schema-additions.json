@@ -1,0 +1,61 @@
+{
+  "$comment": "ADR D12 (#39): what the two contract schemas in ../beacon/ gain. Each key is a JSON pointer into that file and its value is what goes there. Slice 1 folds in `monitors.schema.json` and slice 2 `status.schema.json`, in the PRs that make the CLI accept and write them, so the contract never runs ahead of `beacon check`.",
+  "monitors.schema.json": {
+    "/$defs/host/properties/jobs": {
+      "description": "The review of this host's launchd or systemd user jobs, by label (ADR D12). A label with no entry is unreviewed. Only the CLI reads this; the app ignores it (ADR D1). `beacon jobs keep|ignore|removed` writes it.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/label" },
+      "additionalProperties": { "$ref": "#/$defs/review" }
+    },
+    "/$defs/label": {
+      "description": "A launchd label or a systemd unit name: no whitespace and no control character.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\s\\u0000-\\u001f\\u007f]+$"
+    },
+    "/$defs/review": {
+      "oneOf": [
+        { "const": "ignore", "description": "Not shown and never alerts." },
+        { "const": "removed", "description": "Its removal is intended: not shown while it is gone. If it comes back it is unreviewed." },
+        {
+          "description": "Shown under this name and group; down when it is gone.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["keep"],
+          "properties": {
+            "keep": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "group"],
+              "properties": {
+                "name": { "$ref": "#/$defs/name" },
+                "group": { "$ref": "#/$defs/group" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "/$defs/hostCheck/properties/id": {
+      "$ref": "#/$defs/id",
+      "not": { "pattern": "^job-" },
+      "description": "Unique within its host. `job-` is reserved for discovered jobs (ADR D12)."
+    }
+  },
+  "status.schema.json": {
+    "/properties/checks/description": "Keyed by check id. A check that has not finished its first run is absent. A discovered job has the id `job-<slug of its label>` (ADR D12).",
+    "/properties/checks/additionalProperties/properties/name": {
+      "description": "Only on a job's row: the kept name, else the job's label. The app shows a row that has a name without a heartbeat monitor (ADR D12).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "/properties/checks/additionalProperties/properties/group": {
+      "description": "Only on a kept job's row: its group. A row with a name and no group is unreviewed.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    }
+  }
+}
