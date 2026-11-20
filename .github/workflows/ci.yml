@@ -5,14 +5,26 @@ on:
   push:
     branches: [main, staging]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   rust:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: cli
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cli/target
+          key: rust-${{ runner.os }}-${{ hashFiles('cli/Cargo.lock') }}
       - run: rustup toolchain install
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
@@ -24,6 +36,7 @@ jobs:
 
   line-cap:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - run: sh scripts/line-cap.sh
@@ -31,15 +44,45 @@ jobs:
 
   actionlint:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - run: bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
       - run: ./actionlint -color
 
-  swift:
-    runs-on: macos-latest
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.diff.outputs.app }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          app=true
+          if git diff --name-only "$BASE" HEAD > "$RUNNER_TEMP/files"; then
+            grep -qE '^(app/|\.github/workflows/|\.swiftlint\.yml$)' "$RUNNER_TEMP/files" || app=false
+          fi
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+
+  swift:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.temp }}/dd
+            ~/Library/Developer/Xcode/DerivedData
+          key: swift-${{ runner.os }}-${{ hashFiles('app/Beacon.xcodeproj/project.pbxproj', 'app/BeaconKit/Package.swift') }}
+          restore-keys: swift-${{ runner.os }}-
       - name: SwiftLint
         run: |
           if ! command -v swiftlint >/dev/null; then
