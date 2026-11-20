@@ -10,10 +10,11 @@ use sha2::Sha256;
 use std::collections::{BTreeMap, BTreeSet};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+use std::sync::Mutex;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
 use std::thread;
 use std::time::{Duration, Instant};
-use ureq::{Body, http::Response};
+use ureq::{Agent, Body, http::Response};
 
 pub const POLL_S: u64 = 60;
 pub const CHECK_POLLS: u32 = 2;
@@ -21,12 +22,16 @@ pub const HOST_FAILS: u32 = 3;
 pub const GROUP_S: u64 = 30;
 const TRIES_S: [u64; 3] = [0, 5, 30];
 
-/// The `--notify` file: the webhook URL and its HMAC secret.
+/// Each watched host's name and whether it is down now.
+pub type Down = Mutex<BTreeMap<String, bool>>;
+
+/// The `--notify` file: the webhook URL, its HMAC secret and the `alive` interval.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Notify {
     url: HttpsUrl,
     secret: String,
+    alive_every_s: Option<u64>,
 }
 
 impl Notify {
@@ -37,13 +42,17 @@ impl Notify {
         if mode & 0o077 != 0 {
             return Err(format!("{path}: mode {mode:o}; chmod 600 it"));
         }
-        serde_json::from_reader(file).map_err(|e| {
+        let notify: Notify = serde_json::from_reader(file).map_err(|e| {
             format!(
                 "{path}: want {{\"url\": \"https://…\", \"secret\": \"…\"}} (line {} column {})",
                 e.line(),
                 e.column()
             )
-        })
+        })?;
+        if (1..60).contains(&notify.alive_every_s.unwrap_or(300)) {
+            return Err(format!("{path}: alive_every_s: want 0 or at least 60"));
+        }
+        Ok(notify)
     }
 }
 
@@ -164,7 +173,12 @@ struct Seen {
 }
 
 /// Polls `host` every `POLL_S` while `target` names its URL and timeout, sending each change on `tx`.
-pub fn watch(host: &str, target: impl Fn() -> Option<(String, u8)>, tx: &Sender<Event>) {
+pub fn watch(
+    host: &str,
+    target: impl Fn() -> Option<(String, u8)>,
+    tx: &Sender<Event>,
+    down: &Down,
+) {
     let (agent, mut tracker) = (agent(), Tracker::new(host));
     let (mut etag, mut last) = (String::new(), BTreeMap::<String, Seen>::new());
     let home = std::env::var_os("HOME");
@@ -205,8 +219,43 @@ pub fn watch(host: &str, target: impl Fn() -> Option<(String, u8)>, tx: &Sender<
         for e in events.into_iter().flatten() {
             tx.send(e).ok();
         }
+        let is_down = tracker.down == Some(true);
+        down.lock().map(|mut d| d.insert(host.into(), is_down)).ok();
         thread::sleep(every(POLL_S));
     }
+    down.lock().map(|mut d| d.remove(host)).ok();
+}
+
+/// POSTs a signed `alive` for `host` every `alive_every_s`, once each; `hosts` gives (hosts, down).
+pub fn alive(notify: &Notify, host: &str, hosts: impl Fn() -> (usize, usize)) {
+    let every_s = notify.alive_every_s.unwrap_or(300);
+    if every_s == 0 {
+        return;
+    }
+    let (agent, mut failing) = (agent(), false);
+    loop {
+        thread::sleep(every(every_s));
+        let (n, m) = hosts();
+        let mut e = Tracker::new(host).event(None, Status::Up, &format!("{n} hosts, {m} down"));
+        e.kind = "alive";
+        let why = post(&agent, notify, &Rendered::json(&e).body).err();
+        if let (Some(why), false) = (&why, failing) {
+            out::err(&format!("notify alive failed: {why}"));
+        }
+        failing = why.is_some();
+    }
+}
+
+fn post(agent: &Agent, notify: &Notify, body: &[u8]) -> Result<(), String> {
+    let sent = agent
+        .post(&notify.url.0)
+        .header("Content-Type", "application/json")
+        .header("X-Signature-256", &sign(notify.secret.as_bytes(), body))
+        .config()
+        .timeout_global(Some(Duration::from_secs(10)))
+        .build()
+        .send(body);
+    ok(sent).map(drop)
 }
 
 type Key = (String, Option<String>);
@@ -366,19 +415,10 @@ pub fn deliver(notify: &Notify, events: &Receiver<Event>, policy: impl Fn() -> N
             continue;
         };
         let body = Rendered::json(&batch).body;
-        let signature = sign(notify.secret.as_bytes(), &body);
         let mut why = None;
         for wait in TRIES_S {
             thread::sleep(every(wait));
-            let sent = agent
-                .post(&notify.url.0)
-                .header("Content-Type", "application/json")
-                .header("X-Signature-256", &signature)
-                .config()
-                .timeout_global(Some(Duration::from_secs(10)))
-                .build()
-                .send(&body[..]);
-            why = ok(sent).err();
+            why = post(&agent, notify, &body).err();
             if why.is_none() {
                 break;
             }

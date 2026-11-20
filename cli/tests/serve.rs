@@ -19,15 +19,15 @@ fn config(id: &str) -> String {
         .to_string()
 }
 
-fn start() -> (Serve, String) {
-    let path = format!("{}/serve.json", env!("CARGO_TARGET_TMPDIR"));
+fn start(name: &str) -> (Serve, String, String) {
+    let path = format!("{}/{name}.json", env!("CARGO_TARGET_TMPDIR"));
     std::fs::write(&path, config("ok")).unwrap();
     let (serve, addr, line) = start_at(&path);
     assert!(
         line.contains("1 checks (ok every 10s), metrics every 60s (/)"),
         "{line}"
     );
-    (serve, addr)
+    (serve, addr, path)
 }
 
 fn start_at(path: &str) -> (Serve, String, String) {
@@ -94,7 +94,7 @@ fn poll(addr: &str, path: &str, done: impl Fn(&Value) -> bool) -> (String, Value
 
 #[test]
 fn serve_answers_metrics_and_status_with_etags_304s_and_404() {
-    let (_serve, addr) = start();
+    let (_serve, addr, _) = start("serve-metrics");
     let (etag, m) = poll(&addr, "/metrics", |v| {
         v["t"].as_array().is_some_and(|t| t.len() == 1)
     });
@@ -126,8 +126,7 @@ fn serve_answers_metrics_and_status_with_etags_304s_and_404() {
 
 #[test]
 fn serve_exits_2_when_it_cannot_listen() {
-    let (_serve, addr) = start();
-    let path = format!("{}/serve.json", env!("CARGO_TARGET_TMPDIR"));
+    let (_serve, addr, path) = start("serve-listen");
     let out = Command::new(env!("CARGO_BIN_EXE_beacon"))
         .args([
             "serve", "--config", &path, "--host", "box", "--listen", &addr,
