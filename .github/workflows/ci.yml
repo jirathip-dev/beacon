@@ -25,10 +25,14 @@ jobs:
             ~/.cargo/git
             cli/target
           key: rust-${{ runner.os }}-${{ hashFiles('cli/Cargo.lock') }}
-      - run: rustup component add rustfmt clippy
+      - run: rustup toolchain install
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny@0.22.0
+      - run: cargo deny --locked check
 
   line-cap:
     runs-on: ubuntu-latest
@@ -61,7 +65,7 @@ jobs:
         run: |
           app=true
           if git diff --name-only "$BASE" HEAD > "$RUNNER_TEMP/files"; then
-            grep -qE '^(app|\.github/workflows)/' "$RUNNER_TEMP/files" || app=false
+            grep -qE '^(app/|\.github/workflows/|\.swiftlint\.yml$)' "$RUNNER_TEMP/files" || app=false
           fi
           echo "app=$app" >> "$GITHUB_OUTPUT"
 
@@ -79,10 +83,18 @@ jobs:
             ~/Library/Developer/Xcode/DerivedData
           key: swift-${{ runner.os }}-${{ hashFiles('app/Beacon.xcodeproj/project.pbxproj', 'app/BeaconKit/Package.swift') }}
           restore-keys: swift-${{ runner.os }}-
+      - name: SwiftLint
+        run: |
+          if ! command -v swiftlint >/dev/null; then
+            curl -sSfL -o "$RUNNER_TEMP/swiftlint.zip" https://github.com/realm/SwiftLint/releases/download/0.65.1/portable_swiftlint.zip
+            unzip -q "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/swiftlint"
+            echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
+          fi
+      - run: swiftlint lint --strict
       - name: Pick an iPhone simulator
         run: echo "SIM=$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }')" >> "$GITHUB_ENV"
       - name: Build app
-        run: xcodebuild -project app/Beacon.xcodeproj -scheme Beacon -destination "id=$SIM" -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -project app/Beacon.xcodeproj -scheme Beacon -destination "id=$SIM" -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build-for-testing
       - name: Built app carries the AppIcon
         run: |
           app="$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/Beacon.app"
@@ -91,4 +103,4 @@ jobs:
           ls -l "$app"/AppIcon*.png
       - name: Test BeaconKit
         working-directory: app/BeaconKit
-        run: xcodebuild -scheme BeaconKit -destination "id=$SIM" test
+        run: xcodebuild -scheme BeaconKit -destination "id=$SIM" OTHER_SWIFT_FLAGS=-warnings-as-errors test

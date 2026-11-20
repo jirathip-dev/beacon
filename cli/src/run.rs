@@ -1,6 +1,6 @@
 use crate::config::Host;
-use crate::probe;
 use crate::status::Status;
+use crate::{out, probe};
 use std::time::Duration;
 
 /// Runs every check of `host` once, concurrently, and prints one line per check in config order.
@@ -15,7 +15,12 @@ pub fn round(host: &Host) -> bool {
                 s.spawn(move || probe::run(&c.command, timeout))
             })
             .collect();
-        runs.into_iter().map(|r| r.join().unwrap()).collect()
+        runs.into_iter()
+            .map(|r| {
+                r.join()
+                    .unwrap_or_else(|_| (Status::Down, "check thread panicked".into()))
+            })
+            .collect()
     });
     let width = host
         .checks
@@ -24,7 +29,10 @@ pub fn round(host: &Host) -> bool {
         .max()
         .unwrap_or(0);
     for (c, (status, message)) in host.checks.iter().zip(&results) {
-        println!("{:width$}  {status:4}  {message:?}", c.id.as_str());
+        out::out(&format!(
+            "{:width$}  {status:4}  {message:?}",
+            c.id.as_str()
+        ));
     }
     results.iter().all(|(s, _)| *s == Status::Up)
 }

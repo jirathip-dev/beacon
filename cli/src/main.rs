@@ -15,24 +15,25 @@ fn main() -> ExitCode {
         .as_slice()
     {
         ["check", path] => load(path).map(|_| ExitCode::SUCCESS),
-        ["run", opts @ ..] => {
-            target(opts, false).map(|(_, host, _, _)| match beacon::run::round(&host) {
-                true => ExitCode::SUCCESS,
-                false => ExitCode::from(1),
-            })
-        }
+        ["run", opts @ ..] => target(opts, false).map(|(_, host, _, _)| {
+            if beacon::run::round(&host) {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::from(1)
+            }
+        }),
         ["serve", opts @ ..] => target(opts, true)
             .and_then(|(name, _, listen, path)| Err(beacon::serve::serve(&name, &path, &listen))),
         ["install", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path)| {
             beacon::install::install(&path, &name, &listen).map(|done| {
-                println!("{done}");
+                beacon::out::out(&done);
                 ExitCode::SUCCESS
             })
         }),
         _ => Err(USAGE.into()),
     };
     result.unwrap_or_else(|e| {
-        eprintln!("{e}");
+        beacon::out::err(&e);
         ExitCode::from(2)
     })
 }

@@ -1,10 +1,12 @@
+use crate::config::MountPath;
 use crate::config::{self, Host, HostCheck, Id};
 use crate::metrics::{EVERY_S, Ring};
+use crate::out;
 use crate::probe;
 use crate::sampler::Sampler;
 use crate::status::{Rendered, StatusBody};
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::thread::{self, Scope};
 use std::time::{Duration, Instant, SystemTime};
 use tiny_http::{Header, Response, Server};
@@ -15,12 +17,16 @@ struct Cell(Mutex<Rendered>);
 
 impl Cell {
     fn get(&self) -> Rendered {
-        self.0.lock().unwrap().clone()
+        lock(&self.0).clone()
     }
 
     fn set(&self, r: Rendered) {
-        *self.0.lock().unwrap() = r;
+        *lock(&self.0) = r;
     }
+}
+
+fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 struct Live {
@@ -50,18 +56,18 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
         .iter()
         .map(|c| format!("{} every {}s", c.id.as_str(), c.every_s))
         .collect();
-    let disks: Vec<_> = host.disks.iter().map(|d| d.as_str()).collect();
-    println!(
+    let disks: Vec<_> = host.disks.iter().map(MountPath::as_str).collect();
+    out::out(&format!(
         "serve {name} on {addr}: {} checks ({}), metrics every {EVERY_S}s ({})",
         checks.len(),
         checks.join(", "),
         disks.join(", ")
-    );
+    ));
     let live = Mutex::new(Live {
         generation: 0,
         body: StatusBody::new(name),
     });
-    let status = Cell(Mutex::new(live.lock().unwrap().body.render()));
+    let status = Cell(Mutex::new(lock(&live).body.render()));
     let metrics = Cell(Mutex::new(Ring::new().render(name, &host.disks)));
     let config = Cell(Mutex::new(Rendered::of(raw.clone())));
     thread::scope(|s| {
@@ -76,24 +82,24 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
                     pulled = Some(Instant::now());
                     let args = ["-C", &dir.to_string_lossy(), "pull", "--ff-only", "-q"];
                     if probe::output("git", &args, Duration::from_secs(60)).is_none() {
-                        eprintln!("git pull --ff-only in {}: failed", dir.display());
+                        out::err(&format!("git pull --ff-only in {}: failed", dir.display()));
                     }
                 }
                 let read = std::fs::read(path).map_err(|e| e.to_string());
                 if read != seen {
-                    seen = read.clone();
+                    seen.clone_from(&read);
                     match read.and_then(|raw| host_of(&raw, name).map(|h| (raw, h))) {
                         Ok((raw, host)) => {
                             config.set(Rendered::of(raw));
-                            let mut l = live.lock().unwrap();
+                            let mut l = lock(live);
                             l.generation += 1;
                             let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
                             l.body.keep(&ids);
                             status.set(l.body.render());
-                            eprintln!("reload {path}: {} checks", ids.len());
+                            out::err(&format!("reload {path}: {} checks", ids.len()));
                             run_checks(s, l.generation, host.checks.clone(), live, status);
                         }
-                        Err(e) => eprintln!("{path}: {e}; serving the last valid config"),
+                        Err(e) => out::err(&format!("{path}: {e}; serving the last valid config")),
                     }
                 }
                 thread::sleep(Duration::from_secs(1));
@@ -115,26 +121,31 @@ pub fn serve(name: &str, path: &str, listen: &str) -> String {
                 "/metrics" => &metrics,
                 "/config" => config,
                 _ => {
-                    let _ = request.respond(Response::empty(404));
+                    request.respond(Response::empty(404)).ok();
                     continue;
                 }
             };
             let r = cell.get();
-            let header = |k: &str, v: &str| Header::from_bytes(k, v).unwrap();
             let fresh = !request
                 .headers()
                 .iter()
                 .any(|h| h.field.equiv("If-None-Match") && h.value.as_str() == r.etag);
-            let response = match fresh {
-                true => Response::from_data(r.body.to_vec())
-                    .with_header(header("Content-Type", "application/json")),
-                false => Response::from_data(vec![]).with_status_code(304),
+            let (response, kind) = if fresh {
+                (Response::from_data(r.body.to_vec()), "application/json")
+            } else {
+                (Response::from_data(vec![]).with_status_code(304), "")
             };
-            let _ = request.respond(
-                response
-                    .with_header(header("ETag", &r.etag))
-                    .with_header(header("Cache-Control", "no-cache")),
-            );
+            let headers = [
+                ("Content-Type", kind),
+                ("ETag", &r.etag),
+                ("Cache-Control", "no-cache"),
+            ];
+            let response = headers
+                .into_iter()
+                .filter(|(_, v)| !v.is_empty())
+                .filter_map(|(k, v)| Header::from_bytes(k, v).ok())
+                .fold(response, Response::with_header);
+            request.respond(response).ok();
         }
         "listener closed".into()
     })
@@ -160,7 +171,7 @@ fn run_checks<'s>(
         s.spawn(move || {
             loop {
                 let (st, message) = probe::run(&c.command, Duration::from_secs(c.timeout_s.into()));
-                let mut l = live.lock().unwrap();
+                let mut l = lock(live);
                 if l.generation != generation {
                     return;
                 }

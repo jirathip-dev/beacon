@@ -21,7 +21,7 @@ impl fmt::Display for Status {
     }
 }
 
-/// A response body as a request reads it: the bytes and their ETag.
+/// A response body as a request reads it: the bytes and their `ETag`.
 #[derive(Clone)]
 pub struct Rendered {
     pub body: Arc<[u8]>,
@@ -36,6 +36,14 @@ impl Rendered {
             body: body.into(),
             etag: format!("\"{:016x}\"", h.finish()),
         }
+    }
+
+    #[expect(
+        clippy::unwrap_used,
+        reason = "serde_json fails only on non-string map keys or a failing Serialize impl; beacon's bodies have neither"
+    )]
+    pub fn json(body: &impl Serialize) -> Rendered {
+        Rendered::of(serde_json::to_vec(body).unwrap())
     }
 }
 
@@ -86,14 +94,15 @@ impl StatusBody {
     }
 
     pub fn render(&self) -> Rendered {
-        Rendered::of(serde_json::to_vec(self).unwrap())
+        Rendered::json(self)
     }
 }
 
 fn rfc3339(unix: u64) -> String {
-    let (days, secs) = ((unix / 86400) as i64 + 719468, unix % 86400);
-    let (era, doe) = (days.div_euclid(146097), days.rem_euclid(146097));
-    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let days = i64::try_from(unix / 86_400).unwrap_or_default() + 719_468;
+    let secs = unix % 86_400;
+    let (era, doe) = (days.div_euclid(146_097), days.rem_euclid(146_097));
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
     let mp = (5 * doy + 2) / 153;
     let (d, m) = (doy - (153 * mp + 2) / 5 + 1, (mp + 2) % 12 + 1);

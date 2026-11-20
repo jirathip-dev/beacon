@@ -8,8 +8,8 @@ struct Serve(Child);
 
 impl Drop for Serve {
     fn drop(&mut self) {
-        let _ = self.0.kill();
-        let _ = self.0.wait();
+        self.0.kill().ok();
+        self.0.wait().ok();
     }
 }
 
@@ -161,7 +161,7 @@ fn serve_answers_config_with_etag_and_reloads_only_a_valid_change() {
 #[test]
 fn serve_pulls_a_git_checkout_of_its_config() {
     let root = format!("{}/serve-git", env!("CARGO_TARGET_TMPDIR"));
-    let _ = std::fs::remove_dir_all(&root);
+    std::fs::remove_dir_all(&root).ok();
     std::fs::create_dir_all(&root).unwrap();
     let git = |dir: &str, args: &[&str]| {
         let ok = Command::new("git")
