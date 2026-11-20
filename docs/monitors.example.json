@@ -15,11 +15,16 @@
         { "id": "backup", "command": "test -f /var/log/backup.ok && test $(( $(date +%s) - $(stat -f %m /var/log/backup.ok) )) -lt 93600", "every_s": 300 },
         { "id": "disk", "command": "df -P / | awk 'NR==2 { gsub(\"%\",\"\",$5); print $5 \"% used\"; exit ($5 < 90 ? 0 : 1) }'", "timeout_s": 5 }
       ],
+      "rules": [
+        { "id": "disk-full", "metric": "disk", "above": 90, "for_min": 10 },
+        { "id": "load-high", "metric": "load", "above": 3, "for_min": 15 }
+      ],
       "jobs": {
         "com.example.caffeinate": "ignore",
         "dev.example.old": "removed",
         "dev.example.tick": {"keep":{"name":"tick","group":"macmini"}}
       }
     }
-  }
+  },
+  "notify": { "remind_every_h": 4, "remind_max": 3 }
 }

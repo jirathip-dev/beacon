@@ -1,5 +1,5 @@
 use crate::config::MountPath;
-use crate::config::{self, Host, HostCheck, Id};
+use crate::config::{self, Host, HostCheck, Id, NotifyPolicy, RuleCheck};
 use crate::history::{History, Key};
 use crate::jobs::{self, Manager};
 use crate::metrics::{EVERY_S, Ring};
@@ -8,6 +8,7 @@ use crate::notify::{self, Down, Event, Notify, Tracker};
 use crate::out;
 use crate::probe;
 use crate::prober;
+use crate::rules::{self, Streak};
 use crate::sampler::Sampler;
 use crate::state::{self, Announced};
 use crate::status::{Rendered, Status, StatusBody};
@@ -43,6 +44,8 @@ struct Live {
     generation: u64,
     body: StatusBody,
     own: Tracker,
+    rules: Vec<RuleCheck>,
+    notify: NotifyPolicy,
     history: History,
 }
 
@@ -52,17 +55,63 @@ struct Cells {
     times: Mutex<BTreeMap<String, Rendered>>,
 }
 
+impl Live {
+    fn report(
+        &mut self,
+        cells: &Cells,
+        id: &Id,
+        st: Status,
+        msg: String,
+        tx: Option<&Sender<Event>>,
+    ) {
+        if let Some(tx) = tx
+            && let Some(e) = self.own.check(id.as_str(), st, &msg)
+        {
+            tx.send(e).ok();
+        }
+        let now = unix_now();
+        if self.history.record(Key::Check(id), st, &msg, now) {
+            cells.history.set(self.history.render());
+        }
+        if self.body.record(id, st, msg, now) {
+            cells.status.set(self.body.render());
+        }
+    }
+
+    fn reload(
+        &mut self,
+        cells: &Cells,
+        host: &Host,
+        notify: NotifyPolicy,
+        monitors: &[Probed],
+    ) -> usize {
+        self.generation += 1;
+        self.rules = host.rule_checks().unwrap_or_default();
+        self.notify = notify;
+        let rules = self.rules.iter().map(|r| &r.id);
+        let ids: Vec<_> = host.checks.iter().map(|c| &c.id).chain(rules).collect();
+        self.body.keep(&ids);
+        self.history.keep(&ids, &tracks(monitors), unix_now());
+        cells.status.set(self.body.render());
+        cells.history.set(self.history.render());
+        let ours = |id: &String| monitors.iter().any(|m| &m.id.0 == id);
+        lock(&cells.times).retain(|id, _| ours(id));
+        ids.len()
+    }
+}
+
 type Watched = Mutex<BTreeMap<Id, (u64, String, u8)>>;
 
 /// Serves `/status`, `/metrics`, `/config` and `/history` for `name` on `listen`; returns only when it cannot start.
 pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> String {
-    let (raw, (host, others, monitors)) = match std::fs::read(path).map_err(|e| e.to_string()) {
-        Ok(raw) => match host_of(&raw, name) {
-            Ok(hosts) => (raw, hosts),
+    let (raw, (host, others, monitors, policy)) =
+        match std::fs::read(path).map_err(|e| e.to_string()) {
+            Ok(raw) => match host_of(&raw, name) {
+                Ok(hosts) => (raw, hosts),
+                Err(e) => return format!("{path}: {e}"),
+            },
             Err(e) => return format!("{path}: {e}"),
-        },
-        Err(e) => return format!("{path}: {e}"),
-    };
+        };
     let server = match Server::http(listen) {
         Ok(s) => s,
         Err(e) => return format!("listen {listen}: {e}"),
@@ -88,15 +137,13 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> S
     let times_dir = state.as_deref().map(state::times);
     times_dir.as_ref().map(std::fs::create_dir_all);
     let loaded = state.as_deref().and_then(state::events);
-    let mut history = match &loaded {
+    let history = match &loaded {
         Some((b, at)) => History::load(name, b, *at).unwrap_or_else(|| {
             out::err("history/events.json: unreadable; starting an empty history");
             History::new(name, 0)
         }),
         None => History::new(name, 0),
     };
-    let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
-    history.keep(&ids, &tracks(&monitors), unix_now());
     let mut written = loaded.map_or(String::new(), |(b, _)| Rendered::of(b).etag);
     let cells = Cells {
         status: Cell(Mutex::new(StatusBody::new(name).render())),
@@ -107,8 +154,11 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> S
         generation: 0,
         body: StatusBody::new(name),
         own: Tracker::new(name),
+        rules: Vec::new(),
+        notify: policy,
         history,
     });
+    lock(&live).reload(&cells, &host, policy, &monitors);
     let (tx, rx) = mpsc::channel();
     let tx = notify.is_some().then_some(tx);
     let (watched, down) = (Watched::default(), Down::default());
@@ -156,7 +206,8 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> S
         }
         let (tx, watched, down) = (tx.as_ref(), &watched, &down);
         if let Some(notify) = notify {
-            s.spawn(move || notify::deliver(notify, rx));
+            let live = &live;
+            s.spawn(move || notify::deliver(notify, &rx, || lock(live).notify));
             let hosts = || {
                 (
                     lock(watched).len() + 1,
@@ -165,10 +216,11 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> S
             };
             s.spawn(move || notify::alive(notify, name, hosts));
         }
+        let generation = lock(&live).generation;
         let (live, cells, config, probed) = (&live, &cells, &config, &probed);
-        run_checks(s, 0, host.checks.clone(), live, cells, tx);
-        watch(s, 0, others, watched, down, tx);
-        prober::run(s, 0, monitors, times_dir.as_deref(), probed);
+        run_checks(s, generation, host.checks.clone(), live, cells, tx);
+        watch(s, generation, others, watched, down, tx);
+        prober::run(s, generation, monitors, times_dir.as_deref(), probed);
         let times_dir = times_dir.as_deref();
         let reviews = &reviews;
         s.spawn(move || {
@@ -248,23 +300,16 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> S
                 if read != seen {
                     seen.clone_from(&read);
                     match read.and_then(|raw| host_of(&raw, name).map(|h| (raw, h))) {
-                        Ok((raw, (host, others, monitors))) => {
+                        Ok((raw, (host, others, monitors, policy))) => {
                             config.set(Rendered::of(raw));
                             *lock(reviews) = host.jobs.clone();
                             let mut l = lock(live);
-                            l.generation += 1;
-                            let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
-                            l.body.keep(&ids);
-                            cells.status.set(l.body.render());
-                            l.history.keep(&ids, &tracks(&monitors), unix_now());
-                            cells.history.set(l.history.render());
-                            let ours = |id: &String| monitors.iter().any(|m| &m.id.0 == id);
-                            lock(&cells.times).retain(|id, _| ours(id));
+                            let n = l.reload(cells, &host, policy, &monitors);
                             run_checks(s, l.generation, host.checks.clone(), live, cells, tx);
                             watch(s, l.generation, others, watched, down, tx);
                             prober::run(s, l.generation, monitors, times_dir, probed);
                             drop(l);
-                            out::err(&format!("reload {path}: {} checks", ids.len()));
+                            out::err(&format!("reload {path}: {n} checks"));
                         }
                         Err(e) => out::err(&format!("{path}: {e}; serving the last valid config")),
                     }
@@ -272,10 +317,24 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> S
                 thread::sleep(every(1));
             }
         });
-        s.spawn(|| {
+        let (metrics, host) = (&metrics, &host);
+        s.spawn(move || {
             let (mut sampler, mut ring, started) = (Sampler::new(), Ring::new(), Instant::now());
+            let cores = thread::available_parallelism().map_or(1, usize::from);
+            let cores = u32::try_from(cores).map_or(1.0, f64::from);
+            let mut streaks = BTreeMap::<Id, Streak>::new();
             loop {
-                ring.push(sampler.sample(unix_now(), &host.disks));
+                let sample = sampler.sample(unix_now(), &host.disks);
+                let mut l = lock(live);
+                let checks = l.rules.clone();
+                streaks.retain(|id, _| checks.iter().any(|r| r.id == *id));
+                for r in &checks {
+                    let streak = streaks.entry(r.id.clone()).or_default();
+                    let (st, message) = rules::judge(r, &sample, cores, streak);
+                    l.report(cells, &r.id, st, message, tx);
+                }
+                drop(l);
+                ring.push(sample);
                 metrics.set(ring.render(name, &host.disks));
                 let period = every(EVERY_S);
                 let n = started.elapsed().as_nanos() / period.as_nanos() + 1;
@@ -286,7 +345,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> S
                 thread::sleep(next.saturating_sub(started.elapsed()));
             }
         });
-        let (metrics, server) = (&metrics, &server);
+        let server = &server;
         let answer = move || {
             for request in server.incoming_requests() {
                 if over_budget("slow") {
@@ -337,7 +396,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<&Notify>) -> S
     })
 }
 
-type Ours = (Host, BTreeMap<Id, Host>, Vec<Probed>);
+type Ours = (Host, BTreeMap<Id, Host>, Vec<Probed>, NotifyPolicy);
 
 fn host_of(raw: &[u8], name: &str) -> Result<Ours, String> {
     let text = std::str::from_utf8(raw).map_err(|e| e.to_string())?;
@@ -347,7 +406,8 @@ fn host_of(raw: &[u8], name: &str) -> Result<Ours, String> {
         .and_then(|id| config.hosts.remove(&id))
         .ok_or(format!("no host {name:?} in hosts"))?;
     let others = std::mem::take(&mut config.hosts);
-    Ok((host, others, monitor::probed(config, name)))
+    let policy = config.notify;
+    Ok((host, others, monitor::probed(config, name), policy))
 }
 
 fn tracks(monitors: &[Probed]) -> Vec<(&crate::history::MonitorId, &str, &str)> {
@@ -355,15 +415,6 @@ fn tracks(monitors: &[Probed]) -> Vec<(&crate::history::MonitorId, &str, &str)> 
         .iter()
         .map(|m| (&m.id, m.monitor.names().0, m.monitor.names().1))
         .collect()
-}
-
-fn record(l: &mut Live, cells: &Cells, id: &Id, st: Status, message: String, now: u64) {
-    if l.history.record(Key::Check(id), st, &message, now) {
-        cells.history.set(l.history.render());
-    }
-    if l.body.record(id, st, message, now) {
-        cells.status.set(l.body.render());
-    }
 }
 
 fn watch<'s>(
@@ -411,12 +462,7 @@ fn run_checks<'s>(
                 if l.generation != generation {
                     return;
                 }
-                if let Some(tx) = tx
-                    && let Some(e) = l.own.check(c.id.as_str(), st, &message)
-                {
-                    tx.send(e).ok();
-                }
-                record(&mut l, cells, &c.id, st, message, unix_now());
+                l.report(cells, &c.id, st, message, tx);
                 drop(l);
                 thread::sleep(every(c.every_s.into()));
             }

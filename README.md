@@ -25,9 +25,18 @@ disk    up    "11% used"
   git checkout, serve runs `git pull --ff-only` in it at start and every 5 minutes; a failed pull is logged.
   New or removed checks take effect without a restart.
   With `--notify <path>`, serve also watches its own checks and every other host in `hosts` (it polls each
-  host's `url` every 60 s) and POSTs one signed webhook per change: a check that is up or down on 2 polls in a
-  row, or a host that failed 3 polls in a row (and its first good poll after that). Nothing is sent at start or
-  on a reload. The notify file is `{"url": "https://…/hooks/in/<id>", "secret": "…"}`, conventionally
+  host's `url` every 60 s) and POSTs signed webhooks for changes: a check that is up or down on 2 polls in a
+  row, or a host that failed 3 polls in a row (and its first good poll after that). Changes within 30 s of the
+  first one go out as one batch (`{"kind":"batch","summary":…,"changes":[…],"at":…}`); a down host's checks
+  are left out while it is down. Something that stays down is reminded (`still down: <host>/<check> for <n>h`)
+  every `notify.remind_every_h` hours, at most `notify.remind_max` times (top-level `"notify":
+  {"remind_every_h": 4, "remind_max": 3}`, these defaults when absent; `remind_max: 0` turns reminders off).
+  Nothing is sent at start or on a reload.
+  Metric rules in `hosts.<name>.rules`, `{"id", "metric": "disk"|"memory"|"load", "above": <n>, "for_min": <n>}`,
+  act like checks in `/status`: down once the metric (disk or memory % used per mount in `disks`, load1 per
+  core) stays above `above` for `for_min` minutes, up once it stays at or below it as long. Without `rules`:
+  `disk-full` > 90 for 10 min, `memory-full` > 90 for 10 min, `load-high` > 2 per core for 15 min; `"rules": []`
+  turns them off. The notify file is `{"url": "https://…/hooks/in/<id>", "secret": "…"}`, conventionally
   `~/.config/beacon/notify.json`, mode 600 (serve exits 2 on a file group or others can read, a missing file or
   an invalid one). Each POST carries `X-Signature-256: sha256=<hex HMAC-SHA256 of the body under the secret>`.
   The secret is never logged. `SSL_CERT_FILE`, when set, replaces the built-in roots for these requests.

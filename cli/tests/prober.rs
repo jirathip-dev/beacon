@@ -73,10 +73,11 @@ fn answer(tcp: TcpStream, tls: Arc<ServerConfig>, hooks: &Mutex<Vec<Value>>) {
             .map_or(0, |n| n.trim().parse().unwrap());
         let mut body = vec![0; len];
         r.read_exact(&mut body).unwrap();
+        let batch: Value = serde_json::from_slice(&body).unwrap();
         hooks
             .lock()
             .unwrap()
-            .push(serde_json::from_slice(&body).unwrap());
+            .extend(batch["changes"].as_array().unwrap().iter().cloned());
     }
     let body = "hello beacon";
     let reply = format!(

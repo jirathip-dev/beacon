@@ -62,6 +62,15 @@ impl Fake {
             .map(|g| serde_json::from_slice(&g.body).unwrap())
             .collect()
     }
+
+    fn changes(&self) -> Vec<Value> {
+        let posts = self.posts();
+        for p in &posts {
+            assert_eq!(p["kind"], "batch", "{p}");
+        }
+        let changes = posts.iter().flat_map(|p| p["changes"].as_array().unwrap());
+        changes.cloned().collect()
+    }
 }
 
 fn tls() -> Arc<ServerConfig> {
@@ -275,7 +284,8 @@ fn own(dir_name: &str, id: &str, seq: &str) -> Value {
 }
 
 fn config(checks: &[Value], remotes: &[(&str, &str, u8)]) -> String {
-    let mut hosts = json!({ "box": { "url": "https://box/status", "checks": checks } });
+    let mut hosts =
+        json!({ "box": { "url": "https://box/status", "checks": checks, "rules": [] } });
     for (name, url, timeout_s) in remotes {
         hosts[name] = json!({ "url": url, "timeout_s": timeout_s, "checks": [] });
     }
@@ -296,9 +306,9 @@ fn a_change_held_for_2_polls_sends_one_signed_post_and_a_blip_sends_none() {
         &config(&checks, &[("r1", &r1.url("/status"), 5)]),
         &hook,
     );
-    wait("two posts", || hook.got().len() >= 2);
+    wait("two changes", || hook.changes().len() >= 2);
     settle();
-    let mut posts = hook.posts();
+    let mut posts = hook.changes();
     posts.sort_by_key(|p| p["host"].to_string());
     let keys: Vec<_> = posts
         .iter()
@@ -481,7 +491,7 @@ fn a_host_that_stops_answering_sends_down_after_3_failed_polls_and_up_when_it_an
     let polls_at_down = r1.got().len();
     wait("host up", || hook.got().len() >= 2);
     settle();
-    let posts = hook.posts();
+    let posts = hook.changes();
     assert_eq!(posts.len(), 2, "{posts:?}");
     assert_eq!(
         (
@@ -545,7 +555,7 @@ fn nothing_is_sent_on_start_up_or_on_a_config_reload() {
     flip.store(true, Ordering::SeqCst);
     wait("the flip", || !hook.got().is_empty());
     settle();
-    let posts = hook.posts();
+    let posts = hook.changes();
     assert_eq!(posts.len(), 1, "{posts:?}");
     assert_eq!(
         (&posts[0]["host"], &posts[0]["check"], &posts[0]["status"]),
@@ -591,7 +601,7 @@ fn a_hung_host_does_not_delay_another_hosts_alert() {
         "{:?}",
         started.elapsed()
     );
-    assert_eq!(hook.posts()[0]["host"], "fast");
+    assert_eq!(hook.changes()[0]["host"], "fast");
 }
 
 #[test]
@@ -637,6 +647,54 @@ fn serve_refuses_a_notify_file_others_can_read_a_missing_one_or_an_invalid_one()
 }
 
 #[test]
+fn five_changes_within_the_window_give_one_signed_post_listing_5() {
+    let hook = receiver(200);
+    let ids = ["a", "b", "c", "d", "e"];
+    let checks: Vec<_> = ids.iter().map(|id| own("five", id, "udd")).collect();
+    let _serve = Serve::start("five", &config(&checks, &[]), &hook);
+    wait("the batch", || !hook.got().is_empty());
+    settle();
+    let posts = hook.posts();
+    assert_eq!(posts.len(), 1, "{posts:?}");
+    assert_eq!(posts[0]["summary"], "5 checks down");
+    let mut got: Vec<_> = hook.changes().iter().map(|c| c["check"].clone()).collect();
+    got.sort_by_key(Value::to_string);
+    assert_eq!(got, ids);
+    let g = &hook.got()[0];
+    let want = beacon::notify::sign(SECRET.as_bytes(), &g.body);
+    assert!(g.head.contains(&format!("x-signature-256: {want}\r\n")));
+}
+
+#[test]
+fn a_disk_rule_over_its_threshold_goes_down_in_status_and_is_sent_once() {
+    let hook = receiver(200);
+    let rule = json!({ "id": "full", "metric": "disk", "above": 0, "for_min": 2 });
+    let mut c: Value = serde_json::from_str(&config(&[], &[])).unwrap();
+    c["hosts"]["box"]["rules"] = json!([rule]);
+    let serve = Serve::start("rule", &c.to_string(), &hook);
+    wait("the rule alert", || !hook.got().is_empty());
+    settle();
+    let changes = hook.changes();
+    assert_eq!(changes.len(), 1, "{changes:?}");
+    let c = &changes[0];
+    assert_eq!(
+        (&c["host"], &c["check"], &c["status"]),
+        (&json!("box"), &json!("full"), &json!("down"))
+    );
+    assert!(c["message"].as_str().unwrap().starts_with("disk / "), "{c}");
+    let mut s = TcpStream::connect(&serve.addr).unwrap();
+    write!(
+        s,
+        "GET /status HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n"
+    )
+    .unwrap();
+    let mut raw = String::new();
+    s.read_to_string(&mut raw).unwrap();
+    let status: Value = serde_json::from_str(raw.split_once("\r\n\r\n").unwrap().1).unwrap();
+    assert_eq!(status["checks"]["full"]["status"], "down", "{status}");
+}
+
+#[test]
 fn a_new_unreviewed_job_sends_one_webhook_and_a_restart_does_not_resend_it() {
     let hook = receiver(200);
     let dir = scratch("jobs");
@@ -661,7 +719,8 @@ fn a_new_unreviewed_job_sends_one_webhook_and_a_restart_does_not_resend_it() {
     write(&["1\t0\tdev.there", "-\t0\tdev.kept", "-\t1\tdev.new"]);
     wait("the new job", || !hook.got().is_empty());
     settle();
-    let posts = hook.posts();
+    assert_eq!(hook.posts().len(), 1);
+    let posts = hook.changes();
     assert_eq!(posts.len(), 1, "{posts:?}");
     let want = (
         "job",
@@ -699,7 +758,8 @@ fn a_new_unreviewed_job_sends_one_webhook_and_a_restart_does_not_resend_it() {
         hook.got().len() > 1
     });
     settle();
-    let posts = hook.posts();
+    assert_eq!(hook.posts().len(), 2);
+    let posts = hook.changes();
     assert_eq!(
         posts.len(),
         2,
@@ -729,7 +789,8 @@ fn a_polled_hosts_new_unreviewed_job_is_announced_once() {
     flip.store(true, Ordering::SeqCst);
     wait("the announcement", || !hook.got().is_empty());
     settle();
-    let posts = hook.posts();
+    assert_eq!(hook.posts().len(), 1);
+    let posts = hook.changes();
     assert_eq!(posts.len(), 1, "{posts:?}");
     assert_eq!(
         (&posts[0]["host"], &posts[0]["kind"], &posts[0]["message"]),
