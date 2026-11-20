@@ -1,10 +1,11 @@
 use beacon::config::{self, Host, Id, MonitorsConfig};
+use beacon::notify::Notify;
 use std::process::{Command, ExitCode};
 
 const USAGE: &str = "usage: beacon check <path>
        beacon run [--config <path>] [--host <name>]
-       beacon serve [--config <path>] [--host <name>] [--listen <addr>]
-       beacon install [--config <path>] [--host <name>] [--listen <addr>]";
+       beacon serve [--config <path>] [--host <name>] [--listen <addr>] [--notify <path>]
+       beacon install [--config <path>] [--host <name>] [--listen <addr>] [--notify <path>]";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -15,17 +16,19 @@ fn main() -> ExitCode {
         .as_slice()
     {
         ["check", path] => load(path).map(|_| ExitCode::SUCCESS),
-        ["run", opts @ ..] => target(opts, false).map(|(_, host, _, _)| {
+        ["run", opts @ ..] => target(opts, false).map(|(_, host, _, _, _)| {
             if beacon::run::round(&host) {
                 ExitCode::SUCCESS
             } else {
                 ExitCode::from(1)
             }
         }),
-        ["serve", opts @ ..] => target(opts, true)
-            .and_then(|(name, _, listen, path)| Err(beacon::serve::serve(&name, &path, &listen))),
-        ["install", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path)| {
-            beacon::install::install(&path, &name, &listen).map(|done| {
+        ["serve", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path, notify)| {
+            let notify = notify.as_deref().map(Notify::load).transpose()?;
+            Err(beacon::serve::serve(&name, &path, &listen, notify))
+        }),
+        ["install", opts @ ..] => target(opts, true).and_then(|(name, _, listen, path, notify)| {
+            beacon::install::install(&path, &name, &listen, notify.as_deref()).map(|done| {
                 beacon::out::out(&done);
                 ExitCode::SUCCESS
             })
@@ -38,14 +41,17 @@ fn main() -> ExitCode {
     })
 }
 
-fn target(opts: &[&str], serve: bool) -> Result<(String, Host, String, String), String> {
-    let (mut path, mut host) = (std::env::var("BEACON_CONFIG").ok(), None);
+type Target = (String, Host, String, String, Option<String>);
+
+fn target(opts: &[&str], serve: bool) -> Result<Target, String> {
+    let (mut path, mut host, mut notify) = (std::env::var("BEACON_CONFIG").ok(), None, None);
     let mut listen = "127.0.0.1:7878".to_string();
     for pair in opts.chunks(2) {
         match pair {
             ["--config", v] => path = Some(v.to_string()),
             ["--host", v] => host = Some(v.to_string()),
             ["--listen", v] if serve => listen = v.to_string(),
+            ["--notify", v] if serve => notify = Some(v.to_string()),
             _ => return Err(USAGE.into()),
         }
     }
@@ -59,7 +65,7 @@ fn target(opts: &[&str], serve: bool) -> Result<(String, Host, String, String), 
         .ok()
         .and_then(|id| config.hosts.remove(&id))
         .ok_or(format!("{path}: no host {host:?} in hosts"))?;
-    Ok((host, checks, listen, path))
+    Ok((host, checks, listen, path, notify))
 }
 
 fn load(path: &str) -> Result<MonitorsConfig, String> {

@@ -1,11 +1,11 @@
 use crate::config::Id;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
     Up,
@@ -98,7 +98,7 @@ impl StatusBody {
     }
 }
 
-fn rfc3339(unix: u64) -> String {
+pub(crate) fn rfc3339(unix: u64) -> String {
     let days = i64::try_from(unix / 86_400).unwrap_or_default() + 719_468;
     let secs = unix % 86_400;
     let (era, doe) = (days.div_euclid(146_097), days.rem_euclid(146_097));

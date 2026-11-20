@@ -163,6 +163,12 @@ The only secret is the optional config header: in the app's Keychain
 (`kSecAttrAccessibleAfterFirstUnlock`, so background refresh can read it), and on the host
 in `$BEACON_CONFIG_HEADER`. The widget never reads the Keychain (D8).
 
+The notify file (D11, q2445) holds the cooee webhook URL and its HMAC secret:
+`{"url": "https://…/hooks/in/<id>", "secret": "…"}`, conventionally `~/.config/beacon/notify.json`, passed as
+`serve --notify <path>`. It is never in `monitors.json`, which is served at `/config`. Serve exits 2 when the
+file is missing, does not parse, or has any group or other mode bit (mode & 0o077 ≠ 0). Neither the secret nor
+the file's contents are ever logged or printed; a parse error names only its line and column.
+
 ### D7 Module split: `cli/` is the Rust crate `beacon`; `app/` is the Xcode project
 
 The schemas are shared as documents (`monitors.schema.json`, `status.schema.json`), not as code.
@@ -253,6 +259,39 @@ Consequences of D10:
   host without checks gets a row is #14's design question.
 - About 450 non-test lines in `cli/src` (serve core about 170, metrics about 280). The cap is 2000 and the
   tree is at 1902, so impl needs a raise to about 2400.
+
+### D11 Push notifications to cooee (#37)
+
+The question: the phone learns that a check went down only on its next refresh, and nothing says that a host
+stopped answering. cooee already takes a signed webhook (`POST /hooks/in/<id>`, `X-Signature-256`).
+
+- **Who sends (q2442).** Only the Mini, with `beacon serve --notify <path>` (and `beacon install --notify
+  <path>`, written into the plist or unit). Boats need no setup. Without `--notify`, serve is unchanged.
+- **What is watched.** The Mini's own checks, from their results in memory, and every other `hosts.<name>`:
+  serve GETs its `url` every 60 s with its `timeout_s` and `If-None-Match` (an unchanged host is a 304). One
+  thread per host, so a hung host delays no other host's alert. The host list follows config reloads: a new
+  host gets a thread, a removed one's thread ends at its next poll.
+- **Debounce.** A check is sent when its new status (`up` or `down`) holds for 2 polls in a row (for an own
+  check, 2 runs). A host is `down` after 3 failed polls in a row (no answer, timeout, non-2xx or an
+  undecodable body), and `up` on its first good poll after that. A down host's checks are not sent; when it
+  is back, they are compared with their last sent status. The first poll of a host and the first result of a
+  check set the baseline only, so nothing is sent at start or on a reload. A host that never answered becomes
+  a silent `down` baseline after 3 failed polls.
+- **Body.** `{"kind":"check"|"host","host":…,"check":…|null,"status":"up"|"down","message":…,"at":…}`,
+  `Content-Type: application/json`. `at` is UTC to the second, the format of `/status` `since`, and
+  `message` is cut to 200 chars. cooee puts it after the routine's prompt as untrusted data.
+- **Signing (q2446).** `X-Signature-256: sha256=<lowercase hex HMAC-SHA256(secret, body bytes)>` with the
+  RustCrypto `hmac` and `sha2` crates.
+- **HTTP client.** `ureq` with rustls (D4) for the host GETs and the POST. Roots are webpki's, or the
+  certificates in `$SSL_CERT_FILE` when it is set (the tests use this for a local CA). cargo-deny allows
+  `ISC` and `CDLA-Permissive-2.0`, the licenses of rustls's `ring`, `rustls-webpki`, `untrusted` and
+  `webpki-roots`.
+- **Delivery.** One thread sends, off the poll and request threads, so a slow cooee never stalls `/status`.
+  Each event gets 3 tries (now, +5 s, +30 s) on a network error or a non-2xx reply, and then serve logs
+  `notify failed: <host>/<check> <status>: <reason>` (`-` for a host event) and drops it.
+- **Tests.** `cli/tests/notify.rs` runs serve against local TLS fake hosts and a fake receiver, with
+  `BEACON_SPEEDUP=60` shortening the 60 s poll and the retry waits. `POLL_S`, `CHECK_POLLS` and `HOST_FAILS`
+  are constants in `notify.rs`.
 
 ## Consequences (D1–D9)
 
