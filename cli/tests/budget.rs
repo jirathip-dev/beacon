@@ -94,9 +94,9 @@ struct Reading {
 
 #[cfg(target_os = "linux")]
 fn peek(pid: u32) -> Reading {
-    let field = |text: &str, key: &str| -> u64 {
-        let line = text.lines().find_map(|l| l.strip_prefix(key)).unwrap();
-        line.trim().trim_end_matches("kB").trim().parse().unwrap()
+    let field = |text: &str, key: &str| -> Option<u64> {
+        let line = text.lines().find_map(|l| l.strip_prefix(key))?;
+        line.trim().trim_end_matches("kB").trim().parse().ok()
     };
     let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).unwrap();
     let ticks: Vec<u64> = stat
@@ -109,12 +109,12 @@ fn peek(pid: u32) -> Reading {
     let status = std::fs::read_to_string(format!("/proc/{pid}/status")).unwrap();
     let switches = |t: std::fs::DirEntry| {
         let status = std::fs::read_to_string(t.path().join("status")).unwrap_or_default();
-        field(&status, "voluntary_ctxt_switches:")
+        field(&status, "voluntary_ctxt_switches:").unwrap_or(0)
     };
     let tasks = std::fs::read_dir(format!("/proc/{pid}/task")).unwrap();
     Reading {
         cpu_s: f(ticks[11..15].iter().sum()) / 100.0,
-        peak_bytes: field(&status, "VmHWM:") * 1024,
+        peak_bytes: field(&status, "VmHWM:").unwrap() * 1024,
         wakeups: tasks.flatten().map(switches).sum(),
     }
 }
