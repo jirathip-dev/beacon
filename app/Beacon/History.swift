@@ -154,7 +154,7 @@ struct HistoryScreen: View {
                 ForEach(["1h", "24h", "30d"], id: \.self) { r in RangeKey(title: r, on: r == range) { range = r } }
             }
             .padding(.leading, 12)
-            Plot(w: w, top: top, step: month ? 7 * 86_400 : range == "1h" ? 900 : 21_600, unit: "ms", read: ms) { ctx, rect, x in
+            Plot(w: w, top: top, step: month ? 7 * 86_400 : range == "1h" ? 900 : 21_600, unit: "ms", fill: false, read: ms) { ctx, rect, x in
                 let y = { (v: Double) in rect.maxY - CGFloat(v / top) * rect.height }
                 let pairs = zip(w.points, peak?.points ?? [])
                 for (a, b) in zip(pairs, pairs.dropFirst()) {

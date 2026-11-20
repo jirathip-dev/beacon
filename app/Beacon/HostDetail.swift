@@ -146,8 +146,8 @@ struct MetricRow: View {
     }
 }
 
-/// Draws `w`'s points in `rect` as an accent line over a faint fill, broken at every missing point.
-func trace(_ ctx: GraphicsContext, _ w: Window, top: Double, in rect: CGRect, dot: Bool) {
+/// Draws `w`'s points in `rect` as an accent line, over a faint fill unless `fill` is off, broken at every missing point.
+func trace(_ ctx: GraphicsContext, _ w: Window, top: Double, in rect: CGRect, dot: Bool, fill: Bool = true) {
     let (t0, t1) = (w.t.first ?? 0, w.t.last ?? 0)
     let x = { (t: Int) in rect.minX + (t1 == t0 ? rect.width : CGFloat(t - t0) / CGFloat(t1 - t0) * rect.width) }
     var line = Path(), area = Path(), run: [CGPoint] = [], newest: CGPoint?
@@ -165,7 +165,7 @@ func trace(_ ctx: GraphicsContext, _ w: Window, top: Double, in rect: CGRect, do
         run.append(point)
     }
     flush()
-    ctx.fill(area, with: .color(T.accent.opacity(0.12)))
+    if fill { ctx.fill(area, with: .color(T.accent.opacity(0.12))) }
     ctx.stroke(line, with: .color(T.accent), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
     if dot, let newest {
         let r = CGRect(x: newest.x - 3, y: newest.y - 3, width: 6, height: 6)
@@ -268,6 +268,7 @@ struct Plot: View {
     let top: Double
     let step: Int
     var unit = ""
+    var fill = true
     let read: (Double) -> String
     var extra: (GraphicsContext, CGRect, (Int) -> CGFloat) -> Void = { _, _, _ in }
     @State private var scrub: Int?
@@ -296,7 +297,7 @@ struct Plot: View {
                 }
                 ctx.draw(label("now"), at: CGPoint(x: rect.maxX, y: size.height - 6), anchor: .bottomTrailing)
                 extra(ctx, rect, x)
-                trace(ctx, w, top: top, in: rect, dot: scrub == nil)
+                trace(ctx, w, top: top, in: rect, dot: scrub == nil, fill: fill)
                 guard let i = scrub, let v = w.values[i] else { return }
                 let p = CGPoint(x: x(w.t[i]), y: y(v))
                 ctx.stroke(Path { $0.addLines([CGPoint(x: p.x, y: rect.minY), CGPoint(x: p.x, y: rect.maxY)]) },
