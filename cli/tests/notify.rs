@@ -178,13 +178,18 @@ impl Drop for Serve {
 
 impl Serve {
     fn start(name: &str, config: &str, hook: &Fake) -> Serve {
-        let dir = scratch(name);
+        Serve::start_in(scratch(name), config, hook, "true")
+    }
+
+    fn start_in(dir: PathBuf, config: &str, hook: &Fake, launchctl: &str) -> Serve {
         std::fs::write(dir.join("monitors.json"), config).unwrap();
         let notify = dir.join("notify.json");
         let file = json!({ "url": hook.url("/hooks/in/abc"), "secret": SECRET });
         std::fs::write(&notify, file.to_string()).unwrap();
         std::fs::set_permissions(&notify, PermissionsExt::from_mode(0o600)).unwrap();
         let mut child = beacon(&dir)
+            .env("BEACON_LAUNCHCTL", launchctl)
+            .env("FAKE_JOBS", dir.join("jobs"))
             .stdout(Stdio::piped())
             .stderr(std::fs::File::create(dir.join("stderr")).unwrap())
             .spawn()
@@ -541,4 +546,112 @@ fn a_disk_rule_over_its_threshold_goes_down_in_status_and_is_sent_once() {
     s.read_to_string(&mut raw).unwrap();
     let status: Value = serde_json::from_str(raw.split_once("\r\n\r\n").unwrap().1).unwrap();
     assert_eq!(status["checks"]["full"]["status"], "down", "{status}");
+}
+
+#[test]
+fn a_new_unreviewed_job_sends_one_webhook_and_a_restart_does_not_resend_it() {
+    let hook = receiver(200);
+    let dir = scratch("jobs");
+    let list = dir.join("jobs/list");
+    std::fs::create_dir_all(dir.join("jobs")).unwrap();
+    let write = |labels: &[&str]| {
+        let lines: String = labels.iter().map(|l| format!("{l}\n")).collect();
+        std::fs::write(&list, format!("PID\tStatus\tLabel\n{lines}")).unwrap();
+    };
+    write(&["1\t0\tdev.there", "-\t0\tdev.kept"]);
+    let checks = json!([]);
+    let kept = json!({ "dev.kept": { "keep": { "name": "kept", "group": "Mini" } } });
+    let host = json!({ "url": "https://box/status", "checks": checks, "jobs": kept });
+    let config = json!({ "version": 1, "monitors": [], "hosts": { "box": host } }).to_string();
+    let fake = format!("{}/tests/fixtures/jobs/fake", env!("CARGO_MANIFEST_DIR"));
+    let start = || Serve::start_in(dir.clone(), &config, &hook, &fake);
+    let serve = start();
+    let seen = dir.join(".local/state/beacon/jobs/box.json");
+    wait("the baseline", || seen.exists());
+    settle();
+    assert_eq!(hook.got().len(), 0, "the first report is a baseline");
+    write(&["1\t0\tdev.there", "-\t0\tdev.kept", "-\t1\tdev.new"]);
+    wait("the new job", || !hook.got().is_empty());
+    settle();
+    assert_eq!(hook.posts().len(), 1);
+    let posts = hook.changes();
+    assert_eq!(posts.len(), 1, "{posts:?}");
+    let want = (
+        "job",
+        "box",
+        "job-dev-new",
+        "down",
+        "new job found: dev.new",
+    );
+    let p = &posts[0];
+    assert_eq!(
+        (
+            &p["kind"],
+            &p["host"],
+            &p["check"],
+            &p["status"],
+            &p["message"]
+        ),
+        (
+            &json!(want.0),
+            &json!(want.1),
+            &json!(want.2),
+            &json!(want.3),
+            &json!(want.4)
+        )
+    );
+    drop(serve);
+    write(&[
+        "1\t0\tdev.there",
+        "-\t0\tdev.kept",
+        "-\t1\tdev.new",
+        "1\t0\tdev.next",
+    ]);
+    let _serve = start();
+    wait("the job added while serve was down", || {
+        hook.got().len() > 1
+    });
+    settle();
+    assert_eq!(hook.posts().len(), 2);
+    let posts = hook.changes();
+    assert_eq!(
+        posts.len(),
+        2,
+        "a restart resends nothing it already saw: {posts:?}"
+    );
+    assert_eq!(posts[1]["message"], "new job found: dev.next");
+}
+
+#[test]
+fn a_polled_hosts_new_unreviewed_job_is_announced_once() {
+    let hook = receiver(200);
+    let flip = Arc::new(AtomicBool::new(false));
+    let f = flip.clone();
+    let r1 = Fake::start(move |_, _| {
+        let mut checks =
+            json!({ "disk": { "status": "up", "message": "ok", "since": "2026-11-20T10:15:00Z" } });
+        if f.load(Ordering::SeqCst) {
+            checks["job-dev-new"] = json!({ "status": "up", "message": "running", "since": "2026-11-20T10:15:00Z", "name": "dev.new" });
+            checks["job-dev-kept"] = json!({ "status": "up", "message": "running", "since": "2026-11-20T10:15:00Z", "name": "kept", "group": "G" });
+        }
+        let body = json!({ "version": 1, "host": "r1", "checks": checks }).to_string();
+        Reply::Answer(200, String::new(), body)
+    });
+    let url = r1.url("/status");
+    let _serve = Serve::start("polled-jobs", &config(&[], &[("r1", &url, 5)]), &hook);
+    settle();
+    flip.store(true, Ordering::SeqCst);
+    wait("the announcement", || !hook.got().is_empty());
+    settle();
+    assert_eq!(hook.posts().len(), 1);
+    let posts = hook.changes();
+    assert_eq!(posts.len(), 1, "{posts:?}");
+    assert_eq!(
+        (&posts[0]["host"], &posts[0]["kind"], &posts[0]["message"]),
+        (
+            &json!("r1"),
+            &json!("job"),
+            &json!("new job found: dev.new")
+        )
+    );
 }

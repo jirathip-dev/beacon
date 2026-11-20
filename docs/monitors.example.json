@@ -18,7 +18,12 @@
       "rules": [
         { "id": "disk-full", "metric": "disk", "above": 90, "for_min": 10 },
         { "id": "load-high", "metric": "load", "above": 3, "for_min": 15 }
-      ]
+      ],
+      "jobs": {
+        "com.example.caffeinate": "ignore",
+        "dev.example.old": "removed",
+        "dev.example.tick": {"keep":{"name":"tick","group":"macmini"}}
+      }
     }
   },
   "notify": { "remind_every_h": 4, "remind_max": 3 }

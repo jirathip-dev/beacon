@@ -1,0 +1,9 @@
+#!/bin/sh
+d="${FAKE_JOBS:?}"
+case "$1 $2" in
+list\ *) cat "$d/list" ;;
+print\ *) f="$d/print/${2##*/}"; test -f "$f" || { echo "Could not find service"; exit 113; }; cat "$f" ;;
+"--user list-units") cat "$d/list-units" ;;
+"--user show") cat "$d/show/$3" 2>/dev/null || exit 1 ;;
+*) exit 64 ;;
+esac

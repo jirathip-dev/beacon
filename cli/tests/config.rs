@@ -213,3 +213,47 @@ fn notify_and_rules_parse_with_defaults_and_reject_bad_values() {
         "unknown field `every`",
     );
 }
+
+#[test]
+fn jobs_block_parses_and_rejects_bad_labels_reviews_and_reserved_ids() {
+    use beacon::config::{Kept, Review};
+    let config = parse(EXAMPLE).unwrap();
+    let jobs = &config.hosts.values().next().unwrap().jobs;
+    assert_eq!(jobs.get("com.example.caffeinate"), Some(&Review::Ignore));
+    assert_eq!(jobs.get("dev.example.old"), Some(&Review::Removed));
+    let kept = Kept {
+        name: "tick".into(),
+        group: "macmini".into(),
+        running: false,
+    };
+    assert_eq!(jobs.get("dev.example.tick"), Some(&Review::Keep(kept)));
+    let job = |label: &'static str, review: Value| {
+        move |v: &mut Value| v["hosts"]["macmini"]["jobs"][label] = review
+    };
+    rejects(job("a b", json!("ignore")), "invalid job label \"a b\"");
+    rejects(job("x", json!("forget")), "unknown variant `forget`");
+    let long = "n".repeat(61);
+    rejects(
+        job("x", json!({ "keep": { "name": long, "group": "g" } })),
+        "job \"x\": name must be 1..=60 chars",
+    );
+    rejects(
+        job(
+            "x",
+            json!({ "keep": { "name": "n", "group": "g", "when": 1 } }),
+        ),
+        "unknown field `when`",
+    );
+    rejects(
+        |v| v["hosts"]["macmini"]["checks"][0]["id"] = json!("job-backup"),
+        "reserved for jobs",
+    );
+    let mut v = example();
+    job(
+        "x",
+        json!({ "keep": { "name": "n", "group": "g", "running": true } }),
+    )(&mut v);
+    let config = parse(&v.to_string()).unwrap();
+    let running = &config.hosts.values().next().unwrap().jobs;
+    assert!(matches!(running.get("x"), Some(Review::Keep(k)) if k.running));
+}

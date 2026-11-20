@@ -1,0 +1,31 @@
+gui/501/dev.cooee.cooee = {
+	active count = 1
+	path = /Users/owner/Library/LaunchAgents/dev.cooee.cooee.plist
+	type = LaunchAgent
+	state = not running
+
+	program = /bin/sh
+	arguments = {
+		/bin/sh
+		-c
+		exec run-dev.cooee.cooee
+	}
+
+	inherited environment = {
+		SSH_AUTH_SOCK => /private/tmp/com.apple.launchd.x/Listeners
+	}
+
+	domain = gui/501 [100005]
+	asid = 100005
+	minimum runtime = 10
+	exit timeout = 5
+	runs = 3
+	last exit code = 0
+
+	spawn type = daemon (3)
+	jetsam priority = 40
+	jetsam memory limit (active) = (unlimited)
+	jetsamproperties category = daemon
+	submitted job. ignore execute allowed
+	properties = keepalive | runatload | inferred program
+}
