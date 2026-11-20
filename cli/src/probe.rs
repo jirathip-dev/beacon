@@ -5,11 +5,13 @@ use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::time::Duration;
 
+const DRAIN: Duration = Duration::from_millis(100);
+
 /// Runs `sh -c command`; up on exit 0. Past `timeout` its whole process group is killed.
 pub fn run(command: &str, timeout: Duration) -> (Status, String) {
     let mut sh = Command::new("sh");
     sh.args(["-c", command]);
-    match spawn_and_wait(sh, timeout) {
+    match spawn_and_wait(sh, timeout, true) {
         Ok(Some((ok, output))) => (
             if ok { Status::Up } else { Status::Down },
             last_line(&output),
@@ -26,13 +28,17 @@ pub fn run(command: &str, timeout: Duration) -> (Status, String) {
 pub fn output(program: &str, args: &[&str], timeout: Duration) -> Option<String> {
     let mut cmd = Command::new(program);
     cmd.args(args);
-    match spawn_and_wait(cmd, timeout) {
+    match spawn_and_wait(cmd, timeout, false) {
         Ok(Some((true, output))) => Some(output),
         _ => None,
     }
 }
 
-fn spawn_and_wait(mut cmd: Command, timeout: Duration) -> std::io::Result<Option<(bool, String)>> {
+fn spawn_and_wait(
+    mut cmd: Command,
+    timeout: Duration,
+    reap: bool,
+) -> std::io::Result<Option<(bool, String)>> {
     let (mut reader, writer) = std::io::pipe()?;
     let mut child = cmd
         .stdin(Stdio::null())
@@ -42,22 +48,27 @@ fn spawn_and_wait(mut cmd: Command, timeout: Duration) -> std::io::Result<Option
         .spawn()?;
     drop(cmd);
     let pgid = child.id();
-    let output = std::thread::spawn(move || {
+    let (out_tx, output) = mpsc::channel();
+    std::thread::spawn(move || {
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf).ok();
-        String::from_utf8_lossy(&buf).into_owned()
+        out_tx.send(String::from_utf8_lossy(&buf).into_owned())
     });
     let (tx, rx) = mpsc::channel();
     std::thread::spawn(move || tx.send(child.wait()));
     let Ok(exit) = rx.recv_timeout(timeout) else {
         kill_group(pgid);
         rx.recv().ok();
-        output.join().ok();
+        output.recv().ok();
         return Ok(None);
     };
     let exit = exit?;
-    kill_group(pgid);
-    Ok(Some((exit.success(), output.join().unwrap_or_default())))
+    let drained = (!reap).then(|| output.recv_timeout(DRAIN).ok()).flatten();
+    let text = drained.unwrap_or_else(|| {
+        kill_group(pgid);
+        output.recv().unwrap_or_default()
+    });
+    Ok(Some((exit.success(), text)))
 }
 
 fn kill_group(pgid: u32) {

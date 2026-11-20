@@ -284,7 +284,8 @@ fn serve_resident_peak_is_at_most_10_mb() {
 #[test]
 fn an_unchanged_poll_is_a_304_of_at_most_1_kb_both_ways() {
     let _alone = ALONE.lock().unwrap();
-    let serve = Serve::start("polls", &[], &[], SPEEDUP, false);
+    let serve = Serve::start("polls", &[], &[], 1, false);
+    thread::sleep(Duration::from_millis(1500));
     for path in ["/status", "/metrics", "/config"] {
         let etag = etag(&serve.addr, path);
         let conn = TcpStream::connect(&serve.addr).unwrap();
