@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "history.schema.json",
+  "title": "beacon serve: GET /history, and the bytes of ~/.local/state/beacon/history/events.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "host", "gaps", "checks", "monitors"],
+  "properties": {
+    "version": { "const": 1 },
+    "host": { "type": "string" },
+    "gaps": {
+      "description": "Spans serve was not watching, oldest first: [from, to] in Unix seconds. Neither up nor down.",
+      "type": "array",
+      "maxItems": 128,
+      "items": { "type": "array", "prefixItems": [{ "$ref": "#/$defs/time" }, { "$ref": "#/$defs/time" }], "items": false, "minItems": 2 }
+    },
+    "checks": {
+      "description": "One entry per key of /status `checks` (checks, rules, jobs).",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+      "additionalProperties": { "$ref": "#/$defs/track" }
+    },
+    "monitors": {
+      "description": "The http and tcp monitors this host probes, in config order. Empty unless this host is the config's `prober`.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "group", "name", "since", "down"],
+        "properties": {
+          "id": { "description": "The segment of /history/<id>.", "type": "string", "pattern": "^[0-9a-f]{16}$" },
+          "group": { "type": "string" },
+          "name": { "type": "string" },
+          "since": { "$ref": "#/$defs/time" },
+          "down": { "$ref": "#/$defs/down" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "time": { "description": "Unix seconds, UTC.", "type": "integer", "minimum": 0 },
+    "track": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["since", "down"],
+      "properties": {
+        "since": { "description": "Where this key's knowledge starts.", "$ref": "#/$defs/time" },
+        "down": { "$ref": "#/$defs/down" }
+      }
+    },
+    "down": {
+      "description": "Incidents, oldest first, not overlapping. Only the last may be open.",
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["down_at", "up_at", "message"],
+        "properties": {
+          "down_at": { "$ref": "#/$defs/time" },
+          "up_at": { "description": "null while it is down.", "oneOf": [{ "$ref": "#/$defs/time" }, { "type": "null" }] },
+          "message": { "description": "The message it went down with.", "type": "string", "maxLength": 120 }
+        }
+      }
+    }
+  }
+}
