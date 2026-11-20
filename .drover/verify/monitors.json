@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "prober": "macmini",
   "monitors": [
     { "type": "http", "name": "Status page", "group": "Web", "url": "http://127.0.0.1:PORT/ok.html", "expect_status": 200, "keyword": "beacon ok", "timeout_s": 5 },
     { "type": "http", "name": "API wrong status", "group": "Web", "url": "http://127.0.0.1:PORT/health", "expect_status": 200, "timeout_s": 5 },

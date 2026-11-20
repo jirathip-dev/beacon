@@ -4,8 +4,10 @@ public struct MonitorsConfig: Decodable, Sendable {
     public let version: Int
     public let monitors: [Monitor]
     public let hosts: [String: Host]?
+    /// The host whose serve probes the http/tcp monitors and keeps their history (ADR H1).
+    public let prober: String?
 
-    enum CodingKeys: String, CodingKey { case version, monitors, hosts }
+    enum CodingKeys: String, CodingKey { case version, monitors, hosts, prober }
 
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -16,6 +18,7 @@ public struct MonitorsConfig: Decodable, Sendable {
         }
         monitors = try c.decode([Monitor].self, forKey: .monitors)
         hosts = try c.decodeIfPresent([String: Host].self, forKey: .hosts)
+        prober = try c.decodeIfPresent(String.self, forKey: .prober)
     }
 }
 
@@ -44,6 +47,7 @@ public struct HTTPMonitor: Decodable, Sendable {
     public let expect_status: Int?
     public let keyword: String?
     public let timeout_s: Int?
+    public let cert_warn_days: Int?
 }
 
 public struct TCPMonitor: Decodable, Sendable {

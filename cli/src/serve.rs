@@ -1,13 +1,16 @@
 use crate::config::MountPath;
 use crate::config::{self, Host, HostCheck, Id};
+use crate::history::{History, Key};
 use crate::jobs::{self, Manager};
 use crate::metrics::{EVERY_S, Ring};
+use crate::monitor::{self, Probed, Seen};
 use crate::notify::{self, Event, Notify, Tracker};
 use crate::out;
 use crate::probe;
+use crate::prober;
 use crate::sampler::Sampler;
 use crate::state::{self, Announced};
-use crate::status::{Rendered, StatusBody};
+use crate::status::{Rendered, Status, StatusBody};
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::mpsc::{self, Sender};
@@ -40,13 +43,20 @@ struct Live {
     generation: u64,
     body: StatusBody,
     own: Tracker,
+    history: History,
+}
+
+struct Cells {
+    status: Cell,
+    history: Cell,
+    times: Mutex<BTreeMap<String, Rendered>>,
 }
 
 type Watched = Mutex<BTreeMap<Id, (u64, String, u8)>>;
 
-/// Serves `/status`, `/metrics` and `/config` for `name` on `listen`; returns only when it cannot start.
+/// Serves `/status`, `/metrics`, `/config` and `/history` for `name` on `listen`; returns only when it cannot start.
 pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> String {
-    let (raw, (host, others)) = match std::fs::read(path).map_err(|e| e.to_string()) {
+    let (raw, (host, others, monitors)) = match std::fs::read(path).map_err(|e| e.to_string()) {
         Ok(raw) => match host_of(&raw, name) {
             Ok(hosts) => (raw, hosts),
             Err(e) => return format!("{path}: {e}"),
@@ -68,26 +78,67 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
         .collect();
     let disks: Vec<_> = host.disks.iter().map(MountPath::as_str).collect();
     out::out(&format!(
-        "serve {name} on {addr}: {} checks ({}), metrics every {EVERY_S}s ({})",
+        "serve {name} on {addr}: {} checks ({}), metrics every {EVERY_S}s ({}), {} monitors probed",
         checks.len(),
         checks.join(", "),
-        disks.join(", ")
+        disks.join(", "),
+        monitors.len()
     ));
+    let state = std::env::var_os("HOME").map(|h| state::dir(Path::new(&h)));
+    let times_dir = state.as_deref().map(state::times);
+    times_dir.as_ref().map(std::fs::create_dir_all);
+    let loaded = state.as_deref().and_then(state::events);
+    let mut history = match &loaded {
+        Some((b, at)) => History::load(name, b, *at).unwrap_or_else(|| {
+            out::err("history/events.json: unreadable; starting an empty history");
+            History::new(name, 0)
+        }),
+        None => History::new(name, 0),
+    };
+    let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
+    history.keep(&ids, &tracks(&monitors), unix_now());
+    let mut written = loaded.map_or(String::new(), |(b, _)| Rendered::of(b).etag);
+    let cells = Cells {
+        status: Cell(Mutex::new(StatusBody::new(name).render())),
+        history: Cell(Mutex::new(history.render())),
+        times: Mutex::default(),
+    };
     let live = Mutex::new(Live {
         generation: 0,
         body: StatusBody::new(name),
         own: Tracker::new(name),
+        history,
     });
     let (tx, rx) = mpsc::channel();
     let tx = notify.is_some().then_some(tx);
     let watched = Watched::default();
     let reviews = Mutex::new(host.jobs.clone());
-    let status = Cell(Mutex::new(lock(&live).body.render()));
     let metrics = Cell(Mutex::new(Ring::new().render(name, &host.disks)));
     let config = Cell(Mutex::new(Rendered::of(raw.clone())));
     if over_budget("mem") {
         std::mem::forget(std::hint::black_box(vec![1u8; 20 << 20]));
     }
+    let probed = |generation: u64, m: &Probed, seen: &Seen, times: Rendered| {
+        let mut l = lock(&live);
+        if l.generation != generation {
+            return false;
+        }
+        let key = format!("{}/{}", m.monitor.names().0, m.monitor.names().1);
+        if let Some(tx) = tx.as_ref()
+            && let Some(e) = l.own.check(&key, seen.status, &seen.message)
+        {
+            tx.send(e).ok();
+        }
+        let key = Key::Monitor(&m.id);
+        if l.history
+            .record(key, seen.status, &seen.message, unix_now())
+        {
+            cells.history.set(l.history.render());
+        }
+        drop(l);
+        lock(&cells.times).insert(m.id.0.clone(), times);
+        true
+    };
     thread::scope(|s| {
         if over_budget("cpu") {
             s.spawn(|| {
@@ -107,9 +158,12 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
         if let Some(notify) = notify {
             s.spawn(move || notify::deliver(&notify, rx));
         }
-        run_checks(s, 0, host.checks.clone(), &live, &status, tx);
+        let (live, cells, config, probed) = (&live, &cells, &config, &probed);
+        run_checks(s, 0, host.checks.clone(), live, cells, tx);
         watch(s, 0, others, watched, tx);
-        let (live, status, config, reviews) = (&live, &status, &config, &reviews);
+        prober::run(s, 0, monitors, times_dir.as_deref(), probed);
+        let times_dir = times_dir.as_deref();
+        let reviews = &reviews;
         s.spawn(move || {
             let state = std::env::var_os("HOME").map(|h| state::dir(Path::new(&h)));
             let mut announced = tx.and(state.as_deref()).map(|d| Announced::load(d, name));
@@ -133,9 +187,16 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                         {
                             tx.send(e).ok();
                         }
+                        let id = Id::try_from(r.id.clone());
+                        if let Ok(id) = id
+                            && l.history
+                                .record(Key::Check(&id), r.status, &r.message, unix_now())
+                        {
+                            cells.history.set(l.history.render());
+                        }
                     }
                     if l.body.set_jobs(&rows, unix_now()) {
-                        status.set(l.body.render());
+                        cells.status.set(l.body.render());
                     }
                 },
             );
@@ -143,14 +204,28 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
         s.spawn(move || {
             let dir = Path::new(path).parent().unwrap_or(Path::new(""));
             let git = dir.join(".git").exists();
-            let state = std::env::var_os("HOME").map(|h| state::dir(Path::new(&h)));
             let (mut seen, mut pulled, mut tidied) = (Ok(raw), None::<Instant>, None::<Instant>);
-            let mut pull_down = false;
+            let (mut pull_down, mut write_down) = (false, false);
             loop {
                 if let Some(state) = &state
                     && tidied.is_none_or(|t| t.elapsed() >= every(TIDY_EVERY_S))
                 {
                     tidied = Some(Instant::now());
+                    let r = {
+                        let mut l = lock(live);
+                        if l.history.tick(unix_now()) {
+                            cells.history.set(l.history.render());
+                        }
+                        cells.history.get()
+                    };
+                    let kept = state::keep_events(state, &r.body, r.etag != written);
+                    if let Err(e) = &kept
+                        && !write_down
+                    {
+                        out::err(&format!("history/events.json: {e}"));
+                    }
+                    write_down = kept.is_err();
+                    written = if write_down { String::new() } else { r.etag };
                     state::tidy(state);
                 }
                 if git && pulled.is_none_or(|p| p.elapsed() >= every(PULL_EVERY_S)) {
@@ -166,16 +241,21 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                 if read != seen {
                     seen.clone_from(&read);
                     match read.and_then(|raw| host_of(&raw, name).map(|h| (raw, h))) {
-                        Ok((raw, (host, others))) => {
+                        Ok((raw, (host, others, monitors))) => {
                             config.set(Rendered::of(raw));
                             *lock(reviews) = host.jobs.clone();
                             let mut l = lock(live);
                             l.generation += 1;
                             let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
                             l.body.keep(&ids);
-                            status.set(l.body.render());
-                            run_checks(s, l.generation, host.checks.clone(), live, status, tx);
+                            cells.status.set(l.body.render());
+                            l.history.keep(&ids, &tracks(&monitors), unix_now());
+                            cells.history.set(l.history.render());
+                            let ours = |id: &String| monitors.iter().any(|m| &m.id.0 == id);
+                            lock(&cells.times).retain(|id, _| ours(id));
+                            run_checks(s, l.generation, host.checks.clone(), live, cells, tx);
                             watch(s, l.generation, others, watched, tx);
+                            prober::run(s, l.generation, monitors, times_dir, probed);
                             drop(l);
                             out::err(&format!("reload {path}: {} checks", ids.len()));
                         }
@@ -202,19 +282,23 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
         let (metrics, server) = (&metrics, &server);
         let answer = move || {
             for request in server.incoming_requests() {
-                let cell = match request.url() {
-                    "/status" => status,
-                    "/metrics" => metrics,
-                    "/config" => config,
-                    _ => {
-                        request.respond(Response::empty(404)).ok();
-                        continue;
-                    }
-                };
                 if over_budget("slow") {
                     thread::sleep(Duration::from_millis(3));
                 }
-                let r = cell.get();
+                let r = match request.url() {
+                    "/status" => cells.status.get(),
+                    "/metrics" => metrics.get(),
+                    "/config" => config.get(),
+                    "/history" => cells.history.get(),
+                    url => {
+                        let id = url.strip_prefix("/history/");
+                        let Some(r) = id.and_then(|id| lock(&cells.times).get(id).cloned()) else {
+                            request.respond(Response::empty(404)).ok();
+                            continue;
+                        };
+                        r
+                    }
+                };
                 let fresh = over_budget("poll")
                     || !request
                         .headers()
@@ -246,14 +330,33 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
     })
 }
 
-fn host_of(raw: &[u8], name: &str) -> Result<(Host, BTreeMap<Id, Host>), String> {
+type Ours = (Host, BTreeMap<Id, Host>, Vec<Probed>);
+
+fn host_of(raw: &[u8], name: &str) -> Result<Ours, String> {
     let text = std::str::from_utf8(raw).map_err(|e| e.to_string())?;
     let mut config = config::parse(text)?;
-    Id::try_from(name.to_string())
+    let host = Id::try_from(name.to_string())
         .ok()
         .and_then(|id| config.hosts.remove(&id))
-        .map(|host| (host, config.hosts))
-        .ok_or(format!("no host {name:?} in hosts"))
+        .ok_or(format!("no host {name:?} in hosts"))?;
+    let others = std::mem::take(&mut config.hosts);
+    Ok((host, others, monitor::probed(config, name)))
+}
+
+fn tracks(monitors: &[Probed]) -> Vec<(&crate::history::MonitorId, &str, &str)> {
+    monitors
+        .iter()
+        .map(|m| (&m.id, m.monitor.names().0, m.monitor.names().1))
+        .collect()
+}
+
+fn record(l: &mut Live, cells: &Cells, id: &Id, st: Status, message: String, now: u64) {
+    if l.history.record(Key::Check(id), st, &message, now) {
+        cells.history.set(l.history.render());
+    }
+    if l.body.record(id, st, message, now) {
+        cells.status.set(l.body.render());
+    }
 }
 
 fn watch<'s>(
@@ -287,13 +390,13 @@ fn run_checks<'s>(
     generation: u64,
     checks: Vec<HostCheck>,
     live: &'s Mutex<Live>,
-    status: &'s Cell,
+    cells: &'s Cells,
     tx: Option<&'s Sender<Event>>,
 ) {
     for c in checks {
         s.spawn(move || {
             loop {
-                let held = over_budget("lock").then(|| lock(&status.0));
+                let held = over_budget("lock").then(|| lock(&cells.status.0));
                 let (st, message) = probe::run(&c.command, Duration::from_secs(c.timeout_s.into()));
                 drop(held);
                 let mut l = lock(live);
@@ -305,9 +408,7 @@ fn run_checks<'s>(
                 {
                     tx.send(e).ok();
                 }
-                if l.body.record(&c.id, st, message, unix_now()) {
-                    status.set(l.body.render());
-                }
+                record(&mut l, cells, &c.id, st, message, unix_now());
                 drop(l);
                 thread::sleep(every(c.every_s.into()));
             }
