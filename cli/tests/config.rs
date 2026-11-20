@@ -167,3 +167,49 @@ fn disks_default_to_root_and_reject_relative_duplicate_or_too_many() {
         2
     );
 }
+
+#[test]
+fn notify_and_rules_parse_with_defaults_and_reject_bad_values() {
+    let config = parse(EXAMPLE).unwrap();
+    assert_eq!(
+        (config.notify.remind_every_h, config.notify.remind_max),
+        (4, 3)
+    );
+    let mut v = example();
+    v.as_object_mut().unwrap().remove("notify");
+    v["notify"] = json!({ "remind_max": 0 });
+    let quiet = parse(&v.to_string()).unwrap().notify;
+    assert_eq!((quiet.remind_every_h, quiet.remind_max), (4, 0));
+    v["hosts"]["macmini"]["rules"] = json!([]);
+    let host = parse(&v.to_string()).unwrap();
+    assert_eq!(host.hosts.values().next().unwrap().rules.len(), 0);
+    let heartbeat = json!({ "type": "heartbeat", "name": "Disk full", "group": "macmini", "host": "macmini", "id": "disk-full" });
+    let mut v = example();
+    v["monitors"].as_array_mut().unwrap().push(heartbeat);
+    parse(&v.to_string()).unwrap();
+    let rule = |r: Value| move |v: &mut Value| v["hosts"]["macmini"]["rules"] = json!([r]);
+    rejects(
+        rule(json!({ "id": "x", "metric": "swap", "above": 1, "for_min": 1 })),
+        "unknown variant `swap`",
+    );
+    rejects(
+        rule(json!({ "id": "x", "metric": "disk", "above": 101, "for_min": 1 })),
+        "rule \"x\": above 101 out of 0..=100",
+    );
+    rejects(
+        rule(json!({ "id": "x", "metric": "load", "above": 2, "for_min": 0 })),
+        "for_min 0 out of 1..=1440",
+    );
+    rejects(
+        rule(json!({ "id": "backup", "metric": "memory", "above": 2, "for_min": 1 })),
+        "rule check \"backup\" reuses an id",
+    );
+    rejects(
+        |v| v["notify"] = json!({ "remind_every_h": 0 }),
+        "notify.remind_every_h 0 out of 1..=168",
+    );
+    rejects(
+        |v| v["notify"] = json!({ "every": 1 }),
+        "unknown field `every`",
+    );
+}

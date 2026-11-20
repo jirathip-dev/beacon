@@ -1,21 +1,22 @@
-use crate::config::HttpsUrl;
+use crate::config::{HttpsUrl, NotifyPolicy};
 use crate::out;
 use crate::serve::{every, unix_now};
 use crate::status::{Rendered, Status, rfc3339};
 use hmac::{Hmac, KeyInit, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::os::unix::fs::PermissionsExt;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use ureq::tls::{PemItem, RootCerts, TlsConfig, parse_pem};
 use ureq::{Agent, Body, http::Response};
 
 pub const POLL_S: u64 = 60;
 pub const CHECK_POLLS: u32 = 2;
 pub const HOST_FAILS: u32 = 3;
+pub const GROUP_S: u64 = 30;
 const TRIES_S: [u64; 3] = [0, 5, 30];
 
 /// The `--notify` file: the webhook URL and its HMAC secret.
@@ -55,7 +56,7 @@ pub fn sign(secret: &[u8], body: &[u8]) -> String {
     format!("sha256={hex}")
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, Debug)]
 pub struct Event {
     kind: &'static str,
     host: String,
@@ -104,7 +105,7 @@ impl Tracker {
         Some(self.event(Some(id), status, message))
     }
 
-    fn polled(&mut self, result: &Result<(), String>) -> Option<Event> {
+    pub fn polled(&mut self, result: &Result<(), String>) -> Option<Event> {
         let Err(why) = result else {
             self.fails = 0;
             let was_down = self.down.replace(false) == Some(true);
@@ -178,11 +179,163 @@ pub fn watch(host: &str, target: impl Fn() -> Option<(String, u8)>, tx: &Sender<
     }
 }
 
-/// POSTs each event, signed, with 3 tries; logs and drops it when all fail.
-pub fn deliver(notify: &Notify, events: Receiver<Event>) {
-    let agent = agent();
-    for e in events {
-        let body = Rendered::json(&e).body;
+type Key = (String, Option<String>);
+
+/// The grouping window and the reminder policy, in the clock `Alerts` is given.
+pub struct Timing {
+    pub group: Duration,
+    pub hour: Duration,
+    pub policy: NotifyPolicy,
+}
+
+#[derive(Serialize)]
+pub struct Batch {
+    kind: &'static str,
+    pub summary: String,
+    pub changes: Vec<Event>,
+    at: String,
+}
+
+/// Changes waiting for their window to close, and what is down with the reminders it got.
+#[derive(Default)]
+pub struct Alerts {
+    opened: Option<Duration>,
+    changes: Vec<Event>,
+    down: BTreeMap<Key, (Duration, u32)>,
+}
+
+impl Alerts {
+    pub fn change(&mut self, e: Event, now: Duration) {
+        let key = (e.host.clone(), e.check.clone());
+        if e.status == Status::Down {
+            self.down.insert(key, (now, 0));
+        } else {
+            self.down.remove(&key);
+        }
+        self.opened.get_or_insert(now);
+        self.changes.push(e);
+    }
+
+    /// The batch due at `now`: reminders that fell due join the window, sent once it has been open `group`.
+    pub fn due(&mut self, now: Duration, t: &Timing) -> Option<Batch> {
+        let hosts_down = self.hosts_down();
+        for ((host, check), (since, sent)) in &mut self.down {
+            let next = remind_at(*since, *sent, t);
+            if next.is_none_or(|n| n > now) || check.as_ref().is_some() && hosts_down.contains(host)
+            {
+                continue;
+            }
+            *sent += 1;
+            let name = check
+                .as_ref()
+                .map_or(host.clone(), |c| format!("{host}/{c}"));
+            let hours = u32::from(t.policy.remind_every_h) * *sent;
+            self.changes.push(Event {
+                kind: "reminder",
+                host: host.clone(),
+                check: check.clone(),
+                status: Status::Down,
+                message: format!("still down: {name} for {hours}h"),
+                at: rfc3339(unix_now()),
+            });
+            self.opened.get_or_insert(now);
+        }
+        if self.opened.is_none_or(|o| o + t.group > now) {
+            return None;
+        }
+        self.opened = None;
+        let mut changes = std::mem::take(&mut self.changes);
+        changes.retain(|e| e.check.is_none() || !hosts_down.contains(&e.host));
+        (!changes.is_empty()).then(|| Batch {
+            kind: "batch",
+            summary: summary(&changes),
+            changes,
+            at: rfc3339(unix_now()),
+        })
+    }
+
+    /// How long until `due` may have something new; `None` when only a change can bring it.
+    pub fn wait(&self, now: Duration, t: &Timing) -> Option<Duration> {
+        let hosts_down = self.hosts_down();
+        let reminders = self
+            .down
+            .iter()
+            .filter_map(|((host, check), (since, sent))| {
+                let swallowed = check.is_some() && hosts_down.contains(host);
+                remind_at(*since, *sent, t).filter(|_| !swallowed)
+            });
+        let window = self.opened.map(|o| o + t.group);
+        let next = reminders.chain(window).min()?;
+        Some(next.saturating_sub(now))
+    }
+
+    fn hosts_down(&self) -> BTreeSet<String> {
+        let hosts = self.down.keys().filter(|(_, check)| check.is_none());
+        hosts.map(|(host, _)| host.clone()).collect()
+    }
+}
+
+fn remind_at(since: Duration, sent: u32, t: &Timing) -> Option<Duration> {
+    let every = t.hour.checked_mul(t.policy.remind_every_h.into())?;
+    let n = (sent < t.policy.remind_max.into()).then_some(sent + 1)?;
+    since.checked_add(every.checked_mul(n)?)
+}
+
+fn summary(changes: &[Event]) -> String {
+    if let [e] = changes {
+        return match (e.kind, &e.check) {
+            ("reminder", _) => e.message.clone(),
+            (_, Some(c)) => format!("{}/{c} {}", e.host, e.status),
+            (_, None) => format!("{} {}", e.host, e.status),
+        };
+    }
+    let mut parts: Vec<_> = changes
+        .iter()
+        .filter(|e| e.kind == "host")
+        .map(|e| format!("{} {}", e.host, e.status))
+        .collect();
+    let count = |kind: &str, status: Status| {
+        let of = |e: &&Event| e.kind == kind && e.status == status;
+        changes.iter().filter(of).count()
+    };
+    for (n, what) in [
+        (count("check", Status::Down), "down"),
+        (count("check", Status::Up), "up"),
+    ] {
+        let s = if n == 1 { "" } else { "s" };
+        if n > 0 {
+            parts.push(format!("{n} check{s} {what}"));
+        }
+    }
+    let reminded = count("reminder", Status::Down);
+    if reminded > 0 {
+        parts.push(format!("{reminded} still down"));
+    }
+    parts.join(", ")
+}
+
+/// Groups events into batches with `Alerts` and POSTs each, signed, with 3 tries; logs and drops it when all fail.
+pub fn deliver(notify: &Notify, events: &Receiver<Event>, policy: impl Fn() -> NotifyPolicy) {
+    let (agent, start, mut alerts) = (agent(), Instant::now(), Alerts::default());
+    loop {
+        let timing = Timing {
+            group: every(GROUP_S),
+            hour: every(3600),
+            policy: policy(),
+        };
+        let got = match alerts.wait(start.elapsed(), &timing) {
+            Some(wait) => events.recv_timeout(wait),
+            None => events.recv().map_err(|_| RecvTimeoutError::Disconnected),
+        };
+        match got {
+            Ok(e) => alerts.change(e, start.elapsed()),
+            Err(RecvTimeoutError::Timeout) => {}
+            Err(RecvTimeoutError::Disconnected) => return,
+        }
+        let Some(batch) = alerts.due(start.elapsed(), &timing) else {
+            continue;
+        };
+        let body = Rendered::json(&batch).body;
         let signature = sign(notify.secret.as_bytes(), &body);
         let mut why = None;
         for wait in TRIES_S {
@@ -201,11 +354,7 @@ pub fn deliver(notify: &Notify, events: Receiver<Event>) {
             }
         }
         if let Some(why) = why {
-            let (host, check) = (&e.host, e.check.as_deref().unwrap_or("-"));
-            out::err(&format!(
-                "notify failed: {host}/{check} {}: {why}",
-                e.status
-            ));
+            out::err(&format!("notify failed: {}: {why}", batch.summary));
         }
     }
 }

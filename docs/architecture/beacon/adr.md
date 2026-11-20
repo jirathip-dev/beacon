@@ -277,8 +277,7 @@ stopped answering. cooee already takes a signed webhook (`POST /hooks/in/<id>`, 
   is back, they are compared with their last sent status. The first poll of a host and the first result of a
   check set the baseline only, so nothing is sent at start or on a reload. A host that never answered becomes
   a silent `down` baseline after 3 failed polls.
-- **Body.** `{"kind":"check"|"host","host":…,"check":…|null,"status":"up"|"down","message":…,"at":…}`,
-  `Content-Type: application/json`. `at` is UTC to the second, the format of `/status` `since`, and
+- **Change object.** `{"kind":"check"|"host"|"reminder","host":…,"check":…|null,"status":"up"|"down","message":…,"at":…}`. `at` is UTC to the second, the format of `/status` `since`, and
   `message` is cut to 200 chars. cooee puts it after the routine's prompt as untrusted data.
 - **Signing (q2446).** `X-Signature-256: sha256=<lowercase hex HMAC-SHA256(secret, body bytes)>` with the
   RustCrypto `hmac` and `sha2` crates.
@@ -286,11 +285,32 @@ stopped answering. cooee already takes a signed webhook (`POST /hooks/in/<id>`, 
   certificates in `$SSL_CERT_FILE` when it is set (the tests use this for a local CA). cargo-deny allows
   `ISC` and `CDLA-Permissive-2.0`, the licenses of rustls's `ring`, `rustls-webpki`, `untrusted` and
   `webpki-roots`.
-- **Delivery.** One thread sends, off the poll and request threads, so a slow cooee never stalls `/status`.
-  Each event gets 3 tries (now, +5 s, +30 s) on a network error or a non-2xx reply, and then serve logs
-  `notify failed: <host>/<check> <status>: <reason>` (`-` for a host event) and drops it.
+- **Grouping (#41, q2458).** The first change opens a 30 s window; when it closes, one POST lists every change
+  in it: `{"kind":"batch","summary":"boat-dev-2 down, 3 checks down","changes":[<change objects>],"at":…}`,
+  `Content-Type: application/json`. A window with one change is a one-item batch whose summary names it
+  (`box/disk down`). A host that is down swallows its own checks: their changes and reminders are not listed
+  while it is down.
+- **Reminders (#41, q2457).** While a check, host or rule stays down, a `reminder` change with the message
+  `still down: <host>/<check> for <n>h` (`<host>` alone for a host) falls due every `notify.remind_every_h`
+  hours, at most `notify.remind_max` times, then nothing until it recovers. Reminders due together share a
+  window and a batch. Defaults 4 and 3 when `notify` is absent; `remind_max: 0` sends none. The policy follows
+  config reloads; an outage's clock starts at the change that opened it.
+- **Metric rules (#41, q2459).** `hosts.<name>.rules` (`{"id","metric":"disk"|"memory"|"load","above","for_min"}`)
+  are judged by that host's serve on each 60 s sample (D10): disk and memory as % used, load as load1 per core
+  (`available_parallelism`). A rule goes down once its metric has read above `above` for `for_min` minutes
+  (`for_min + 1` samples in a row), and up once it has read at or below it as long; a missing reading changes
+  nothing. A disk rule keeps one status per mount in `disks` (`<id>` for `/`, `<id>-<mount slug>` else). Each
+  status is a check in `/status` (message like `disk / 93.0% used (down above 90 for 10 min)`), so it is
+  debounced, grouped, reminded, watched by the Mini and shown by a heartbeat monitor like any check. Absent
+  `rules`: `disk-full` (> 90 for 10 min), `memory-full` (> 90 for 10 min) and `load-high` (> 2 per core for
+  15 min); `"rules": []` turns them off. Rule status ids may not repeat a check id. The app ignores `rules`
+  and `notify` (D1).
+- **Delivery.** One thread groups and sends, off the poll and request threads, so a slow cooee never stalls
+  `/status`. Each batch gets 3 tries (now, +5 s, +30 s) on a network error or a non-2xx reply, and then serve
+  logs `notify failed: <summary>: <reason>` and drops it.
 - **Tests.** `cli/tests/notify.rs` runs serve against local TLS fake hosts and a fake receiver, with
-  `BEACON_SPEEDUP=60` shortening the 60 s poll and the retry waits. `POLL_S`, `CHECK_POLLS` and `HOST_FAILS`
+  `BEACON_SPEEDUP=60` shortening the 60 s poll, the window and the retry waits. `cli/tests/alerts.rs` drives
+  the grouping, reminder and rule logic on a fake clock. `POLL_S`, `CHECK_POLLS` and `HOST_FAILS`
   are constants in `notify.rs`.
 
 ## Consequences (D1–D9)

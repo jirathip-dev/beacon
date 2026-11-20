@@ -18,6 +18,15 @@
       "type": "object",
       "propertyNames": { "$ref": "#/$defs/id" },
       "additionalProperties": { "$ref": "#/$defs/host" }
+    },
+    "notify": {
+      "description": "How `beacon serve --notify` reminds that a check, host or rule is still down (ADR D11). Holds no secret; the webhook and its secret stay in the notify file.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "remind_every_h": { "type": "integer", "minimum": 1, "maximum": 168, "default": 4, "description": "Hours between `still down` reminders." },
+        "remind_max": { "type": "integer", "minimum": 0, "maximum": 100, "default": 3, "description": "Reminders per outage; 0 sends none." }
+      }
     }
   },
   "$defs": {
@@ -83,7 +92,23 @@
           "uniqueItems": true,
           "default": ["/"],
           "items": { "type": "string", "pattern": "^/", "maxLength": 255, "description": "An absolute path with no control character." }
+        },
+        "rules": {
+          "description": "Metric rules serve judges on each 60 s sample; each acts like a check in /status (ADR D11). Absent: disk-full (disk > 90 for 10 min), memory-full (memory > 90 for 10 min), load-high (load > 2 per core for 15 min). [] turns them off.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/rule" }
         }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "metric", "above", "for_min"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id", "description": "Unique within its host's rules. A disk rule keeps one status per mount in `disks`: `<id>` for `/`, else `<id>-<mount as a slug>` (/Volumes/T7: `<id>-volumes-t7`). No status id may repeat a check id." },
+        "metric": { "enum": ["disk", "memory", "load"], "description": "disk and memory: % used; load: load1 per core." },
+        "above": { "type": "number", "minimum": 0, "maximum": 1000, "description": "Down once the metric stays above this for for_min; at most 100 for disk and memory." },
+        "for_min": { "type": "integer", "minimum": 1, "maximum": 1440, "description": "Minutes the metric must stay above (down) or at or below (up) before the rule changes." }
       }
     },
     "hostCheck": {

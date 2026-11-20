@@ -1,12 +1,13 @@
 use crate::config::MountPath;
-use crate::config::{self, Host, HostCheck, Id};
+use crate::config::{self, Host, HostCheck, Id, NotifyPolicy, RuleCheck};
 use crate::metrics::{EVERY_S, Ring};
 use crate::notify::{self, Event, Notify, Tracker};
 use crate::out;
 use crate::probe;
+use crate::rules::{self, Streak};
 use crate::sampler::Sampler;
 use crate::state;
-use crate::status::{Rendered, StatusBody};
+use crate::status::{Rendered, Status, StatusBody};
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::mpsc::{self, Sender};
@@ -39,13 +40,36 @@ struct Live {
     generation: u64,
     body: StatusBody,
     own: Tracker,
+    rules: Vec<RuleCheck>,
+    notify: NotifyPolicy,
+}
+
+impl Live {
+    fn report(&mut self, id: &Id, st: Status, message: String, tx: Option<&Sender<Event>>) -> bool {
+        if let Some(tx) = tx
+            && let Some(e) = self.own.check(id.as_str(), st, &message)
+        {
+            tx.send(e).ok();
+        }
+        self.body.record(id, st, message, unix_now())
+    }
+
+    fn reload(&mut self, host: &Host, notify: NotifyPolicy) -> usize {
+        self.generation += 1;
+        self.rules = host.rule_checks().unwrap_or_default();
+        self.notify = notify;
+        let rules = self.rules.iter().map(|r| &r.id);
+        let ids: Vec<_> = host.checks.iter().map(|c| &c.id).chain(rules).collect();
+        self.body.keep(&ids);
+        ids.len()
+    }
 }
 
 type Watched = Mutex<BTreeMap<Id, (u64, String, u8)>>;
 
 /// Serves `/status`, `/metrics` and `/config` for `name` on `listen`; returns only when it cannot start.
 pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> String {
-    let (raw, (host, others)) = match std::fs::read(path).map_err(|e| e.to_string()) {
+    let (raw, (host, others, policy)) = match std::fs::read(path).map_err(|e| e.to_string()) {
         Ok(raw) => match host_of(&raw, name) {
             Ok(hosts) => (raw, hosts),
             Err(e) => return format!("{path}: {e}"),
@@ -76,7 +100,10 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
         generation: 0,
         body: StatusBody::new(name),
         own: Tracker::new(name),
+        rules: Vec::new(),
+        notify: policy,
     });
+    lock(&live).reload(&host, policy);
     let (tx, rx) = mpsc::channel();
     let tx = notify.is_some().then_some(tx);
     let watched = Watched::default();
@@ -103,10 +130,12 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
         }
         let (tx, watched) = (tx.as_ref(), &watched);
         if let Some(notify) = notify {
-            s.spawn(move || notify::deliver(&notify, rx));
+            let live = &live;
+            s.spawn(move || notify::deliver(&notify, &rx, || lock(live).notify));
         }
-        run_checks(s, 0, host.checks.clone(), &live, &status, tx);
-        watch(s, 0, others, watched, tx);
+        let generation = lock(&live).generation;
+        run_checks(s, generation, host.checks.clone(), &live, &status, tx);
+        watch(s, generation, others, watched, tx);
         let (live, status, config) = (&live, &status, &config);
         s.spawn(move || {
             let dir = Path::new(path).parent().unwrap_or(Path::new(""));
@@ -134,17 +163,15 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                 if read != seen {
                     seen.clone_from(&read);
                     match read.and_then(|raw| host_of(&raw, name).map(|h| (raw, h))) {
-                        Ok((raw, (host, others))) => {
+                        Ok((raw, (host, others, policy))) => {
                             config.set(Rendered::of(raw));
                             let mut l = lock(live);
-                            l.generation += 1;
-                            let ids: Vec<_> = host.checks.iter().map(|c| &c.id).collect();
-                            l.body.keep(&ids);
+                            let n = l.reload(&host, policy);
                             status.set(l.body.render());
                             run_checks(s, l.generation, host.checks.clone(), live, status, tx);
                             watch(s, l.generation, others, watched, tx);
                             drop(l);
-                            out::err(&format!("reload {path}: {} checks", ids.len()));
+                            out::err(&format!("reload {path}: {n} checks"));
                         }
                         Err(e) => out::err(&format!("{path}: {e}; serving the last valid config")),
                     }
@@ -152,10 +179,28 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                 thread::sleep(every(1));
             }
         });
-        s.spawn(|| {
+        let (metrics, host) = (&metrics, &host);
+        s.spawn(move || {
             let (mut sampler, mut ring, started) = (Sampler::new(), Ring::new(), Instant::now());
+            let cores = thread::available_parallelism().map_or(1, usize::from);
+            let cores = u32::try_from(cores).map_or(1.0, f64::from);
+            let mut streaks = BTreeMap::<Id, Streak>::new();
             loop {
-                ring.push(sampler.sample(unix_now(), &host.disks));
+                let sample = sampler.sample(unix_now(), &host.disks);
+                let mut l = lock(live);
+                let checks = l.rules.clone();
+                streaks.retain(|id, _| checks.iter().any(|r| r.id == *id));
+                let mut changed = false;
+                for r in &checks {
+                    let streak = streaks.entry(r.id.clone()).or_default();
+                    let (st, message) = rules::judge(r, &sample, cores, streak);
+                    changed |= l.report(&r.id, st, message, tx);
+                }
+                if changed {
+                    status.set(l.body.render());
+                }
+                drop(l);
+                ring.push(sample);
                 metrics.set(ring.render(name, &host.disks));
                 let period = every(EVERY_S);
                 let n = started.elapsed().as_nanos() / period.as_nanos() + 1;
@@ -166,7 +211,7 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
                 thread::sleep(next.saturating_sub(started.elapsed()));
             }
         });
-        let (metrics, server) = (&metrics, &server);
+        let server = &server;
         let answer = move || {
             for request in server.incoming_requests() {
                 let cell = match request.url() {
@@ -213,13 +258,13 @@ pub fn serve(name: &str, path: &str, listen: &str, notify: Option<Notify>) -> St
     })
 }
 
-fn host_of(raw: &[u8], name: &str) -> Result<(Host, BTreeMap<Id, Host>), String> {
+fn host_of(raw: &[u8], name: &str) -> Result<(Host, BTreeMap<Id, Host>, NotifyPolicy), String> {
     let text = std::str::from_utf8(raw).map_err(|e| e.to_string())?;
     let mut config = config::parse(text)?;
     Id::try_from(name.to_string())
         .ok()
         .and_then(|id| config.hosts.remove(&id))
-        .map(|host| (host, config.hosts))
+        .map(|host| (host, config.hosts, config.notify))
         .ok_or(format!("no host {name:?} in hosts"))
 }
 
@@ -267,12 +312,7 @@ fn run_checks<'s>(
                 if l.generation != generation {
                     return;
                 }
-                if let Some(tx) = tx
-                    && let Some(e) = l.own.check(c.id.as_str(), st, &message)
-                {
-                    tx.send(e).ok();
-                }
-                if l.body.record(&c.id, st, message, unix_now()) {
+                if l.report(&c.id, st, message, tx) {
                     status.set(l.body.render());
                 }
                 drop(l);

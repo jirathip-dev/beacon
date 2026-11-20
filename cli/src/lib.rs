@@ -4,6 +4,7 @@ pub mod metrics;
 pub mod notify;
 pub mod out;
 pub mod probe;
+pub mod rules;
 pub mod run;
 pub mod sampler;
 pub mod serve;
