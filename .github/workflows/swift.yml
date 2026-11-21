@@ -1,4 +1,4 @@
-name: ci
+name: swift
 
 on:
   pull_request:
@@ -6,55 +6,10 @@ on:
     branches: [main, staging]
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: swift-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  rust:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: cli
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            cli/target
-          key: rust-${{ runner.os }}-${{ hashFiles('cli/Cargo.lock') }}
-      - run: rustup toolchain install
-      - run: cargo fmt --check
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-deny@0.22.0
-      - run: cargo deny --locked check
-
-  line-cap:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v5
-      - run: sh scripts/line-cap.sh
-      - run: sh scripts/line-cap.test.sh
-      - name: Lesson checks (shadow, never fail)
-        run: |
-          if ! sh scripts/lessons/screen-body.sh > "$RUNNER_TEMP/screen-body.log" 2>&1; then
-            { echo "### would-fail: screen-body"; echo '```'; cat "$RUNNER_TEMP/screen-body.log"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-  actionlint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v5
-      - run: bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
-      - run: ./actionlint -color
-
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -70,7 +25,7 @@ jobs:
         run: |
           app=true
           if git diff --name-only "$BASE" HEAD > "$RUNNER_TEMP/files"; then
-            grep -qE '^(app/|\.github/workflows/|\.swiftlint\.yml$)' "$RUNNER_TEMP/files" || app=false
+            grep -qE '^(app/|\.github/workflows/swift\.yml$|\.swiftlint\.yml$)' "$RUNNER_TEMP/files" || app=false
           fi
           echo "app=$app" >> "$GITHUB_OUTPUT"
 

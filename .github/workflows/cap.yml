@@ -1,0 +1,24 @@
+name: cap
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging]
+
+concurrency:
+  group: cap-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  line-cap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - run: sh scripts/line-cap.sh
+      - run: sh scripts/line-cap.test.sh
+      - name: Lesson checks (shadow, never fail)
+        run: |
+          if ! sh scripts/lessons/screen-body.sh > "$RUNNER_TEMP/screen-body.log" 2>&1; then
+            { echo "### would-fail: screen-body"; echo '```'; cat "$RUNNER_TEMP/screen-body.log"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
