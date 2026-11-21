@@ -17,3 +17,8 @@ jobs:
       - uses: actions/checkout@v5
       - run: sh scripts/line-cap.sh
       - run: sh scripts/line-cap.test.sh
+      - name: Lesson checks (shadow, never fail)
+        run: |
+          if ! sh scripts/lessons/screen-body.sh > "$RUNNER_TEMP/screen-body.log" 2>&1; then
+            { echo "### would-fail: screen-body"; echo '```'; cat "$RUNNER_TEMP/screen-body.log"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
