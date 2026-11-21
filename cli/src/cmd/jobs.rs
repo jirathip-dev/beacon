@@ -1,39 +1,38 @@
 use crate::config::{self, Id, Kept, Label, Review};
 use crate::jobs::{Manager, Watcher, edit};
-use crate::{out, probe};
+use crate::out;
+use crate::target::Target;
 use std::path::Path;
+use std::process::ExitCode;
 use std::time::Instant;
 
-const USAGE: &str = "usage: beacon jobs [keep <label> --name <n> --group <g> [--running] | ignore <label> | removed <label>] [--config <path>] [--host <name>]";
+pub const USAGE: &str = "beacon jobs [keep <label> --name <n> --group <g> [--running] | ignore <label> | removed <label>] [--config <path>] [--host <name>]";
 
 /// `beacon jobs`: lists this host's jobs with their review, or sets one job's review in the config.
-pub fn run(args: &[&str]) -> Result<(), String> {
+pub fn run(args: &[&str]) -> Result<ExitCode, String> {
+    let usage = || format!("usage: {USAGE}");
     let (verb, label, rest) = match args {
         [v @ ("keep" | "ignore" | "removed"), label, rest @ ..] => (Some(*v), *label, rest),
         rest => (None, "", rest),
     };
-    let (mut path, mut host) = (std::env::var("BEACON_CONFIG").ok(), None);
+    let (Target { path, name: host }, rest) = Target::take(rest)?;
     let (mut name, mut group, mut running) = (None, None, false);
     let mut it = rest.iter();
     while let Some(flag) = it.next() {
-        let mut value = || it.next().map(ToString::to_string).ok_or(USAGE);
+        let mut value = || it.next().map(ToString::to_string).ok_or_else(usage);
         match *flag {
-            "--config" => path = Some(value()?),
-            "--host" => host = Some(value()?),
             "--name" if verb == Some("keep") => name = Some(value()?),
             "--group" if verb == Some("keep") => group = Some(value()?),
             "--running" if verb == Some("keep") => running = true,
-            _ => return Err(USAGE.into()),
+            _ => return Err(usage()),
         }
     }
-    let path = path.ok_or("no config: pass --config <path> or set BEACON_CONFIG")?;
-    let host = host.map_or_else(probe::hostname, Ok)?;
     let id = Id::try_from(host.clone())?;
     let text = std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
     let review = match verb {
         None => return list(&text, &id).map_err(|e| format!("{path}: {e}")),
         Some("keep") => {
-            let (name, group) = (name.ok_or(USAGE)?, group.ok_or(USAGE)?);
+            let (name, group) = (name.ok_or_else(usage)?, group.ok_or_else(usage)?);
             Review::Keep(Kept {
                 name,
                 group,
@@ -52,7 +51,7 @@ pub fn run(args: &[&str]) -> Result<(), String> {
     }
     if new == text {
         out::out(&format!("= {host}: {what}"));
-        return Ok(());
+        return Ok(ExitCode::SUCCESS);
     }
     std::fs::write(&path, new).map_err(|e| format!("{path}: {e}"))?;
     out::out(&format!("~ {host}: {what}"));
@@ -65,10 +64,10 @@ pub fn run(args: &[&str]) -> Result<(), String> {
         "git -C {dir} commit -m \"beacon jobs: {verb} {}\" {file} && git -C {dir} push",
         label.as_str()
     ));
-    Ok(())
+    Ok(ExitCode::SUCCESS)
 }
 
-fn list(text: &str, id: &Id) -> Result<(), String> {
+fn list(text: &str, id: &Id) -> Result<ExitCode, String> {
     let mut config = config::parse(text)?;
     let host = config
         .hosts
@@ -127,5 +126,5 @@ fn list(text: &str, id: &Id) -> Result<(), String> {
             .collect();
         out::out(cells.join("  ").trim_end());
     }
-    Ok(())
+    Ok(ExitCode::SUCCESS)
 }

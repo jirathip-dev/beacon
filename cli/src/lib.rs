@@ -1,3 +1,4 @@
+pub mod cmd;
 pub mod config;
 pub mod history;
 pub mod install;
@@ -15,3 +16,4 @@ pub mod sampler;
 pub mod serve;
 pub mod state;
 pub mod status;
+pub mod target;
