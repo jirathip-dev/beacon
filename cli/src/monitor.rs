@@ -1,7 +1,7 @@
+use crate::clock::unix_now;
 use crate::config::{Monitor, MonitorsConfig};
 use crate::history::MonitorId;
 use crate::net;
-use crate::serve::unix_now;
 use crate::status::Status;
 use rustls::pki_types::{ServerName, UnixTime};
 use rustls::time_provider::TimeProvider;

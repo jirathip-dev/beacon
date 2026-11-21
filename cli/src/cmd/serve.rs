@@ -54,5 +54,5 @@ pub fn run(args: &[&str]) -> Result<ExitCode, String> {
     let s = ServeArgs::parse(args, USAGE)?;
     let notify = s.notify.as_deref().map(Notify::load).transpose()?;
     let (name, path) = (&s.target.name, &s.target.path);
-    Err(crate::serve::serve(name, path, &s.listen, notify.as_ref()))
+    Err(crate::serve::serve(name, path, &s.listen, notify))
 }

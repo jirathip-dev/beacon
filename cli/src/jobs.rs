@@ -2,8 +2,8 @@ pub mod edit;
 pub mod launchd;
 pub mod systemd;
 
+use crate::clock::every;
 use crate::config::{Kept, Label, Review};
-use crate::serve::every;
 use crate::status::Status;
 use crate::{out, probe};
 use sha2::{Digest, Sha256};
