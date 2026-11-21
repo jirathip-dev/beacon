@@ -9,3 +9,4 @@ At most 30 "don't X" lines, each naming its enforcer or `none`.
 - Don't force-unwrap, try! or as! in app sources: swiftlint (.swiftlint.yml).
 - Don't fatalError( or print( in app sources: swiftlint custom rules (.swiftlint.yml).
 - Don't leave a Swift warning: SWIFT_TREAT_WARNINGS_AS_ERRORS (app/Beacon.xcodeproj), -warnings-as-errors (ci.yml swift job).
+- Don't pad a screen body (ScrollView, sheet) with literal .padding; use .screenBody() (enforced by: screen-body `sh scripts/lessons/screen-body.sh`, shadow since 2026-11-21).

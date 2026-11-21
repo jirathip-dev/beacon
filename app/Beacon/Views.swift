@@ -224,7 +224,7 @@ struct MonitorList: View {
                                   plain: model.checking.map { "checking \($0) monitors" } ?? "loading config")
                     }
                 }
-                .padding(.horizontal, 12).padding(.vertical, 12)
+                .screenBody(side: 12)
             }
             .refreshable { await model.refresh() }
         }
