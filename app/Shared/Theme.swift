@@ -50,3 +50,8 @@ struct Dot: View {
     let color: Color
     var body: some View { Circle().fill(color).frame(width: 7, height: 7) }
 }
+
+extension View {
+    /// A screen's body inset: the design's `.body { padding:12px 16px }`; the monitor list's design uses side 12.
+    func screenBody(side: CGFloat = 16) -> some View { padding(.horizontal, side).padding(.vertical, 12) }
+}
