@@ -1,4 +1,3 @@
-pub mod cli;
 pub mod edit;
 pub mod launchd;
 pub mod systemd;

@@ -3,8 +3,9 @@ frozen = [
     ".github/workflows/ci.yml",
     "ci/cap.toml",
     "docs/architecture/beacon/adr.md",
+    "cli/src/main.rs",
 ]
-generated = ["cli/src/lib.rs"]
+generated = ["cli/src/lib.rs", "cli/src/cmd/mod.rs"]
 generate = "sh scripts/gen.sh"
 shared = ["cli/Cargo.toml", "cli/src/install.rs", "cli/src/status.rs"]
 
@@ -19,6 +20,21 @@ glob = "*.toml"
 [[collect]]
 dir = "docs/architecture"
 glob = "*/README.md"
+
+[[collect]]
+dir = "cli/src/cmd"
+glob = "*.rs"
+
+[[layer]]
+name = "lib"
+paths = ["cli/src/*.rs", "cli/src/jobs/**"]
+exclude = ["cli/src/lib.rs", "cli/src/main.rs"]
+
+[[layer]]
+name = "cmd"
+paths = ["cli/src/cmd/**", "cli/src/main.rs"]
+mods = ["crate::cmd", "beacon::cmd"]
+may_use = ["lib"]
 
 [[size]]
 paths = ["cli/Cargo.toml"]
