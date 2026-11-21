@@ -1,5 +1,5 @@
+use crate::budget::over_budget;
 use crate::config::Id;
-use crate::serve::over_budget;
 use crate::status::{Rendered, Status};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, VecDeque};

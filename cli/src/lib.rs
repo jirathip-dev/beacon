@@ -1,3 +1,5 @@
+pub mod budget;
+pub mod clock;
 pub mod cmd;
 pub mod config;
 pub mod history;

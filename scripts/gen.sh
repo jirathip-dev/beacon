@@ -1,5 +1,6 @@
 #!/bin/sh
-# Writes cli/src/lib.rs from the modules in cli/src and cli/src/cmd/mod.rs from the commands in cli/src/cmd;
+# Writes cli/src/lib.rs from the modules in cli/src, cli/src/cmd/mod.rs from the commands in cli/src/cmd and
+# cli/src/serve/once/mod.rs, cli/src/serve/each/mod.rs from the parts there;
 # a file is rewritten only when its bytes change.
 set -eu
 cd "$(dirname "$0")/.."
@@ -44,6 +45,29 @@ pub fn usage() -> String {
 RS
 } > "$tmp"
 write "$src/cmd/mod.rs" "$tmp"
+part() {
+  names=$(for f in "$src/serve/$1"/*.rs; do
+    n=${f##*/}
+    n=${n%.rs}
+    if [ -e "$f" ] && [ "$n" != mod ]; then echo "$n"; fi
+  done | sort)
+  mkdir -p "$src/serve/$1"
+  tmp=$(mktemp)
+  {
+    for n in $names; do echo "mod $n;"; done
+    echo
+    echo "use super::hub::$2;"
+    echo "use std::thread::Scope;"
+    echo
+    echo "/// $3"
+    echo "pub fn start<'s>(s: &'s Scope<'s, '_>, hub: &'s Hub$4) {"
+    for n in $names; do echo "    $n::start(s, hub$5);"; done
+    echo "}"
+  } > "$tmp"
+  write "$src/serve/$1/mod.rs" "$tmp"
+}
+part once Hub "Starts the parts that live as long as serve." "" ""
+part each "{Hub, Loaded}" "Starts the parts that run again for each valid config." ", config: &Loaded" ", config"
 tmp=$(mktemp)
 for f in "$src"/*.rs "$src"/*/mod.rs; do
   [ -e "$f" ] || continue
