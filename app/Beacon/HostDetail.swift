@@ -29,7 +29,7 @@ struct HostDetail: View {
                     }
                 }
                 .font(T.font())
-                .padding(.horizontal, 16).padding(.vertical, 12)
+                .screenBody()
             }
         }
         .background(T.bg)
@@ -233,7 +233,7 @@ struct ChartSheet: View {
                      + (w.missing > 0 ? " · \(w.missing) missing, left blank" : "") + " · hold and drag to read a point")
                     .font(T.font(11)).foregroundStyle(T.mute).padding(.horizontal, 4)
             }
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            .screenBody()
             Spacer()
         }
         .font(T.font())

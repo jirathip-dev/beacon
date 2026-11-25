@@ -1,0 +1,19 @@
+name: actionlint
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging]
+
+concurrency:
+  group: actionlint-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - run: bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+      - run: ./actionlint -color

@@ -1,6 +1,6 @@
 # `beacon jobs`
 
-`beacon serve` discovers its user's jobs: launchd `gui/<uid>` on macOS (not `com.apple.*`, `application.*` or
+`beacon serve` discovers its user's jobs every 60 s: launchd `gui/<uid>` on macOS (not `com.apple.*`, `application.*` or
 `dev.beacon.serve`), the `.service` and `.timer` units in `~/.config/systemd/user` on Linux (a timer and its
 service are one job, under the timer's name; not `beacon-serve.service`). Each is a `/status` row
 `job-<slug of its label>`. Beacon only watches: it never writes, loads or restarts a job. Design: ADR D12 in

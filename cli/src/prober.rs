@@ -1,11 +1,13 @@
+use crate::budget::over_budget;
+use crate::clock::{every, unix_now};
 use crate::history::Times;
 use crate::monitor::{self, Probed, Seen};
 use crate::net;
-use crate::serve::{every, over_budget, unix_now};
 use crate::status::Rendered;
 use std::fs::{self, File};
 use std::os::unix::fs::FileExt;
 use std::path::Path;
+use std::sync::Arc;
 use std::thread::{self, Scope};
 use std::time::{Duration, Instant};
 
@@ -17,9 +19,9 @@ const PROBERS: usize = 4;
 pub fn run<'s>(
     s: &'s Scope<'s, '_>,
     generation: u64,
-    monitors: Vec<Probed>,
+    monitors: Vec<Arc<Probed>>,
     dir: Option<&'s Path>,
-    record: &'s (dyn Fn(u64, &Probed, &Seen, Rendered) -> bool + Sync),
+    record: impl Fn(u64, &Probed, &Seen, Rendered) -> bool + Send + Copy + 's,
 ) {
     let mut threads: Vec<Vec<_>> = (0..PROBERS).map(|_| Vec::new()).collect();
     for (i, m) in monitors.into_iter().enumerate() {

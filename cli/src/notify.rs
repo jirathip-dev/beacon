@@ -1,7 +1,7 @@
+use crate::clock::{every, unix_now};
 use crate::config::{HttpsUrl, NotifyPolicy};
 use crate::net::agent;
 use crate::out;
-use crate::serve::{every, unix_now};
 use crate::state::{self, Announced};
 use crate::status::{Rendered, Status, rfc3339};
 use hmac::{Hmac, KeyInit, Mac};

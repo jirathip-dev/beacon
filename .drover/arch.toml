@@ -1,0 +1,74 @@
+frozen = [
+    "README.md",
+    ".github/workflows/ci.yml",
+    "ci/cap.toml",
+    "docs/architecture/beacon/adr.md",
+    "cli/src/main.rs",
+]
+generated = [
+    "cli/src/lib.rs",
+    "cli/src/cmd/mod.rs",
+    "cli/src/serve/once/mod.rs",
+    "cli/src/serve/each/mod.rs",
+]
+generate = "sh scripts/gen.sh"
+shared = ["cli/Cargo.toml", "cli/src/install.rs", "cli/src/status.rs"]
+
+[[collect]]
+dir = "docs"
+glob = "*.md"
+
+[[collect]]
+dir = "ci/cap.d"
+glob = "*.toml"
+
+[[collect]]
+dir = "docs/architecture"
+glob = "*/README.md"
+
+[[collect]]
+dir = "cli/src/cmd"
+glob = "*.rs"
+
+[[layer]]
+name = "lib"
+paths = ["cli/src/*.rs", "cli/src/jobs/**"]
+exclude = ["cli/src/lib.rs", "cli/src/main.rs"]
+
+[[layer]]
+name = "cmd"
+paths = ["cli/src/cmd/**", "cli/src/main.rs"]
+mods = ["crate::cmd", "beacon::cmd"]
+may_use = ["lib", "serve"]
+
+[[layer]]
+name = "serve"
+paths = ["cli/src/serve/**"]
+mods = ["crate::serve", "beacon::serve"]
+may_use = ["lib"]
+
+[[ban]]
+pattern = "once::"
+paths = ["cli/src/serve/once/*.rs", "cli/src/serve/each/*.rs"]
+reason = "a part reports to the hub and never names another part"
+
+[[ban]]
+pattern = "each::"
+paths = ["cli/src/serve/once/*.rs", "cli/src/serve/each/*.rs"]
+reason = "a part reports to the hub and never names another part"
+
+[[size]]
+paths = ["cli/Cargo.toml"]
+max_file_lines = 70
+
+[[size]]
+paths = ["cli/src/install.rs"]
+max_file_lines = 110
+
+[[size]]
+paths = ["cli/src/status.rs"]
+max_file_lines = 150
+
+[[size]]
+paths = ["cli/src/serve/**"]
+max_file_lines = 160

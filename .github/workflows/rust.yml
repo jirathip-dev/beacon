@@ -1,0 +1,39 @@
+name: rust
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging]
+
+concurrency:
+  group: rust-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cli/target
+          key: rust-${{ runner.os }}-${{ hashFiles('cli/Cargo.lock') }}
+      - run: rustup toolchain install
+      - name: Generated lists are fresh
+        run: |
+          sh ../scripts/gen.sh
+          git diff --exit-code || { echo "a generated list differs from what sh scripts/gen.sh writes; run it and commit the output" >&2; exit 1; }
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny@0.22.0
+      - run: cargo deny --locked check

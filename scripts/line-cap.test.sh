@@ -1,5 +1,5 @@
 #!/bin/sh
-# Runs the real scripts/line-cap.sh on a scratch tree: at the cap it passes, one line over it fails,
+# Runs the real scripts/line-cap.sh on a scratch tree: at the cap it passes, one line over it fails, a higher raise file wins,
 # and blank lines, Rust test modules and Swift test targets are not counted.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
@@ -23,6 +23,10 @@ expect() {
 }
 expect 0 6
 expect 1 5
+mkdir "$t/ci/cap.d"
+printf 'line_cap = 6\nwhy = "test"\n' > "$t/ci/cap.d/2026-11-24-6.toml"
+expect 0 5
+rm -r "${t:?}/ci/cap.d"
 printf '[fleet.beacon]\n' > "$t/ci/cap.toml"
 if sh "$t/scripts/line-cap.sh" > /dev/null 2>&1; then echo "FAIL: missing line_cap passed"; fails=1; else echo "ok: missing line_cap fails"; fi
 exit "$fails"

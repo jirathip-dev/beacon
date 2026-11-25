@@ -29,7 +29,7 @@ struct HistoryScreen: View {
             Header(title: target.title, sub: target.sub, back: target.check == nil ? "monitors" : target.host ?? "", close: close)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) { content }
-                    .font(T.font()).padding(.horizontal, 16).padding(.vertical, 12)
+                    .font(T.font()).screenBody()
             }
         }
         .background(T.bg)

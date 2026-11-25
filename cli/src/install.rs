@@ -1,23 +1,30 @@
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
-/// Installs `beacon serve` as `LaunchAgent` `dev.beacon.serve` (macOS) or systemd user unit `beacon-serve.service`; idempotent.
-pub fn install(
-    config: &str,
-    host: &str,
-    listen: &str,
-    notify: Option<&str>,
-) -> Result<String, String> {
+/// Installs `beacon <serve>` as `LaunchAgent` `dev.beacon.serve` (macOS) or systemd user unit `beacon-serve.service`; idempotent.
+pub fn install(serve: &[String]) -> Result<String, String> {
     let home = std::env::var("HOME").map_err(|_| "install: HOME is not set")?;
     let exe = std::env::current_exe().map_err(|e| format!("install: {e}"))?;
-    let config = std::fs::canonicalize(config).map_err(|e| format!("{config}: {e}"))?;
-    let notify = notify.map(|n| std::fs::canonicalize(n).map_err(|e| format!("{n}: {e}")));
-    let notify = notify.transpose()?.map(|n| n.display().to_string());
-    let unit_notify = notify.as_ref().map(|n| format!(" --notify \"{n}\""));
-    let plist_notify = notify.map(|n| format!("<string>--notify</string><string>{n}</string>"));
-    let unit_notify = unit_notify.unwrap_or_default();
-    let plist_notify = plist_notify.unwrap_or_default();
-    let (exe, config) = (exe.display(), config.display());
+    let argv: Vec<String> = [exe.display().to_string()]
+        .into_iter()
+        .chain(serve.iter().cloned())
+        .collect();
+    let plain = |a: &str| {
+        a.chars()
+            .all(|c| c.is_ascii_alphanumeric() || "._:-".contains(c))
+    };
+    let quote = |a: &String| {
+        if plain(a) {
+            a.clone()
+        } else {
+            format!("\"{a}\"")
+        }
+    };
+    let exec = argv.iter().map(quote).collect::<Vec<_>>().join(" ");
+    let strings: String = argv
+        .iter()
+        .map(|a| format!("<string>{a}</string>"))
+        .collect();
     let logs = crate::state::dir(std::path::Path::new(&home));
     let logs = logs.to_string_lossy();
     let path = format!(
@@ -25,7 +32,7 @@ pub fn install(
     );
     if !cfg!(target_os = "macos") {
         let unit = format!(
-            "[Unit]\nDescription=beacon serve\n\n[Service]\nExecStart=\"{exe}\" serve --config \"{config}\" --host {host} --listen {listen}{unit_notify}\nEnvironment=PATH={path}\nRestart=always\nStandardOutput=append:{logs}/serve.log\nStandardError=append:{logs}/serve.log\n\n[Install]\nWantedBy=default.target\n"
+            "[Unit]\nDescription=beacon serve\n\n[Service]\nExecStart={exec}\nEnvironment=PATH={path}\nRestart=always\nStandardOutput=append:{logs}/serve.log\nStandardError=append:{logs}/serve.log\n\n[Install]\nWantedBy=default.target\n"
         );
         let dir = format!("{home}/.config/systemd/user");
         let file = format!("{dir}/beacon-serve.service");
@@ -53,7 +60,7 @@ pub fn install(
     let plist = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
 <plist version="1.0"><dict><key>Label</key><string>dev.beacon.serve</string>
-<key>ProgramArguments</key><array><string>{exe}</string><string>serve</string><string>--config</string><string>{config}</string><string>--host</string><string>{host}</string><string>--listen</string><string>{listen}</string>{plist_notify}</array>
+<key>ProgramArguments</key><array>{strings}</array>
 <key>EnvironmentVariables</key><dict><key>PATH</key><string>{path}</string></dict>
 <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
 <key>StandardOutPath</key><string>{logs}/serve.log</string><key>StandardErrorPath</key><string>{logs}/serve.log</string>
