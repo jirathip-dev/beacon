@@ -5,8 +5,6 @@
 ```text
 scripts/gen.sh                     writes the four generated lists below
 .drover/arch.toml                  the rules of adr.md's last section
-ci/cap.toml                        frozen: the first cap
-ci/cap.d/<date>-<cap>.toml         one file per raise
 .github/workflows/rust.yml         job rust
 .github/workflows/swift.yml        jobs changes, swift
 .github/workflows/cap.yml          job line-cap
@@ -203,11 +201,11 @@ survives a reload keeps its thread and its baseline (`Notifier.watched`); nothin
 ## A cap raise (slice 0)
 
 ```toml
-line_cap = 8000
+cap = 8000
 why = "#N: owner decision qNNNN, what it covers"
 ```
 
-`ci/cap.d/<date>-<cap>.toml`. `scripts/line-cap.sh` enforces the highest `line_cap` among `ci/cap.toml` and
+`ci/cap.d/<date>-<cap>.toml`. `scripts/line-cap.sh` enforces the highest cap among the first cap file and
 `ci/cap.d/*.toml`, which is the rule `drover cap` already reads. The `why` replaces a new file in
 `docs/cap-history/`; the five files there stay.
 
