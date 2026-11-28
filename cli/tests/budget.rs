@@ -6,7 +6,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::{Arc, Barrier, Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -16,6 +16,7 @@ const REAL_S: f64 = 600.0;
 const DAY_SPEEDUP: u64 = 8640;
 const CLIENTS: usize = 50;
 const POLLS: usize = 60;
+const POLL_EVERY: Duration = Duration::from_millis(50);
 const TLS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tls");
 static ALONE: Mutex<()> = Mutex::new(());
 const FAKE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/jobs/fake");
@@ -456,19 +457,22 @@ fn status_and_metrics_p99_is_at_most_2_ms_for_50_clients_with_a_hung_host_and_a_
     let paths = ["/status", "/metrics", "/config", "/history", times];
     let etags: Vec<_> = paths.iter().map(|p| etag(&serve.addr, p)).collect();
     let run = || {
-        let start = Arc::new(Barrier::new(CLIENTS));
+        let start = Instant::now() + Duration::from_millis(500);
         let clients: Vec<_> = (0..CLIENTS)
-            .map(|_| {
-                let (addr, etags, start) = (serve.addr.clone(), etags.clone(), start.clone());
+            .map(|c| {
+                let (addr, etags) = (serve.addr.clone(), etags.clone());
+                let first = start
+                    + POLL_EVERY * u32::try_from(c).unwrap() / u32::try_from(CLIENTS).unwrap();
                 thread::spawn(move || {
                     let conn = TcpStream::connect(addr).unwrap();
                     conn.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
                     let mut conn = BufReader::new(conn);
                     poll(&mut conn, paths[0], &etags[0]);
-                    start.wait();
                     let mut took = Vec::new();
                     for i in 0..POLLS {
                         let (path, etag) = (paths[i % paths.len()], &etags[i % paths.len()]);
+                        let due = first + POLL_EVERY * u32::try_from(i).unwrap();
+                        thread::sleep(due.saturating_duration_since(Instant::now()));
                         let t = Instant::now();
                         let reply = poll(&mut conn, path, etag);
                         took.push(t.elapsed());

@@ -1,0 +1,44 @@
+name: budget
+
+on:
+  pull_request:
+    paths:
+      - cli/tests/budget.rs
+      - cli/src/serve/**
+      - .github/workflows/budget.yml
+  workflow_dispatch:
+
+jobs:
+  p99-loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: cli
+    env:
+      TEST: status_and_metrics_p99_is_at_most_2_ms_for_50_clients_with_a_hung_host_and_a_slow_disk
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            cli/target
+          key: rust-${{ runner.os }}-${{ hashFiles('cli/Cargo.lock') }}
+      - run: rustup toolchain install
+      - name: p99 passes 20 runs in a row
+        run: |
+          for i in $(seq 1 20); do
+            echo "run $i"
+            cargo test --test budget "$TEST" -- --exact --nocapture
+          done
+      - name: a 3 ms delay in the handler fails p99
+        run: |
+          if BEACON_OVER_BUDGET=slow cargo test --features over-budget --test budget "$TEST" -- --exact --nocapture > slow.log 2>&1; then
+            cat slow.log
+            echo "p99 passed with a 3 ms delay injected" >&2
+            exit 1
+          fi
+          cat slow.log
+          grep -E 'p99 .* > 2 ms' slow.log
