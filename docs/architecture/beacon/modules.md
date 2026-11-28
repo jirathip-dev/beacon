@@ -22,8 +22,8 @@ beacon/
     BeaconWidget/      WidgetKit extension: reads StatusSnapshot only
     BeaconKit/         Swift package: config + status types, ConfigStore (source, cache, ETag),
                        probes (http, tcp, host fetch with ETag), Refresher, StatusSnapshot
-  docs/                this ADR, monitors.example.json, cap-history/
-  scripts/line-cap.sh  ci/cap.toml  .github/workflows/ci.yml  .herdsman/rules.md
+  docs/                this ADR, monitors.example.json
+  .github/workflows/ci.yml  .herdsman/rules.md
 ```
 
 An arrow means "may import":

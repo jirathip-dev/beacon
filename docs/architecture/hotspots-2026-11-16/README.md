@@ -24,7 +24,7 @@ PR that created the file. No PR is open; the queue holds #58 (lessons) and this 
 | `cli/src/lib.rs` | 8 | 3 | every PR only added `pub mod` lines | written by a script from the folder |
 | `cli/src/serve.rs` | 7 | 11 | each feature added a thread, its state and its route inside one 290-line function | a folder: a hub and one file per part |
 | `.github/workflows/ci.yml` | 5 | 2 | a job or a step for one area: TestFlight, the app icon, caches, lints | one workflow per area |
-| `ci/cap.toml` | 5 | 0 | created, then four raises of its one number | frozen; a raise is a file in `ci/cap.d/` |
+| the cap file | 5 | 0 | created, then four raises of its one number | frozen; a raise is a file in `ci/cap.d/` |
 | `cli/Cargo.toml` | 5 | 2 | dependencies for serve, notify and TLS, the lints table, the budget feature | shared, 70 lines |
 | `cli/src/install.rs` | 5 | 0 | created, ported to Linux, lints, the log folder, `--notify` passed on | shared, 110 lines |
 | `cli/src/status.rs` | 5 | 0 | created, then `StatusBody`, `Rendered` for `/config`, lints, the job rows | shared, 150 lines |
@@ -104,7 +104,7 @@ new folder under `docs/architecture/`. Docs for a feature go in the `docs/` file
 - `README.md` becomes an index; its text moves word for word to `docs/run.md`, `serve.md`, `alerts.md`,
   `rules.md`, `install.md` and the existing `jobs.md`.
 - `ci.yml` becomes `rust.yml`, `swift.yml`, `cap.yml` and `actionlint.yml`. Job names stay as they are.
-- `scripts/line-cap.sh` takes the highest `line_cap` of `ci/cap.toml` and `ci/cap.d/*.toml`, with one more test case.
+- `scripts/line-cap.sh` takes the highest cap of the first cap file and `ci/cap.d/*.toml`, with one more test case.
 - `.drover/arch.toml` is created with the slice 0 lines of `adr.md`.
 
 Eight files leave the list when it merges. Then two issues, which the orchestrator files on approve:

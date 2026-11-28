@@ -28,7 +28,7 @@ new name?
   history, then the status body) are written out for checks and rules, again for monitors, again for jobs.
 - `README.md` is 70 lines and 31 of them are one bullet, `beacon serve`, which five PRs extended.
 - `ci.yml` holds five jobs for three areas (the CLI, the app, the repo's own rules) under one concurrency group.
-- `ci/cap.toml` is one number. A raise edits it and adds a file to `docs/cap-history/`.
+- The cap file is one number. A raise edits it and adds a file to `docs/cap-history/`.
 - `docs/architecture/beacon/adr.md` holds D1 to D11. The two newest features already wrote their decisions in
   their own folders (`jobs/`, `history/`) to share no file; the older ones appended here.
 - `Cargo.toml`, `install.rs` and `status.rs` are not lists. None has an update round, and two have no predicted
@@ -64,7 +64,7 @@ new name?
    Its text moves word for word to `docs/`, one file per area. The README is frozen.
 5. **CI.** One workflow per area: `rust.yml`, `swift.yml`, `cap.yml`, `actionlint.yml`. `ci.yml` is deleted and
    frozen, so it cannot come back as the shared file. Job names do not change.
-6. **The cap.** `ci/cap.toml` is frozen. A raise is a new file in `ci/cap.d/` with the number and the reason;
+6. **The cap.** The first cap file is frozen. A raise is a new file in `ci/cap.d/` with the number and the reason;
    `scripts/line-cap.sh` enforces the highest.
 7. **The M0 ADR.** `docs/architecture/beacon/adr.md` is frozen as it is. A new decision, or an amendment that
    needs new lines, is its own folder under `docs/architecture/`, as `jobs/` and `history/` already are. Nothing
@@ -89,7 +89,7 @@ new name?
 - The usage text changes (slice 1): a usage error prints the usage line of its own command, as `beacon jobs`
   does today, and an unknown command prints all of them in name order. No test reads more than `usage: beacon`.
 - The plist and the unit that `beacon install` writes keep their bytes, so no host is restarted by the change.
-- An edit of the number in `ci/cap.toml` still passes arch-check (it judges added lines only). The lane hook
+- An edit of the number in the cap file still passes arch-check (it judges added lines only). The lane hook
   already refuses that edit; the freeze is what takes the file off the list.
 - `swift.yml`'s path check no longer matches every workflow, so a change to `rust.yml` does not start the macOS job.
 - Slices 1 and 2 rename what every CLI feature edits; an open CLI PR would take one update round. None is open.
@@ -102,7 +102,7 @@ Run here, on a throwaway copy of 428da16 with drover's own `arch-check`:
 - The slice 0 script rewrote `cli/src/lib.rs` with no difference, and after a new `cli/src/zzz.rs` it added
   `pub mod zzz;` in order.
 - With the slice 0 lines below: `arch-check: 234 files, 0 violations`.
-- Each rule failed when broken: a line added to `README.md`, to `ci/cap.toml` or to the M0 ADR; a `pub mod` line
+- Each rule failed when broken: a line added to `README.md`, to the cap file or to the M0 ADR; a `pub mod` line
   added by hand; a new module with the list not rewritten; `status.rs` at 151 lines.
 - A new ADR folder, a new file in `ci/cap.d/` and a new workflow file passed.
 - A `[[collect]]` over `.github/workflows/*.yml` switched the freeze of `ci.yml` off, because a collected file is
@@ -132,7 +132,6 @@ Slice 0, this issue's PR. The file is new:
 frozen = [
     "README.md",
     ".github/workflows/ci.yml",
-    "ci/cap.toml",
     "docs/architecture/beacon/adr.md",
 ]
 generated = ["cli/src/lib.rs"]

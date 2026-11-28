@@ -321,7 +321,7 @@ stopped answering. cooee already takes a signed webhook (`POST /hooks/in/<id>`, 
 - A plain `http://` serve URL needs an ATS exception in the app. The recommended setup avoids
   that with `tailscale serve` (D3), so the app ships with `NSAllowsLocalNetworking` only.
 - Repo layout for impl: `cli/` (crate), `app/` (`Beacon.xcodeproj`, `BeaconKit` package),
-  `docs/`, `scripts/line-cap.sh`, `ci/cap.toml`, `.github/workflows/ci.yml`,
+  `docs/`, `.github/workflows/ci.yml`,
   `.herdsman/rules.md`. The line cap counts non-test lines in `cli/src` and in `app/**/*.swift`
   outside `*Tests*`.
 

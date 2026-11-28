@@ -1,7 +1,6 @@
 frozen = [
     "README.md",
     ".github/workflows/ci.yml",
-    "ci/cap.toml",
     "docs/architecture/beacon/adr.md",
     "cli/src/main.rs",
 ]
@@ -17,10 +16,6 @@ shared = ["cli/Cargo.toml", "cli/src/install.rs", "cli/src/status.rs"]
 [[collect]]
 dir = "docs"
 glob = "*.md"
-
-[[collect]]
-dir = "ci/cap.d"
-glob = "*.toml"
 
 [[collect]]
 dir = "docs/architecture"
