@@ -24,7 +24,7 @@ PR that created the file. No PR is open; the queue holds #58 (lessons) and this 
 | `cli/src/lib.rs` | 8 | 3 | every PR only added `pub mod` lines | written by a script from the folder |
 | `cli/src/serve.rs` | 7 | 11 | each feature added a thread, its state and its route inside one 290-line function | a folder: a hub and one file per part |
 | `.github/workflows/ci.yml` | 5 | 2 | a job or a step for one area: TestFlight, the app icon, caches, lints | one workflow per area |
-| the cap file | 5 | 0 | created, then four raises of its one number | frozen; a raise is a file in `ci/cap.d/` |
+| the cap file | 5 | 0 | created, then four raises of its one number | frozen; a raise is a new file (#68 later removed the cap) |
 | `cli/Cargo.toml` | 5 | 2 | dependencies for serve, notify and TLS, the lints table, the budget feature | shared, 70 lines |
 | `cli/src/install.rs` | 5 | 0 | created, ported to Linux, lints, the log folder, `--notify` passed on | shared, 110 lines |
 | `cli/src/status.rs` | 5 | 0 | created, then `StatusBody`, `Rendered` for `/config`, lints, the job rows | shared, 150 lines |
@@ -93,8 +93,7 @@ A list that is out of date fails the lane's `drover turn done` and CI's rust job
 cli/src/lib.rs: differs from what `sh scripts/gen.sh` writes: run it and commit the output, never hand-merge a generated file
 ```
 
-A cap raise is one new file, `ci/cap.d/2026-11-24-8000.toml`, holding the number and the reason. A new decision is a
-new folder under `docs/architecture/`. Docs for a feature go in the `docs/` file of its area, or a new one.
+A new decision is a new folder under `docs/architecture/`. Docs for a feature go in the `docs/` file of its area, or a new one.
 
 ## Slices
 
@@ -103,8 +102,8 @@ new folder under `docs/architecture/`. Docs for a feature go in the `docs/` file
 - `scripts/gen.sh`, which writes `cli/src/lib.rs`: the same bytes as today.
 - `README.md` becomes an index; its text moves word for word to `docs/run.md`, `serve.md`, `alerts.md`,
   `rules.md`, `install.md` and the existing `jobs.md`.
-- `ci.yml` becomes `rust.yml`, `swift.yml`, `cap.yml` and `actionlint.yml`. Job names stay as they are.
-- `scripts/line-cap.sh` takes the highest cap of the first cap file and `ci/cap.d/*.toml`, with one more test case.
+- `ci.yml` becomes `rust.yml`, `swift.yml`, a cap workflow and `actionlint.yml`. Job names stay as they are.
+- The cap script takes the highest of the first cap and the raise files, with one more test case. #68 later removed the line cap.
 - `.drover/arch.toml` is created with the slice 0 lines of `adr.md`.
 
 Eight files leave the list when it merges. Then two issues, which the orchestrator files on approve:

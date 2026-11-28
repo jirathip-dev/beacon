@@ -7,7 +7,7 @@ scripts/gen.sh                     writes the four generated lists below
 .drover/arch.toml                  the rules of adr.md's last section
 .github/workflows/rust.yml         job rust
 .github/workflows/swift.yml        jobs changes, swift
-.github/workflows/cap.yml          job line-cap
+.github/workflows/lessons.yml      job lessons
 .github/workflows/actionlint.yml   job actionlint
 .github/workflows/apple-testflight.yml   as today
 README.md                          frozen: what beacon is, the install line, one row per command with its docs file
@@ -200,14 +200,8 @@ survives a reload keeps its thread and its baseline (`Notifier.watched`); nothin
 
 ## A cap raise (slice 0)
 
-```toml
-cap = 8000
-why = "#N: owner decision qNNNN, what it covers"
-```
-
-`ci/cap.d/<date>-<cap>.toml`. `scripts/line-cap.sh` enforces the highest cap among the first cap file and
-`ci/cap.d/*.toml`, which is the rule `drover cap` already reads. The `why` replaces a new file in
-`docs/cap-history/`; the five files there stay.
+Slice 0 made a cap raise one new file holding the number and the reason. #68 later removed the line cap, its
+raise files and its history, so there is no cap to raise.
 
 ## Where the README's text goes (slice 0), word for word
 
@@ -229,7 +223,7 @@ The README keeps one table row per command: the command, eight words on what it 
 |---|---|---|
 | `rust.yml` | `rust` | gains one step: `sh scripts/gen.sh && git diff --exit-code` |
 | `swift.yml` | `changes`, `swift` | `changes` matches `app/`, `.swiftlint.yml` and `swift.yml` itself, no longer every workflow |
-| `cap.yml` | `line-cap` | |
+| `lessons.yml` | `lessons` | was the cap workflow; #68 removed the cap and kept the lesson checks |
 | `actionlint.yml` | `actionlint` | |
 
 Each keeps `on: pull_request` and `push` to `main` and `staging`, and its own concurrency group
