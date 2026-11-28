@@ -28,7 +28,7 @@ new name?
   history, then the status body) are written out for checks and rules, again for monitors, again for jobs.
 - `README.md` is 70 lines and 31 of them are one bullet, `beacon serve`, which five PRs extended.
 - `ci.yml` holds five jobs for three areas (the CLI, the app, the repo's own rules) under one concurrency group.
-- The cap file is one number. A raise edits it and adds a file to `docs/cap-history/`.
+- The cap file is one number. A raise edits it and adds a cap history file. (#68 later removed the line cap.)
 - `docs/architecture/beacon/adr.md` holds D1 to D11. The two newest features already wrote their decisions in
   their own folders (`jobs/`, `history/`) to share no file; the older ones appended here.
 - `Cargo.toml`, `install.rs` and `status.rs` are not lists. None has an update round, and two have no predicted
@@ -62,10 +62,10 @@ new name?
    only for them.
 4. **README.** It becomes an index: what beacon is, the install line, one row per command with its docs file.
    Its text moves word for word to `docs/`, one file per area. The README is frozen.
-5. **CI.** One workflow per area: `rust.yml`, `swift.yml`, `cap.yml`, `actionlint.yml`. `ci.yml` is deleted and
+5. **CI.** One workflow per area: `rust.yml`, `swift.yml`, a cap workflow, `actionlint.yml`. `ci.yml` is deleted and
    frozen, so it cannot come back as the shared file. Job names do not change.
-6. **The cap.** The first cap file is frozen. A raise is a new file in `ci/cap.d/` with the number and the reason;
-   `scripts/line-cap.sh` enforces the highest.
+6. **The cap.** The first cap file is frozen. A raise is a new file in a raises folder with the number and the
+   reason; the cap script enforces the highest. #68 later removed the line cap, its files and its workflow.
 7. **The M0 ADR.** `docs/architecture/beacon/adr.md` is frozen as it is. A new decision, or an amendment that
    needs new lines, is its own folder under `docs/architecture/`, as `jobs/` and `history/` already are. Nothing
    moves.
@@ -104,7 +104,7 @@ Run here, on a throwaway copy of 428da16 with drover's own `arch-check`:
 - With the slice 0 lines below: `arch-check: 234 files, 0 violations`.
 - Each rule failed when broken: a line added to `README.md`, to the cap file or to the M0 ADR; a `pub mod` line
   added by hand; a new module with the list not rewritten; `status.rs` at 151 lines.
-- A new ADR folder, a new file in `ci/cap.d/` and a new workflow file passed.
+- A new ADR folder, a new cap raise file and a new workflow file passed.
 - A `[[collect]]` over `.github/workflows/*.yml` switched the freeze of `ci.yml` off, because a collected file is
   never judged. So no such entry is written, and `docs/architecture` is collected by its `README.md` files only.
 - All three slices' lines together parse. Tried on today's tree, the layer rules reported the six lib files that
@@ -141,10 +141,6 @@ shared = ["cli/Cargo.toml", "cli/src/install.rs", "cli/src/status.rs"]
 [[collect]]
 dir = "docs"
 glob = "*.md"
-
-[[collect]]
-dir = "ci/cap.d"
-glob = "*.toml"
 
 [[collect]]
 dir = "docs/architecture"
